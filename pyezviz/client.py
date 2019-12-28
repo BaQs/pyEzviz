@@ -80,7 +80,6 @@ class EzvizClient(object):
         except (OSError, json.decoder.JSONDecodeError) as e:
             raise PyEzvizError("Impossible to decode response: \nResponse was: [%s] %s", str(e), str(req.status_code), str(req.text))
 
-        print (f"Session: {self._sessionId}")
         return True
 
     def _get_devices(self, max_retries=0):
@@ -119,8 +118,6 @@ class EzvizClient(object):
 
     def _switch_device(self, serial, enable=0, max_retries=0):
         """Switch privacy status on a device"""
-
-        print(f"Switching: {serial}")         
 
         try:
             req = self._session.post(SWITCH_STATUS_URL,

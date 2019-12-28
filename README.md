@@ -11,7 +11,13 @@ Pilot your Ezviz cameras with this module.
 pip install pyezviz
 ```
 
+## Playing with it
 
+```
+pyezviz -u em@il -p PASS get_devices
+...
+pyezviz -u em@il -p PASS --debug switch_devices --enable=1
+```
 
 ## Running the tests
 The tox configuration is already included.

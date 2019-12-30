@@ -9,10 +9,12 @@ COOKIE_NAME = "sessionId"
 API_BASE_URI = "https://apiieu.ezvizlife.com"
 API_ENDPOINT_LOGIN = "/v3/users/login"
 API_ENDPOINT_DEVICES = "/api/cloud/v2/cloudDevices/getAll"
+API_ENDPOINT_PAGELIST = "/v3/userdevices/v1/devices/pagelist"
 API_ENDPOINT_SWITCH_STATUS = '/api/device/switchStatus'
 
 LOGIN_URL = API_BASE_URI + API_ENDPOINT_LOGIN
 DEVICES_URL = API_BASE_URI + API_ENDPOINT_DEVICES
+PAGELIST_URL = API_BASE_URI + API_ENDPOINT_PAGELIST
 SWITCH_STATUS_URL = API_BASE_URI + API_ENDPOINT_SWITCH_STATUS
 
 DEFAULT_TIMEOUT = 10
@@ -27,7 +29,7 @@ class PyEzvizError(Exception):
 
 
 class EzvizClient(object):
-    def __init__(self, account, password, session=None, sessionId=None, timeout=None):
+    def __init__(self, account, password, session=None, sessionId=None, timeout=None, cloud=None, connection=None):
         """Initialize the client object."""
         self.account = account
         self.password = password
@@ -37,6 +39,8 @@ class EzvizClient(object):
         self._sessionId = sessionId
         self._data = {}
         self._timeout = timeout
+        self._CLOUD = cloud
+        self._CONNECTION = connection
 
     def login(self):
         """Set http session."""
@@ -44,6 +48,7 @@ class EzvizClient(object):
             self._session = requests.session()
             # adding fake user-agent header
             self._session.headers.update({'User-agent': str(UserAgent().random)})
+
         return self._login()
 
     def _login(self):
@@ -68,7 +73,6 @@ class EzvizClient(object):
         if req.status_code == 400:
             raise PyEzvizError("Login error: Please check your username/password: %s ", str(req.text))
 
-
         # let's parse the answer, session is in {.."loginSession":{"sessionId":"xxx...}
         try:
             response_json = req.json()
@@ -80,17 +84,58 @@ class EzvizClient(object):
         except (OSError, json.decoder.JSONDecodeError) as e:
             raise PyEzvizError("Impossible to decode response: \nResponse was: [%s] %s", str(e), str(req.status_code), str(req.text))
 
+        # print(f"session: {sessionId}")
+
         return True
 
-    def _get_devices(self, max_retries=0):
-        """Get devices infos."""
+    # def _get_devices(self, max_retries=0):
+    #     """Get devices infos."""
+
+    #     if max_retries > MAX_RETRIES:
+    #         raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
+
+    #     try:
+    #         req = self._session.post(DEVICES_URL,
+    #                                 data={ 'sessionId': self._sessionId, 'enable': '1'},
+    #                                 timeout=self._timeout)
+
+    #     except OSError as e:
+    #         raise PyEzvizError("Could not access Ezviz' API: " + str(e))
+            
+    #     if req.status_code == 401:
+    #     # session is wrong, need to relogin
+    #         self.login()
+    #         logging.info("Got 401, relogging (max retries: %s)",str(max_retries))
+    #         return self._get_devices(max_retries+1)
+
+    #     if req.text is "":
+    #         raise PyEzvizError("No data")
+
+    #     try:
+    #         json_output = req.json()
+    #     except (OSError, json.decoder.JSONDecodeError) as e:
+    #         raise PyEzvizError("Impossible to decode response: " + str(e) + "\nResponse was: " + str(req.text))
+
+    #     cloudDevices = json_output["cloudDevices"]
+    #     if not cloudDevices:
+    #         raise PyEzvizError("Impossible to load the devices, here is the returned response: %s ", str(req.text))
+
+    #     return cloudDevices
+
+
+    def _get_pagelist(self, filter=None, json_key=None, max_retries=0):
+        """Get data from pagelist API."""
 
         if max_retries > MAX_RETRIES:
             raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
 
+        if filter == None:
+            raise PyEzvizError("Trying to call get_pagelist without filter")
+
         try:
-            req = self._session.post(DEVICES_URL,
-                                    data={ 'sessionId': self._sessionId, 'enable': '1'},
+            req = self._session.get(PAGELIST_URL,
+                                    params={'filter': filter},
+                                    headers={ 'sessionId': self._sessionId},
                                     timeout=self._timeout)
 
         except OSError as e:
@@ -110,11 +155,15 @@ class EzvizClient(object):
         except (OSError, json.decoder.JSONDecodeError) as e:
             raise PyEzvizError("Impossible to decode response: " + str(e) + "\nResponse was: " + str(req.text))
 
-        cloudDevices = json_output["cloudDevices"]
-        if not cloudDevices:
+        if json_key == None:
+            json_result = json_output
+        else:
+            json_result = json_output[json_key]
+
+        if not json_result:
             raise PyEzvizError("Impossible to load the devices, here is the returned response: %s ", str(req.text))
 
-        return cloudDevices
+        return json_result
 
     def _switch_device(self, serial, enable=0, max_retries=0):
         """Switch privacy status on a device"""
@@ -155,6 +204,7 @@ class EzvizClient(object):
         return True
 
 
+
     def get_devices(self):
         """Get current data."""
         return self._get_devices()
@@ -162,6 +212,15 @@ class EzvizClient(object):
     def switch_devices(self,enable=0):
         """Switch status on all devices."""
         return self._switch_devices(enable)
+
+    def get_DEVICE(self, max_retries=0):
+        return self._get_pagelist(filter='CLOUD',json_key='deviceInfos')
+
+    def get_CONNECTION(self, max_retries=0):
+        return self._get_pagelist(filter='CONNECTION',json_key='connectionInfos')
+
+    def get_STATUS(self, max_retries=0):
+        return self._get_pagelist(filter='STATUS',json_key='statusInfos')
 
 
     def close_session(self):

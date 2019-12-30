@@ -17,7 +17,7 @@ def main():
                         required=False, help='[switch_devices] Sets privacy to be enabled or disabled')
     parser.add_argument('--debug', action='store_true', help='Print debug messages to stderr')
     parser.add_argument('action', type=str,
-                        default='get_devices', help='Action', choices=['get_devices', 'switch_devices'])
+                        default='status', help='Action', choices=['device','status','connection','switch-all'])
     # parser.add_argument('--period',
     #                     required=False, help='Period (only used with Action=consumption)', choices=['day','week','month','year'])
     args = parser.parse_args()
@@ -42,18 +42,37 @@ def main():
         requests_log.propagate = True
 
 
-
-    if args.action == 'get_devices':
+    if args.action == 'device':
         try:
             client.login()
-            print(json.dumps(client.get_devices(), indent=2))
+            print(json.dumps(client.get_DEVICE(), indent=2))
         except BaseException as exp:
             print(exp)
             return 1
         finally:
             client.close_session()
 
-    elif args.action == 'switch_devices':
+    elif args.action == 'status':
+        try:
+            client.login()
+            print(json.dumps(client.get_STATUS(), indent=2))
+        except BaseException as exp:
+            print(exp)
+            return 1
+        finally:
+            client.close_session()
+
+    elif args.action == 'connection':
+        try:
+            client.login()
+            print(json.dumps(client.get_CONNECTION(), indent=2))
+        except BaseException as exp:
+            print(exp)
+            return 1
+        finally:
+            client.close_session()
+
+    elif args.action == 'switch-all':
         try:
             client.login()
             print(json.dumps(client.switch_devices(args.enable), indent=2))

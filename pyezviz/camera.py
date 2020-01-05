@@ -102,6 +102,7 @@ class EzvizCamera(object):
             'encrypted': bool(self._status['isEncrypt']),
 
             'local_ip': self._connection['localIp'],
+            'local_rtsp_port': self._connection['localRtspPort'],
 
             'detection_sensibility': self._detection_sensibility,
 

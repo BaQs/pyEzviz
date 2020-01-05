@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name='pyEzviz',
-    version="0.0.2",
+    version="0.1.0",
     license='Apache Software License',
     author='Pierre Ourdouille',
     author_email='baqs@users.github.com',
@@ -20,7 +20,10 @@ setuptools.setup(
     install_requires=[
         'requests',
         'fake_useragent',
-        'simplejson'
+        'hashlib',
+        'json',
+        'uuid',
+        'pandas'
     ],
     entry_points={
     'console_scripts': [

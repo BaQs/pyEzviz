@@ -1,7 +1,7 @@
 import setuptools
 
-with open("README.md", "r") as fh:
-    long_description = fh.read()
+# with open("README.md", "r") as fh:
+#     long_description = fh.read()
 
 setuptools.setup(
     name='pyEzviz',
@@ -10,7 +10,7 @@ setuptools.setup(
     author='Pierre Ourdouille',
     author_email='baqs@users.github.com',
     description='Pilot your Ezviz cameras',
-    long_description=long_description,
+    long_description="Pilot your Ezviz cameras with this module. Please view readme on github",
     url='http://github.com/baqs/pyEzviz/',
     packages=setuptools.find_packages(include=['pyezviz']),
     setup_requires=[

@@ -88,7 +88,7 @@ class EzvizCamera(object):
             'serial': self._serial,
             'name': self._device['name'],
             'status': self._device['status'],
-            'device_sub_category': self._device['deviceSubCategory']
+            'device_sub_category': self._device['deviceSubCategory'],
 
             'privacy': self._switch[TYPE_PRIVACY_MODE]['enable'],
             'audio': self._switch[TYPE_AUDIO]['enable'],

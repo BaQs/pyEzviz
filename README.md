@@ -14,10 +14,19 @@ pip install pyezviz
 ## Playing with it
 
 ```
-pyezviz -u em@il -p PASS device
+pyezviz -u em@il -p PASS device -h
 ...
-pyezviz -u em@il -p PASS --debug switch_devices --enable=1
+pyezviz -u em@il -p PASS --debug devices status
+      serial            name  status  privacy  audio  ir_led  state_led  follow_move  alarm_notify alarm_sound_mod  encrypted       local_ip detection_sensibility
+0  D733333333 C6N(D73333333)       1    False   True    True       True         True         False        Software       True  192.168.2.10                     3
+1  D733333333 C6N(D73333333)       1    False   True    True       True         True         False        Software       True  192.168.2.13                     4
+2  D833333333 C6N(D83333333)       1    False   True    True       True         True         False        Disabled       True  192.168.2.12                     3
+3  D833333333 C6N(D83333333)       1    False   True    True       True        False         False        Software       True  192.168.2.11                     3
+4  D933333333 C6N(D93333333)       1    False   True    True       True        False         False        Software       True  192.168.2.14                     3
+
+
 ```
+
 
 ## Running the tests
 The tox configuration is already included.

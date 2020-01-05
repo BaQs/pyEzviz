@@ -1,1 +1,2 @@
 cryptography==2.8
+pandas==0.25.3

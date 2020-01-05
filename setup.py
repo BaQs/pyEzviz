@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name='pyEzviz',
-    version="0.1.0",
+    version="0.1.1",
     license='Apache Software License',
     author='Pierre Ourdouille',
     author_email='baqs@users.github.com',

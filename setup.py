@@ -20,8 +20,6 @@ setuptools.setup(
     install_requires=[
         'requests',
         'fake_useragent',
-        'hashlib',
-        'json',
         'uuid',
         'pandas'
     ],

@@ -88,6 +88,7 @@ class EzvizCamera(object):
             'serial': self._serial,
             'name': self._device['name'],
             'status': self._device['status'],
+            'device_sub_category': self._device['deviceSubCategory'],
 
             'privacy': self._switch[TYPE_PRIVACY_MODE]['enable'],
             'audio': self._switch[TYPE_AUDIO]['enable'],
@@ -102,6 +103,7 @@ class EzvizCamera(object):
             'encrypted': bool(self._status['isEncrypt']),
 
             'local_ip': self._connection['localIp'],
+            'local_rtsp_port': self._connection['localRtspPort'],
 
             'detection_sensibility': self._detection_sensibility,
 

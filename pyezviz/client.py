@@ -159,7 +159,7 @@ class EzvizClient(object):
                 return self._switch_status(serial, type, enable, max_retries+1)
 
             response_json = req.json()
-            if response_json['resultCode'] != '0':
+            if response_json['resultCode'] and response_json['resultCode'] != '0':
                 raise PyEzvizError("Could not set the switch, maybe a permission issue ?: Got %s : %s)",str(req.status_code), str(req.text))
                 return False
         except OSError as e:
@@ -325,11 +325,11 @@ class EzvizClient(object):
             self.login()
             logging.info("Got 401, relogging (max retries: %s)",str(max_retries))
             return self.get_detection_sensibility(serial, enable, max_retries+1)
-        elif req.status_code != 200:
-            raise PyEzvizError("Could not get detection sensibility: Got %s : %s)",str(req.status_code), str(req.text))
+        # elif req.status_code != 200:
+        #     raise PyEzvizError("Could not get detection sensibility: Got %s : %s)",str(req.status_code), str(req.text))
 
         response_json = req.json()
-        if response_json['resultCode'] != '0':
+        if response_json['resultCode'] and response_json['resultCode'] != '0':
             # raise PyEzvizError("Could not get detection sensibility: Got %s : %s)",str(req.status_code), str(req.text))
             return 'Unknown'
         else:

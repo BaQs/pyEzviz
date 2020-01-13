@@ -66,7 +66,7 @@ class EzvizClient(object):
         m = hashlib.md5()
         m.update(self.password.encode('utf-8'))
         md5pass = m.hexdigest()
-        payload = {"account": self.account, "password": md5pass, "featureCode": "92c579faa0902cbfcfcc4fc004ef67e7"}
+        payload = {"account": self.account, "password": md5pass, "featureCode": "93c579faa0902cbfcfcc4fc004ef67e7"}
 
         try:
             req = self._session.post(LOGIN_URL,

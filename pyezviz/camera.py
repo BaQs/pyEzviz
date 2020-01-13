@@ -14,16 +14,14 @@ ALARM_SOUND_MODE= { 0 : 'Software',
                     2 : 'Disabled',
 }
 
+class PyEzvizError(Exception):
+    pass
+
 class EzvizCamera(object):
     def __init__(self, client, serial):
         """Initialize the camera object."""
         self._serial = serial
         self._client = client
-
-        self._loaded = 0
-
-        # self.load()
-
         
     def load(self):
         """Load object properties"""
@@ -43,12 +41,8 @@ class EzvizCamera(object):
         # global status
         self._status = page_list['statusInfos'][self._serial]
 
-
         # load connection infos
         self._connection = page_list['connectionInfos'][self._serial]
-
-        # # a bit of wifi infos
-        #     self._wifi = page_list['wifiStatusInfos'][self._serial]
 
         # # load switches
         switches = {}
@@ -60,29 +54,12 @@ class EzvizCamera(object):
         # load detection sensibility
         self._detection_sensibility = self._client.get_detection_sensibility(self._serial)
 
-        # # load camera object
-        # try:
-        #     # self._switch = page_list['switchStatusInfos'][self._serial]
-        #     self._time_plan = page_list['timePlanInfos'][self._serial]
-        #     self._nodisturb = page_list['alarmNodisturbInfos'][self._serial]
-        #     self._kms = page_list['kmsInfos'][self._serial]
-        #     self._hiddns = page_list['hiddnsInfos'][self._serial]
-        #     self._p2p = page_list['p2pInfos'][self._serial]
-
-        # except BaseException as exp:
-        #     print(exp)
-        #     return 1
-
-        self._loaded = 1
-
         return True
 
 
     def status(self):
         """Return the status of the camera."""
-
-        if not self._loaded:
-            self.load()
+        self.load()
 
         return {
             'serial': self._serial,
@@ -98,7 +75,6 @@ class EzvizCamera(object):
 
             'alarm_notify': bool(self._status[KEY_ALARM_NOTIFICATION]),
             'alarm_sound_mod': ALARM_SOUND_MODE[int(self._status['alarmSoundMode'])],
-            # 'alarm_sound_mod': 'Intensive',
 
             'encrypted': bool(self._status['isEncrypt']),
 
@@ -106,7 +82,6 @@ class EzvizCamera(object):
             'local_rtsp_port': self._connection['localRtspPort'],
 
             'detection_sensibility': self._detection_sensibility,
-
         }
 
     def move(self, direction, speed=5):

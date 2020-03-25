@@ -10,6 +10,7 @@ from .camera import EzvizCamera
 
 COOKIE_NAME = "sessionId"
 CAMERA_DEVICE_CATEGORY = "IPC"
+DOORBELL_DEVICE_CATEGORY = "BDoorBell"
 
 
 EU_API_DOMAIN = "apiieu"
@@ -202,6 +203,10 @@ class EzvizClient(object):
         # foreach, launch a switchstatus for the proper serial
         for idx, device in enumerate(devices):
             if devices[idx]['deviceCategory'] == CAMERA_DEVICE_CATEGORY:
+                camera = EzvizCamera(self, device['deviceSerial'])
+                camera.load()
+                cameras.append(camera.status())
+            if devices[idx]['deviceCategory'] == DOORBELL_DEVICE_CATEGORY:
                 camera = EzvizCamera(self, device['deviceSerial'])
                 camera.load()
                 cameras.append(camera.status())

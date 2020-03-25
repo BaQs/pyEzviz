@@ -11,7 +11,10 @@ from .camera import EzvizCamera
 COOKIE_NAME = "sessionId"
 CAMERA_DEVICE_CATEGORY = "IPC"
 
-API_BASE_URI = "https://apiieu.ezvizlife.com"
+
+EU_API_DOMAIN = "apiieu"
+API_BASE_TLD = "ezvizlife.com"
+API_BASE_URI = "https://" + EU_API_DOMAIN + "." + API_BASE_TLD
 API_ENDPOINT_LOGIN = "/v3/users/login"
 API_ENDPOINT_CLOUDDEVICES = "/api/cloud/v2/cloudDevices/getAll"
 API_ENDPOINT_PAGELIST = "/v3/userdevices/v1/devices/pagelist"
@@ -59,7 +62,7 @@ class EzvizClient(object):
         self._CLOUD = cloud
         self._CONNECTION = connection
 
-    def _login(self):
+    def _login(self, apiDomain=EU_API_DOMAIN):
         """Login to Ezviz' API."""
 
         # Ezviz API sends md5 of password
@@ -69,7 +72,7 @@ class EzvizClient(object):
         payload = {"account": self.account, "password": md5pass, "featureCode": "93c579faa0902cbfcfcc4fc004ef67e7"}
 
         try:
-            req = self._session.post(LOGIN_URL,
+            req = self._session.post("https://" + apiDomain + "." + API_BASE_TLD + API_ENDPOINT_LOGIN,
                                 data=payload,
                                 headers={"Content-Type": "application/x-www-form-urlencoded",
                                         "clientType": "1",
@@ -81,12 +84,19 @@ class EzvizClient(object):
         if req.status_code == 400:
             raise PyEzvizError("Login error: Please check your username/password: %s ", str(req.text))
 
+
         # let's parse the answer, session is in {.."loginSession":{"sessionId":"xxx...}
         try:
             response_json = req.json()
+
+            # if the apidomain is not proper
+            if response_json["meta"]["code"] == 1100: 
+                return self._login(response_json["loginArea"]["apiDomain"])
+
             sessionId = str(response_json["loginSession"]["sessionId"])
             if not sessionId:
                 raise PyEzvizError("Login error: Please check your username/password: %s ", str(req.text))
+
             self._sessionId = sessionId
 
         except (OSError, json.decoder.JSONDecodeError) as e:

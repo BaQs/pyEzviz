@@ -1,11 +1,7 @@
 import time
+import pyezviz.DeviceSwitchType
+from pyezviz.DeviceSwitchType import DeviceSwitchType
 
-# seems to be some internal reference. 21 = sleep mode
-TYPE_PRIVACY_MODE = 21
-TYPE_AUDIO = 22
-TYPE_STATE_LED = 3
-TYPE_IR_LED = 10
-TYPE_FOLLOW_MOVE = 25
 
 KEY_ALARM_NOTIFICATION = 'globalStatus'
 
@@ -90,11 +86,11 @@ class EzvizCamera(object):
             'status': self._device['status'],
             'device_sub_category': self._device['deviceSubCategory'],
 
-            'privacy': self._switch.get(TYPE_PRIVACY_MODE)['enable'],
-            'audio': self._switch.get(TYPE_AUDIO)['enable'],
-            'ir_led': self._switch.get(TYPE_IR_LED)['enable'],
-            'state_led': self._switch.get(TYPE_STATE_LED)['enable'],
-            'follow_move': self._switch.get(TYPE_FOLLOW_MOVE)['enable'],
+            'privacy': self._switch.get( DeviceSwitchType.SLEEP )['enable'],
+            'audio': self._switch.get( DeviceSwitchType.SOUND )['enable'],
+            'ir_led': self._switch.get( DeviceSwitchType.INFRARED_LIGHT )['enable'],
+            'state_led': self._switch.get(DeviceSwitchType.LIGHT)['enable'],
+            'follow_move': self._switch.get(DeviceSwitchType.MOBILE_TRACKING)['enable'],
 
             'alarm_notify': bool(self._status[KEY_ALARM_NOTIFICATION]),
             'alarm_sound_mod': ALARM_SOUND_MODE[int(self._status['alarmSoundMode'])],
@@ -138,21 +134,21 @@ class EzvizCamera(object):
 
     def switch_device_audio(self, enable=0):
         """Switch audio status on a device."""
-        return self._client.switch_status(self._serial, TYPE_AUDIO, enable)
+        return self._client.switch_status(self._serial, DeviceSwitchType.SOUND, enable)
 
     def switch_device_state_led(self, enable=0):
         """Switch audio status on a device."""
-        return self._client.switch_status(self._serial, TYPE_STATE_LED, enable)
+        return self._client.switch_status(self._serial, DeviceSwitchType.LIGHT, enable)
 
     def switch_device_ir_led(self, enable=0):
         """Switch audio status on a device."""
-        return self._client.switch_status(self._serial, TYPE_IR_LED, enable)
+        return self._client.switch_status(self._serial, DeviceSwitchType.INFRARED_LIGHT, enable)
 
     def switch_privacy_mode(self, enable=0):
         """Switch privacy mode on a device."""
-        return self._client.switch_status(self._serial, TYPE_PRIVACY_MODE, enable)
+        return self._client.switch_status(self._serial, DeviceSwitchType.SLEEP, enable)
 
     def switch_follow_move(self, enable=0):
         """Switch follow move."""
-        return self._client.switch_status(self._serial, TYPE_FOLLOW_MOVE, enable)
+        return self._client.switch_status(self._serial, DeviceSwitchType.MOBILE_TRACKING, enable)
         

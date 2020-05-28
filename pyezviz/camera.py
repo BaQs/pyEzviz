@@ -84,17 +84,34 @@ class EzvizCamera(object):
         if not self._loaded:
             self.load()
 
+        #switch list
+        privacy=False
+        audio=False
+        ir_led=False
+        state_led=False
+        follow_move=False
+        if self._switch.get(TYPE_PRIVACY_MODE) is not None:
+            privacy = self._switch.get(TYPE_PRIVACY_MODE)['enable']
+        if self._switch.get(TYPE_AUDIO) is not None:
+            audio = self._switch.get(TYPE_AUDIO)['enable']
+        if self._switch.get(TYPE_IR_LED) is not None:
+            ir_led = self._switch.get(TYPE_IR_LED)['enable']
+        if self._switch.get(TYPE_STATE_LED) is not None:
+            state_led = self._switch.get(TYPE_STATE_LED)['enable']
+        if self._switch.get(TYPE_FOLLOW_MOVE) is not None:
+            follow_move = self._switch.get(TYPE_FOLLOW_MOVE)['enable']
+
         return {
             'serial': self._serial,
             'name': self._device['name'],
             'status': self._device['status'],
             'device_sub_category': self._device['deviceSubCategory'],
 
-            'privacy': self._switch.get(TYPE_PRIVACY_MODE)['enable'],
-            'audio': self._switch.get(TYPE_AUDIO)['enable'],
-            'ir_led': self._switch.get(TYPE_IR_LED)['enable'],
-            'state_led': self._switch.get(TYPE_STATE_LED)['enable'],
-            'follow_move': self._switch.get(TYPE_FOLLOW_MOVE)['enable'],
+            'privacy': privacy,
+            'audio': audio,
+            'ir_led': ir_led,
+            'state_led': state_led,
+            'follow_move': follow_move,
 
             'alarm_notify': bool(self._status[KEY_ALARM_NOTIFICATION]),
             'alarm_sound_mod': ALARM_SOUND_MODE[int(self._status['alarmSoundMode'])],

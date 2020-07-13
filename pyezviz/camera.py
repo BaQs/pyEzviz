@@ -63,11 +63,11 @@ class EzvizCamera(object):
             'status': self._device['status'],
             'device_sub_category': self._device['deviceSubCategory'],
 
-            'privacy': self._switch.get( DeviceSwitchType.SLEEP )['enable'],
-            'audio': self._switch.get( DeviceSwitchType.SOUND )['enable'],
-            'ir_led': self._switch.get( DeviceSwitchType.INFRARED_LIGHT )['enable'],
-            'state_led': self._switch.get(DeviceSwitchType.LIGHT)['enable'],
-            'follow_move': self._switch.get(DeviceSwitchType.MOBILE_TRACKING)['enable'],
+            'privacy': self._switch.get( DeviceSwitchType.SLEEP.value )['enable'],
+            'audio': self._switch.get( DeviceSwitchType.SOUND.value )['enable'],
+            'ir_led': self._switch.get( DeviceSwitchType.INFRARED_LIGHT.value )['enable'],
+            'state_led': self._switch.get(DeviceSwitchType.LIGHT.value )['enable'],
+            'follow_move': self._switch.get(DeviceSwitchType.MOBILE_TRACKING.value )['enable'],
 
             'alarm_notify': bool(self._status[KEY_ALARM_NOTIFICATION]),
             'alarm_sound_mod': ALARM_SOUND_MODE[int(self._status['alarmSoundMode'])],
@@ -84,7 +84,7 @@ class EzvizCamera(object):
     def move(self, direction, speed=5):
         """Moves the camera."""
         if direction not in ['right','left','down','up']:
-            raise PyEzvizError("Invalid direction: %s ", command)
+            raise PyEzvizError("Invalid direction: %s ", direction)
 
         # launch the start command
         self._client.ptzControl(str(direction).upper(), self._serial, 'START', speed)

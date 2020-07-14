@@ -9,6 +9,7 @@ from .camera import EzvizCamera
 # from pyezviz.camera import EzvizCamera
 
 COOKIE_NAME = "sessionId"
+COMMON_DEVICE_CATEGORY = "COMMON"
 CAMERA_DEVICE_CATEGORY = "IPC"
 DOORBELL_DEVICE_CATEGORY = "BDoorBell"
 
@@ -37,13 +38,8 @@ SWITCH_STATUS_URL = API_BASE_URI + API_ENDPOINT_SWITCH_STATUS
 DETECTION_SENSIBILITY_URL = API_BASE_URI + API_ENDPOINT_DETECTION_SENSIBILITY
 DETECTION_SENSIBILITY_GET_URL = API_BASE_URI + API_ENDPOINT_DETECTION_SENSIBILITY_GET
 
-
-
 DEFAULT_TIMEOUT = 10
 MAX_RETRIES = 3
-
-
-
 
 class PyEzvizError(Exception):
     pass
@@ -199,14 +195,16 @@ class EzvizClient(object):
         # get all devices
         devices = self.get_DEVICE()
         cameras = []
+        supported_categories = [COMMON_DEVICE_CATEGORY, CAMERA_DEVICE_CATEGORY, DOORBELL_DEVICE_CATEGORY]
 
         # foreach, launch a switchstatus for the proper serial
         for idx, device in enumerate(devices):
-            if devices[idx]['deviceCategory'] == CAMERA_DEVICE_CATEGORY:
-                camera = EzvizCamera(self, device['deviceSerial'])
-                camera.load()
-                cameras.append(camera.status())
-            if devices[idx]['deviceCategory'] == DOORBELL_DEVICE_CATEGORY:
+            if devices[idx]['deviceCategory'] in supported_categories:
+                # Add support for connected HikVision cameras
+                if devices[idx]['deviceCategory'] == COMMON_DEVICE_CATEGORY and not devices[idx]['hik']:
+                    next
+
+                # Create camera object
                 camera = EzvizCamera(self, device['deviceSerial'])
                 camera.load()
                 cameras.append(camera.status())

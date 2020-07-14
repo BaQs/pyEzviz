@@ -1,6 +1,6 @@
 from enum import Enum
 
-@unique
+# @unique
 class DeviceSwitchType(Enum):
     ALARM_TONE  = 1
     STREAM_ADAPTIVE = 2

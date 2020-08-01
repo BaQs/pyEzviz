@@ -20,7 +20,6 @@ setuptools.setup(
     install_requires=[
         'requests',
         'fake_useragent',
-        'uuid',
         'pandas'
     ],
     entry_points={

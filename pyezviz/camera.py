@@ -1,7 +1,8 @@
 import time
 
 # seems to be some internal reference. 21 = sleep mode
-TYPE_PRIVACY_MODE = 21
+TYPE_PRIVACY_MODE = 7
+TYPE_SLEEP_MODE = 21
 TYPE_AUDIO = 22
 TYPE_STATE_LED = 3
 TYPE_IR_LED = 10
@@ -91,6 +92,7 @@ class EzvizCamera(object):
             'device_sub_category': self._device['deviceSubCategory'],
 
             'privacy': self._switch.get(TYPE_PRIVACY_MODE)['enable'],
+            'sleep': self._switch.get(TYPE_SLEEP_MODE)['enable'],
             'audio': self._switch.get(TYPE_AUDIO)['enable'],
             'ir_led': self._switch.get(TYPE_IR_LED)['enable'],
             'state_led': self._switch.get(TYPE_STATE_LED)['enable'],
@@ -151,6 +153,10 @@ class EzvizCamera(object):
     def switch_privacy_mode(self, enable=0):
         """Switch privacy mode on a device."""
         return self._client.switch_status(self._serial, TYPE_PRIVACY_MODE, enable)
+
+    def switch_sleep_mode(self, enable=0):
+        """Switch sleep mode on a device."""
+        return self._client.switch_status(self._serial, TYPE_SLEEP_MODE, enable)
 
     def switch_follow_move(self, enable=0):
         """Switch follow move."""

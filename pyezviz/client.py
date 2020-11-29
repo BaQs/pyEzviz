@@ -9,7 +9,7 @@ from .camera import EzvizCamera
 # from pyezviz.camera import EzvizCamera
 
 COOKIE_NAME = "sessionId"
-CAMERA_DEVICE_CATEGORY = "IPC"
+CAMERA_DEVICE_CATEGORY = "BatteryCamera"
 DOORBELL_DEVICE_CATEGORY = "BDoorBell"
 
 
@@ -130,7 +130,7 @@ class EzvizClient(object):
             logging.info("Got 401, relogging (max retries: %s)",str(max_retries))
             return self._get_pagelist(max_retries+1)
 
-        if req.text is "":
+        if req.text == "":
             raise PyEzvizError("No data")
 
         try:

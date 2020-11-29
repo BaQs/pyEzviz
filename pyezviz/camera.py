@@ -1,7 +1,8 @@
 import time
 
 # seems to be some internal reference. 21 = sleep mode
-TYPE_PRIVACY_MODE = 21
+TYPE_PRIVACY_MODE = 7
+TYPE_SLEEP_MODE = 21
 TYPE_AUDIO = 22
 TYPE_STATE_LED = 3
 TYPE_IR_LED = 10
@@ -84,18 +85,38 @@ class EzvizCamera(object):
         if not self._loaded:
             self.load()
 
+        #switch list
+        privacy=False
+        audio=False
+        sleep=False
+        ir_led=False
+        state_led=False
+        follow_move=False
+        if self._switch.get(TYPE_PRIVACY_MODE) is not None:
+            privacy = self._switch.get(TYPE_PRIVACY_MODE)['enable']
+        if self._switch.get(TYPE_SLEEP_MODE) is not None:
+            sleep = self._switch.get(TYPE_SLEEP_MODE)['enable']
+        if self._switch.get(TYPE_AUDIO) is not None:
+            audio = self._switch.get(TYPE_AUDIO)['enable']
+        if self._switch.get(TYPE_IR_LED) is not None:
+            ir_led = self._switch.get(TYPE_IR_LED)['enable']
+        if self._switch.get(TYPE_STATE_LED) is not None:
+            state_led = self._switch.get(TYPE_STATE_LED)['enable']
+        if self._switch.get(TYPE_FOLLOW_MOVE) is not None:
+            follow_move = self._switch.get(TYPE_FOLLOW_MOVE)['enable']
+
         return {
             'serial': self._serial,
             'name': self._device['name'],
             'status': self._device['status'],
             'device_sub_category': self._device['deviceSubCategory'],
 
-            'privacy': self._switch.get(TYPE_PRIVACY_MODE)['enable'],
-            'audio': self._switch.get(TYPE_AUDIO)['enable'],
-            'ir_led': self._switch.get(TYPE_IR_LED)['enable'],
-            'state_led': self._switch.get(TYPE_STATE_LED)['enable'],
-            'follow_move': self._switch.get(TYPE_FOLLOW_MOVE)['enable'],
-
+            'privacy': privacy,
+            'sleep': sleep,
+            'audio': audio,
+            'ir_led': ir_led,
+            'state_led': state_led,
+            'follow_move': follow_move,
             'alarm_notify': bool(self._status[KEY_ALARM_NOTIFICATION]),
             'alarm_sound_mod': ALARM_SOUND_MODE[int(self._status['alarmSoundMode'])],
             # 'alarm_sound_mod': 'Intensive',
@@ -151,6 +172,10 @@ class EzvizCamera(object):
     def switch_privacy_mode(self, enable=0):
         """Switch privacy mode on a device."""
         return self._client.switch_status(self._serial, TYPE_PRIVACY_MODE, enable)
+
+    def switch_sleep_mode(self, enable=0):
+        """Switch sleep mode on a device."""
+        return self._client.switch_status(self._serial, TYPE_SLEEP_MODE, enable)
 
     def switch_follow_move(self, enable=0):
         """Switch follow move."""

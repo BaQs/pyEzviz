@@ -37,7 +37,7 @@ def main():
 
 
     parser_camera_switch = subparsers_camera.add_parser('switch', help='Change the status of a switch')
-    parser_camera_switch.add_argument('--switch', required=True, help='Switch to switch', choices=['audio','ir','state','privacy','follow_move'])
+    parser_camera_switch.add_argument('--switch', required=True, help='Switch to switch', choices=['audio','ir','state','privacy','sleep','follow_move'])
     parser_camera_switch.add_argument('--enable', required=False, help='Enable (or not)', default=1, type=int, choices=[0,1] )
 
     parser_camera_alarm = subparsers_camera.add_parser('alarm', help='Configure the camera alarm')
@@ -187,6 +187,8 @@ def main():
                         camera.switch_device_audio(args.enable)
                 elif args.switch == 'privacy':
                         camera.switch_privacy_mode(args.enable)
+                elif args.switch == 'sleep':
+                        camera.switch_sleep_mode(args.enable)
                 elif args.switch == 'follow_move':
                         camera.switch_follow_move(args.enable)
             except BaseException as exp:

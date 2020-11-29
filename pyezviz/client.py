@@ -9,9 +9,10 @@ from .camera import EzvizCamera
 # from pyezviz.camera import EzvizCamera
 
 COOKIE_NAME = "sessionId"
-CAMERA_DEVICE_CATEGORY = "BatteryCamera"
+COMMON_DEVICE_CATEGORY = "COMMON"
+CAMERA_DEVICE_CATEGORY = "IPC"
+BATTERY_CAMERA_DEVICE_CATEGORY = "BatteryCamera"
 DOORBELL_DEVICE_CATEGORY = "BDoorBell"
-
 
 EU_API_DOMAIN = "apiieu"
 API_BASE_TLD = "ezvizlife.com"
@@ -37,13 +38,8 @@ SWITCH_STATUS_URL = API_BASE_URI + API_ENDPOINT_SWITCH_STATUS
 DETECTION_SENSIBILITY_URL = API_BASE_URI + API_ENDPOINT_DETECTION_SENSIBILITY
 DETECTION_SENSIBILITY_GET_URL = API_BASE_URI + API_ENDPOINT_DETECTION_SENSIBILITY_GET
 
-
-
 DEFAULT_TIMEOUT = 10
 MAX_RETRIES = 3
-
-
-
 
 class PyEzvizError(Exception):
     pass
@@ -70,7 +66,7 @@ class EzvizClient(object):
         m = hashlib.md5()
         m.update(self.password.encode('utf-8'))
         md5pass = m.hexdigest()
-        payload = {"account": self.account, "password": md5pass, "featureCode": "92c579faa0902cbfcfcc4fc004ef67e7"}
+        payload = {"account": self.account, "password": md5pass, "featureCode": "93c579faa0902cbfcfcc4fc004ef67e7"}
 
         try:
             req = self._session.post("https://" + apiDomain + "." + API_BASE_TLD + API_ENDPOINT_LOGIN,
@@ -130,7 +126,7 @@ class EzvizClient(object):
             logging.info("Got 401, relogging (max retries: %s)",str(max_retries))
             return self._get_pagelist(max_retries+1)
 
-        if req.text == "":
+        if req.text is "":
             raise PyEzvizError("No data")
 
         try:
@@ -170,7 +166,7 @@ class EzvizClient(object):
                 return self._switch_status(serial, type, enable, max_retries+1)
 
             response_json = req.json()
-            if response_json['resultCode'] != '0':
+            if response_json['resultCode'] and response_json['resultCode'] != '0':
                 raise PyEzvizError("Could not set the switch, maybe a permission issue ?: Got %s : %s)",str(req.status_code), str(req.text))
                 return False
         except OSError as e:
@@ -199,14 +195,16 @@ class EzvizClient(object):
         # get all devices
         devices = self.get_DEVICE()
         cameras = []
+        supported_categories = [COMMON_DEVICE_CATEGORY, CAMERA_DEVICE_CATEGORY, BATTERY_CAMERA_DEVICE_CATEGORY, DOORBELL_DEVICE_CATEGORY]
 
         # foreach, launch a switchstatus for the proper serial
         for idx, device in enumerate(devices):
-            if devices[idx]['deviceCategory'] == CAMERA_DEVICE_CATEGORY:
-                camera = EzvizCamera(self, device['deviceSerial'])
-                camera.load()
-                cameras.append(camera.status())
-            if devices[idx]['deviceCategory'] == DOORBELL_DEVICE_CATEGORY:
+            if devices[idx]['deviceCategory'] in supported_categories:
+                # Add support for connected HikVision cameras
+                if devices[idx]['deviceCategory'] == COMMON_DEVICE_CATEGORY and not devices[idx]['hik']:
+                    next
+
+                # Create camera object
                 camera = EzvizCamera(self, device['deviceSerial'])
                 camera.load()
                 cameras.append(camera.status())
@@ -340,11 +338,11 @@ class EzvizClient(object):
             self.login()
             logging.info("Got 401, relogging (max retries: %s)",str(max_retries))
             return self.get_detection_sensibility(serial, enable, max_retries+1)
-        elif req.status_code != 200:
-            raise PyEzvizError("Could not get detection sensibility: Got %s : %s)",str(req.status_code), str(req.text))
+        # elif req.status_code != 200:
+        #     raise PyEzvizError("Could not get detection sensibility: Got %s : %s)",str(req.status_code), str(req.text))
 
         response_json = req.json()
-        if response_json['resultCode'] != '0':
+        if response_json['resultCode'] and response_json['resultCode'] != '0':
             # raise PyEzvizError("Could not get detection sensibility: Got %s : %s)",str(req.status_code), str(req.text))
             return 'Unknown'
         else:

@@ -1,12 +1,7 @@
 import time
+import pyezviz.DeviceSwitchType
+from pyezviz.DeviceSwitchType import DeviceSwitchType
 
-# seems to be some internal reference. 21 = sleep mode
-TYPE_PRIVACY_MODE = 7
-TYPE_SLEEP_MODE = 21
-TYPE_AUDIO = 22
-TYPE_STATE_LED = 3
-TYPE_IR_LED = 10
-TYPE_FOLLOW_MOVE = 25
 
 KEY_ALARM_NOTIFICATION = 'globalStatus'
 
@@ -15,17 +10,15 @@ ALARM_SOUND_MODE= { 0 : 'Software',
                     2 : 'Disabled',
 }
 
+class PyEzvizError(Exception):
+    pass
+
 class EzvizCamera(object):
     def __init__(self, client, serial):
         """Initialize the camera object."""
-        self._serial = serial
         self._client = client
+        self._serial = serial
 
-        self._loaded = 0
-
-        # self.load()
-
-        
     def load(self):
         """Load object properties"""
         page_list = self._client.get_PAGE_LIST()
@@ -44,12 +37,8 @@ class EzvizCamera(object):
         # global status
         self._status = page_list['statusInfos'][self._serial]
 
-
         # load connection infos
         self._connection = page_list['connectionInfos'][self._serial]
-
-        # # a bit of wifi infos
-        #     self._wifi = page_list['wifiStatusInfos'][self._serial]
 
         # # load switches
         switches = {}
@@ -59,51 +48,17 @@ class EzvizCamera(object):
         self._switch = switches
 
         # load detection sensibility
-        self._detection_sensibility = self._client.get_detection_sensibility(self._serial)
-
-        # # load camera object
-        # try:
-        #     # self._switch = page_list['switchStatusInfos'][self._serial]
-        #     self._time_plan = page_list['timePlanInfos'][self._serial]
-        #     self._nodisturb = page_list['alarmNodisturbInfos'][self._serial]
-        #     self._kms = page_list['kmsInfos'][self._serial]
-        #     self._hiddns = page_list['hiddnsInfos'][self._serial]
-        #     self._p2p = page_list['p2pInfos'][self._serial]
-
-        # except BaseException as exp:
-        #     print(exp)
-        #     return 1
-
-        self._loaded = 1
+        if self._device["deviceCategory"] != "COMMON":
+            self._detection_sensibility = self._client.get_detection_sensibility(self._serial)
+        else:
+            self._detection_sensibility = None
 
         return True
 
 
     def status(self):
         """Return the status of the camera."""
-
-        if not self._loaded:
-            self.load()
-
-        #switch list
-        privacy=False
-        audio=False
-        sleep=False
-        ir_led=False
-        state_led=False
-        follow_move=False
-        if self._switch.get(TYPE_PRIVACY_MODE) is not None:
-            privacy = self._switch.get(TYPE_PRIVACY_MODE)['enable']
-        if self._switch.get(TYPE_SLEEP_MODE) is not None:
-            sleep = self._switch.get(TYPE_SLEEP_MODE)['enable']
-        if self._switch.get(TYPE_AUDIO) is not None:
-            audio = self._switch.get(TYPE_AUDIO)['enable']
-        if self._switch.get(TYPE_IR_LED) is not None:
-            ir_led = self._switch.get(TYPE_IR_LED)['enable']
-        if self._switch.get(TYPE_STATE_LED) is not None:
-            state_led = self._switch.get(TYPE_STATE_LED)['enable']
-        if self._switch.get(TYPE_FOLLOW_MOVE) is not None:
-            follow_move = self._switch.get(TYPE_FOLLOW_MOVE)['enable']
+        self.load()
 
         return {
             'serial': self._serial,
@@ -111,15 +66,15 @@ class EzvizCamera(object):
             'status': self._device['status'],
             'device_sub_category': self._device['deviceSubCategory'],
 
-            'privacy': privacy,
-            'sleep': sleep,
-            'audio': audio,
-            'ir_led': ir_led,
-            'state_led': state_led,
-            'follow_move': follow_move,
+            'sleep': self.get_switch(DeviceSwitchType.SLEEP),
+            'privacy': self.get_switch(DeviceSwitchType.PRIVACY),
+            'audio': self.get_switch(DeviceSwitchType.SOUND),
+            'ir_led': self.get_switch(DeviceSwitchType.INFRARED_LIGHT),
+            'state_led': self.get_switch(DeviceSwitchType.LIGHT),
+            'follow_move': self.get_switch(DeviceSwitchType.MOBILE_TRACKING),
+
             'alarm_notify': bool(self._status[KEY_ALARM_NOTIFICATION]),
             'alarm_sound_mod': ALARM_SOUND_MODE[int(self._status['alarmSoundMode'])],
-            # 'alarm_sound_mod': 'Intensive',
 
             'encrypted': bool(self._status['isEncrypt']),
 
@@ -127,14 +82,13 @@ class EzvizCamera(object):
             'local_rtsp_port': self._connection['localRtspPort'],
 
             'detection_sensibility': self._detection_sensibility,
-
         }
 
 
     def move(self, direction, speed=5):
         """Moves the camera."""
         if direction not in ['right','left','down','up']:
-            raise PyEzvizError("Invalid direction: %s ", command)
+            raise PyEzvizError("Invalid direction: %s ", direction)
 
         # launch the start command
         self._client.ptzControl(str(direction).upper(), self._serial, 'START', speed)
@@ -143,41 +97,54 @@ class EzvizCamera(object):
 
         return True
 
+
     def alarm_notify(self, enable):
         """Enable/Disable camera notification when movement is detected."""
         return self._client.data_report(self._serial, enable)
+
 
     def alarm_sound(self, sound_type):
         """Enable/Disable camera sound when movement is detected."""
         # we force enable = 1 , to make sound...
         return self._client.alarm_sound(self._serial, sound_type, 1)
 
+
     def alarm_detection_sensibility(self, sensibility):
         """Enable/Disable camera sound when movement is detected."""
         # we force enable = 1 , to make sound...
         return self._client.detection_sensibility(self._serial, sensibility)
 
+
     def switch_device_audio(self, enable=0):
         """Switch audio status on a device."""
-        return self._client.switch_status(self._serial, TYPE_AUDIO, enable)
+        return self._client.switch_status(self._serial, DeviceSwitchType.SOUND.value, enable)
+
 
     def switch_device_state_led(self, enable=0):
         """Switch audio status on a device."""
-        return self._client.switch_status(self._serial, TYPE_STATE_LED, enable)
+        return self._client.switch_status(self._serial, DeviceSwitchType.LIGHT.value, enable)
+
 
     def switch_device_ir_led(self, enable=0):
         """Switch audio status on a device."""
-        return self._client.switch_status(self._serial, TYPE_IR_LED, enable)
+        return self._client.switch_status(self._serial, DeviceSwitchType.INFRARED_LIGHT.value, enable)
+
 
     def switch_privacy_mode(self, enable=0):
         """Switch privacy mode on a device."""
-        return self._client.switch_status(self._serial, TYPE_PRIVACY_MODE, enable)
+        return self._client.switch_status(self._serial, DeviceSwitchType.PRIVACY.value, enable)
 
     def switch_sleep_mode(self, enable=0):
-        """Switch sleep mode on a device."""
-        return self._client.switch_status(self._serial, TYPE_SLEEP_MODE, enable)
+        """Switch privacy mode on a device."""
+        return self._client.switch_status(self._serial, DeviceSwitchType.SLEEP.value, enable)
+
 
     def switch_follow_move(self, enable=0):
         """Switch follow move."""
-        return self._client.switch_status(self._serial, TYPE_FOLLOW_MOVE, enable)
-        
+        return self._client.switch_status(self._serial, DeviceSwitchType.MOBILE_TRACKING.value, enable)
+
+
+    def get_switch(self, switch_type):
+        if switch_type.value in self._switch:
+            return self._switch.get(switch_type.value)['enable']
+        return None

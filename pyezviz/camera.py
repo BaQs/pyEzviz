@@ -14,10 +14,11 @@ class PyEzvizError(Exception):
     pass
 
 class EzvizCamera(object):
-    def __init__(self, client, serial):
+    def __init__(self, client, serial, camerainfo):
         """Initialize the camera object."""
         self._client = client
         self._serial = serial
+        self._camerainfo = camerainfo
 
     def load(self):
         """Load object properties"""
@@ -52,6 +53,22 @@ class EzvizCamera(object):
             self._detection_sensibility = self._client.get_detection_sensibility(self._serial)
         else:
             self._detection_sensibility = None
+        
+        # load battery camera device info
+
+        if self._device["deviceCategory"] == "BatteryCamera":
+            for Object in self._camerainfo["devices"]:
+                if Object["subSerial"] == self._serial:
+                    self._camerainfo_battery = Object["deviceExtStatus"]["powerRemaining"]
+        else:
+            self._camerainfo_battery = None
+
+        if self._device["deviceCategory"] == "BatteryCamera" or "COMMON":
+            for Object in self._camerainfo["devices"]:
+                if Object["subSerial"] == self._serial:
+                    self._camerainfo_pirstatus = Object["pirStatus"]
+        else:
+            self._camerainfo_pirstatus = None
 
         return True
 
@@ -82,6 +99,8 @@ class EzvizCamera(object):
             'local_rtsp_port': self._connection['localRtspPort'],
 
             'detection_sensibility': self._detection_sensibility,
+            'battery_level': self._camerainfo_battery,
+            'PIR_Status': self._camerainfo_pirstatus,
         }
 
 

@@ -16,6 +16,8 @@ Pilot your Ezviz cameras with this module.
 pyezviz -u em@il -p PASS device -h
 ...
 pyezviz -u em@il -p PASS --debug devices status
+
+
       serial            name  status  privacy  audio  ir_led  state_led  follow_move  alarm_notify alarm_sound_mod  encrypted       local_ip detection_sensibility
 0  D733333333 C6N(D73333333)       1    False   True    True       True         True         False        Software       True  192.168.2.10                     3
 1  D733333333 C6N(D73333333)       1    False   True    True       True         True         False        Software       True  192.168.2.13                     4

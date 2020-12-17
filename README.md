@@ -6,9 +6,8 @@ Pilot your Ezviz cameras with this module.
 
 ### Installing
 
-
-```
-pip install pyezviz
+1) Clone git repository.
+2) pip install pyezviz
 ```
 
 ## Playing with it
@@ -42,7 +41,7 @@ tests/data folder contains samples of EzvizLife API for tests purposes.
 
 ## Side notes
 
-As there is no official documentation on the API, I had to reverse-engineer what is the one used in the Ezviz IOS APP.
+This module is based on BaQs/pyEzviz. Doesn't seem to be maintained any longer so i'm updating and improving on pyEzviz.
 
 
 ## Contributing

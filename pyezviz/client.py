@@ -4,12 +4,10 @@ import logging
 import hashlib
 import time
 from random import randint
-# from fake_useragent import UserAgent
 from uuid import uuid4
 from .camera import EzvizCamera
 # from pyezviz.camera import EzvizCamera
 
-COOKIE_NAME = "sessionId"
 COMMON_DEVICE_CATEGORY = "COMMON"
 CAMERA_DEVICE_CATEGORY = "IPC"
 BATTERY_CAMERA_DEVICE_CATEGORY = "BatteryCamera"
@@ -29,14 +27,14 @@ API_ENDPOINT_ALARM_SOUND = "/alarm/sound"
 API_ENDPOINT_DATA_REPORT = "/api/other/data/report"
 API_ENDPOINT_DETECTION_SENSIBILITY = "/api/device/configAlgorithm"
 API_ENDPOINT_DETECTION_SENSIBILITY_GET = "/api/device/queryAlgorithmConfig"
-API_ENDPOINT_CAMERA_INFO_GET = "/camera/cameraAction!findAlarmDevices.action"
+API_ENDPOINT_CAMERA_INFO_GET = "/camera/cameraAction!findAllDevices.action"
+API_ENDPOINT_ALARMINFO_GET = "/alarmlog/alarmLogAction!findAlarmLogs.action"
 
 LOGIN_URL = API_BASE_URI + API_ENDPOINT_LOGIN
 CLOUDDEVICES_URL = API_BASE_URI + API_ENDPOINT_CLOUDDEVICES
 DEVICES_URL = API_BASE_URI + API_ENDPOINT_DEVICES
 PAGELIST_URL = API_BASE_URI + API_ENDPOINT_PAGELIST
 DATA_REPORT_URL = API_BASE_URI + API_ENDPOINT_DATA_REPORT
-CAMERA_INFO_URL = API_BASE_URI + API_ENDPOINT_CAMERA_INFO_GET
 
 SWITCH_STATUS_URL = API_BASE_URI + API_ENDPOINT_SWITCH_STATUS
 DETECTION_SENSIBILITY_URL = API_BASE_URI + API_ENDPOINT_DETECTION_SENSIBILITY
@@ -50,14 +48,11 @@ class PyEzvizError(Exception):
 
 
 class EzvizClient(object):
-    def __init__(self, account, password, session=requests.Session(), sessionId=None, timeout=None, cloud=None, connection=None):
+    def __init__(self, account, password, session=requests.Session(), timeout=None, cloud=None, connection=None):
         """Initialize the client object."""
         self.account = account
         self.password = password
-        # self._user_id = None
-        # self._user_reference = None
         self._session = session
-        self._sessionId = sessionId
         self._data = {}
         self._timeout = timeout
         self._CLOUD = cloud
@@ -66,12 +61,12 @@ class EzvizClient(object):
     def _login(self, apiDomain=EU_API_DOMAIN):
         """Login to Ezviz' API."""
 
-        # Ezviz API sends md5 of password , "r":"3227402750035392952"
+        # Ezviz API sends md5 of password
         m = hashlib.md5()
         m.update(self.password.encode('utf-8'))
         md5pass = m.hexdigest()
         randommath = randint(1000000000000000000, 9999999999999999999)
-        payload = {"account": self.account, "password": md5pass, "from": "4e4148ba90184a7cbd81", "r": randommath, "returnUrl": "plugin", "host": "ieu.ezvizlife.com"}
+        payload = {"account": self.account, "password": md5pass, "from": "4e4148ba90184a7cbd81", "r": randommath, "returnUrl": "plugin", "host": EU_API_DOMAIN + "." + API_BASE_TLD}
 
         try:
             req = self._session.post("https://" + EU_AUTH_DOMAIN + "." + API_BASE_TLD + "/doLogin",
@@ -87,24 +82,6 @@ class EzvizClient(object):
         if req.status_code == 400:
             raise PyEzvizError("Login error: Please check your username/password: %s ", str(req.text))
 
-
-        # let's parse the answer, session is in {.."loginSession":{"sessionId":"xxx...}
-        #try:
-        #    response_json = req.json()
-
-        #     if the apidomain is not proper
-        #    if response_json["meta"]["code"] == 1100: 
-        #        return self._login(response_json["loginArea"]["apiDomain"])
-
-        #    sessionId = str(response_json["loginSession"]["sessionId"])
-        #    if not sessionId:
-        #        raise PyEzvizError("Login error: Please check your username/password: %s ", str(req.text))
-
-        #    self._sessionId = sessionId
-
-        #except (OSError, json.decoder.JSONDecodeError) as e:
-        #    raise PyEzvizError("Impossible to decode response: \nResponse was: [%s] %s", str(e), str(req.status_code), str(req.text))
-
         return True
 
     def _get_pagelist(self, filter=None, json_key=None, max_retries=0):
@@ -117,7 +94,7 @@ class EzvizClient(object):
             raise PyEzvizError("Trying to call get_pagelist without filter")
 
         try:
-            req = self._session.get(PAGELIST_URL,
+            req = self._session.get(API_BASE_URI + API_ENDPOINT_PAGELIST,
                                     params={'filter': filter},
                                     timeout=self._timeout)
 
@@ -148,14 +125,13 @@ class EzvizClient(object):
 
         return json_result
 
-##Device info
-    def _get_deviceinfo(self, json_key=None, max_retries=0):
-        """Get data from alarmlist API."""
+    def _get_deviceinfo(self, max_retries=0):
+        """Get data from a device info API."""
         if max_retries > MAX_RETRIES:
             raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
 
         try:
-            req = self._session.get(CAMERA_INFO_URL,
+            req = self._session.get(API_BASE_URI + API_ENDPOINT_CAMERA_INFO_GET,
                                     timeout=self._timeout)
 
         except OSError as e:
@@ -175,17 +151,43 @@ class EzvizClient(object):
         except (OSError, json.decoder.JSONDecodeError) as e:
             raise PyEzvizError("Impossible to decode response: " + str(e) + "\nResponse was: " + str(req.text))
 
-        if json_key == None:
-            json_result = json_output
-        else:
-            json_result = json_output[json_key]
+        return json_output
 
-        if not json_result:
-            raise PyEzvizError("Impossible to load the devices, here is the returned response: %s ", str(req.text))
+    #Get Alarm info
+    def _get_alarminfo(self, serial, alarmType=-1, pageStart=0, pageSize=1, max_retries=0):
+        """Get data from a device info API."""
+        if max_retries > MAX_RETRIES:
+            raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
 
-        return json_result
+        try:
+            req = self._session.post(API_BASE_URI + API_ENDPOINT_ALARMINFO_GET,
+                                    data={ 'objectName': serial,
+                                          'alarmType': alarmType,
+                                          'queryType' : '3',
+                                          'checkState' : '2',
+                                          'pageStart' : pageStart,
+                                          'pageSize' : pageSize},
+                                    timeout=self._timeout)
 
-#### End
+        except OSError as e:
+            raise PyEzvizError("Could not access Ezviz' API: " + str(e))
+            
+        if req.status_code == 401:
+        #session is wrong, need to relogin
+           self.login()
+           logging.info("Got 401, relogging (max retries: %s)",str(max_retries))
+           return self._get_deviceinfo(max_retries+1)
+
+        if req.text is "":
+           raise PyEzvizError("No data")
+
+        try:
+            json_output = req.json()
+        except (OSError, json.decoder.JSONDecodeError) as e:
+            raise PyEzvizError("Impossible to decode response: " + str(e) + "\nResponse was: " + str(req.text))
+
+        return json_output
+
 
     def _switch_status(self, serial, status_type, enable, max_retries=0):
         """Switch status on a device"""
@@ -235,8 +237,8 @@ class EzvizClient(object):
         """Load and return all cameras objects"""
 
         # get all devices
-        devices = self.get_DEVICE()
         camerainfo = self._get_deviceinfo()
+        devices = self.get_DEVICE()
         cameras = []
         supported_categories = [COMMON_DEVICE_CATEGORY, CAMERA_DEVICE_CATEGORY, BATTERY_CAMERA_DEVICE_CATEGORY, DOORBELL_DEVICE_CATEGORY]
 
@@ -384,6 +386,7 @@ class EzvizClient(object):
         else:
             return response_json['algorithmConfig']['algorithmList'][0]['value']
         print(response_json)
+
     def alarm_sound(self, serial, soundType, enable=1, max_retries=0):
         """Enable alarm sound by API."""
         if max_retries > MAX_RETRIES:

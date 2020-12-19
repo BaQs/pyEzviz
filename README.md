@@ -6,9 +6,8 @@ Pilot your Ezviz cameras with this module.
 
 ### Installing
 
-
-```
-pip install pyezviz
+1) Clone git repository.
+2) pip install pyezviz
 ```
 
 ## Playing with it
@@ -17,6 +16,8 @@ pip install pyezviz
 pyezviz -u em@il -p PASS device -h
 ...
 pyezviz -u em@il -p PASS --debug devices status
+
+
       serial            name  status  privacy  audio  ir_led  state_led  follow_move  alarm_notify alarm_sound_mod  encrypted       local_ip detection_sensibility
 0  D733333333 C6N(D73333333)       1    False   True    True       True         True         False        Software       True  192.168.2.10                     3
 1  D733333333 C6N(D73333333)       1    False   True    True       True         True         False        Software       True  192.168.2.13                     4
@@ -42,7 +43,7 @@ tests/data folder contains samples of EzvizLife API for tests purposes.
 
 ## Side notes
 
-As there is no official documentation on the API, I had to reverse-engineer what is the one used in the Ezviz IOS APP.
+This module is based on BaQs/pyEzviz. Doesn't seem to be maintained any longer so i'm updating and improving on pyEzviz.
 
 
 ## Contributing

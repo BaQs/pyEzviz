@@ -68,7 +68,7 @@ def main():
 
         if args.device_action == 'device':
             try:
-                client._login()
+                client.login()
                 print(json.dumps(client.get_DEVICE(), indent=2))
             except BaseException as exp:
                 print(exp)
@@ -78,7 +78,7 @@ def main():
 
         if args.device_action == 'status':
             try:
-                client._login()
+                client.login()
                 # print(json.dumps(client.load_cameras(), indent=2))
                 print(pandas.DataFrame(client.load_cameras()))
             except BaseException as exp:
@@ -89,7 +89,7 @@ def main():
 
         if args.device_action == 'switch':
             try:
-                client._login()
+                client.login()
                 print(json.dumps(client.get_SWITCH_STATUS(), indent=2))
             except BaseException as exp:
                 print(exp)
@@ -99,7 +99,7 @@ def main():
 
         elif args.device_action == 'connection':
             try:
-                client._login()
+                client.login()
                 print(json.dumps(client.get_CONNECTION(), indent=2))
             except BaseException as exp:
                 print(exp)
@@ -109,7 +109,7 @@ def main():
 
         elif args.device_action == 'switch-all':
             try:
-                client._login()
+                client.login()
                 print(json.dumps(client.switch_devices(args.enable), indent=2))
             except BaseException as exp:
                 print(exp)
@@ -122,7 +122,7 @@ def main():
 
         # load camera object
         try:
-            client._login()
+            client.login()
             camerainfo = client._get_deviceinfo()
             camera = EzvizCamera(client, args.serial, camerainfo)
             logging.debug("Camera loaded")

@@ -29,6 +29,7 @@ API_ENDPOINT_DETECTION_SENSIBILITY = "/api/device/configAlgorithm"
 API_ENDPOINT_DETECTION_SENSIBILITY_GET = "/api/device/queryAlgorithmConfig"
 API_ENDPOINT_CAMERA_INFO_GET = "/camera/cameraAction!findAllDevices.action"
 API_ENDPOINT_ALARMINFO_GET = "/alarmlog/alarmLogAction!findAlarmLogs.action"
+API_ENDPOINT_CHECKLOGIN = "/user/user/userAction!checkLoginInfo.action"
 
 LOGIN_URL = API_BASE_URI + API_ENDPOINT_LOGIN
 CLOUDDEVICES_URL = API_BASE_URI + API_ENDPOINT_CLOUDDEVICES
@@ -48,7 +49,7 @@ class PyEzvizError(Exception):
 
 
 class EzvizClient(object):
-    def __init__(self, account, password, session=requests.Session(), timeout=None, cloud=None, connection=None):
+    def __init__(self, account, password, session=None, timeout=None, cloud=None, connection=None):
         """Initialize the client object."""
         self.account = account
         self.password = password
@@ -289,8 +290,21 @@ class EzvizClient(object):
 
     def login(self):
         """Set http session."""
-        if self._session.cookies is None:
+        if self._session is None:
             self._session = requests.session()
+
+        else:
+            try:
+                req = self._session.get(API_BASE_URI + API_ENDPOINT_CHECKLOGIN,
+                                timeout=self._timeout)
+
+            except OSError as e:
+                raise PyEzvizError("Could not access Ezviz' API: " + str(e))
+
+            response_json = req.json()
+            if response_json["success"] == "failure":
+                self._session = requests.session()
+
         return self._login()
 
     def data_report(self, serial, enable=1, max_retries=0):

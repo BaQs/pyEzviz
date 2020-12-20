@@ -77,7 +77,7 @@ class EzvizCamera(object):
             'battery_level': self.get_camera_battery(),
             'PIR_Status': self._device['pirStatus'],
             'last_alarm_time': self._alarmlist_time,
-#            'last_alarm_pic': self._alarmlist_pic,
+            'last_alarm_pic': self._alarmlist_pic,
         }
 
 

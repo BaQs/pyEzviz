@@ -29,8 +29,6 @@ def main():
     subparsers_camera = parser_camera.add_subparsers(dest='camera_action')
 
     parser_camera_status = subparsers_camera.add_parser('status', help='Get the status of the camera')
-    parser_camera_status.add_argument('--status', required=True, help='Status to status', choices=['device','camera','switch','connection','wifi','status'])
-    ##line above was commented.
     parser_camera_move = subparsers_camera.add_parser('move', help='Move the camera')
     parser_camera_move.add_argument('--direction', required=True, help='Direction to move the camera to', choices=['up','down','right','left'])
     parser_camera_move.add_argument('--speed', required=False, help='Speed of the movement', default=5, type=int, choices=range(1, 10))
@@ -125,7 +123,8 @@ def main():
         # load camera object
         try:
             client._login()
-            camera = EzvizCamera(client, args.serial)
+            camerainfo = client._get_deviceinfo()
+            camera = EzvizCamera(client, args.serial, camerainfo)
             logging.debug("Camera loaded")
         except BaseException as exp:
             print(exp)
@@ -170,7 +169,6 @@ def main():
                 #     print(camera._wifi)
                 # print(camera.status())
                 print(json.dumps(camera.status(), indent=2))
-                print(json.dumps(client._get_alarmlist, indent=2))
 
             except BaseException as exp:
                 print(exp)

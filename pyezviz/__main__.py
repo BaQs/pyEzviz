@@ -90,7 +90,7 @@ def main():
         if args.device_action == 'switch':
             try:
                 client.login()
-                print(json.dumps(client.get_SWITCH_STATUS(), indent=2))
+                print(json.dumps(client.get_SWITCH(), indent=2))
             except BaseException as exp:
                 print(exp)
                 return 1
@@ -123,8 +123,7 @@ def main():
         # load camera object
         try:
             client.login()
-            camerainfo = client._get_deviceinfo()
-            camera = EzvizCamera(client, args.serial, camerainfo)
+            camera = EzvizCamera(client, args.serial)
             logging.debug("Camera loaded")
         except BaseException as exp:
             print(exp)
@@ -181,6 +180,7 @@ def main():
                 if args.switch == 'ir':
                         camera.switch_device_ir_led(args.enable)
                 elif args.switch == 'state':
+                        print(args.enable)
                         camera.switch_device_state_led(args.enable)
                 elif args.switch == 'audio':
                         camera.switch_device_audio(args.enable)

@@ -6,19 +6,15 @@ class PyEzvizError(Exception):
     pass
 
 class EzvizCamera(object):
-    def __init__(self, client, serial, camerainfo):
+    def __init__(self, client, serial):
         """Initialize the camera object."""
         self._client = client
         self._serial = serial
-        self._camerainfo = camerainfo
 
     def load(self):
 
-        # we need to know the json array object for this camera's self._serial  
-        for device in self._camerainfo['devices']:
-            if device['subSerial'] == self._serial :
-                self._device = device
-                break
+        # Update device info for camera serial  
+        self._device = self._client._get_deviceinfo(self._serial)
 
         # get last alarm info for this camera's self._serial
         self._alarmlist = self._client._get_alarminfo(self._serial)
@@ -66,6 +62,7 @@ class EzvizCamera(object):
             'follow_move': self.get_switch(DeviceSwitchType.MOBILE_TRACKING),
 
             'alarm_notify': bool(self._device['defence']),
+            'alarm_schedules_enabled': bool(self._device['defencePlanEnable']),
             'alarm_sound_mod': self._device['alarmSoundMode'],
 
             'encrypted': bool(self._device['isEncrypted']),
@@ -112,11 +109,11 @@ class EzvizCamera(object):
         return self._client.switch_status(self._serial, DeviceSwitchType.SOUND.value, enable)
 
     def switch_device_state_led(self, enable=0):
-        """Switch audio status on a device."""
+        """Switch led status on a device."""
         return self._client.switch_status(self._serial, DeviceSwitchType.LIGHT.value, enable)
 
     def switch_device_ir_led(self, enable=0):
-        """Switch audio status on a device."""
+        """Switch ir status on a device."""
         return self._client.switch_status(self._serial, DeviceSwitchType.INFRARED_LIGHT.value, enable)
 
     def switch_privacy_mode(self, enable=0):
@@ -124,7 +121,7 @@ class EzvizCamera(object):
         return self._client.switch_status(self._serial, DeviceSwitchType.PRIVACY.value, enable)
 
     def switch_sleep_mode(self, enable=0):
-        """Switch privacy mode on a device."""
+        """Switch sleep mode on a device."""
         return self._client.switch_status(self._serial, DeviceSwitchType.SLEEP.value, enable)
 
     def switch_follow_move(self, enable=0):

@@ -21,7 +21,7 @@ API_ENDPOINT_LOGIN = "/v3/users/login"
 API_ENDPOINT_CLOUDDEVICES = "/api/cloud/v2/cloudDevices/getAll"
 API_ENDPOINT_PAGELIST = "/v3/userdevices/v1/devices/pagelist"
 API_ENDPOINT_DEVICES = "/v3/devices/"
-API_ENDPOINT_SWITCH_STATUS = '/api/device/switchStatus'
+API_ENDPOINT_SWITCH_STATUS = '/device/deviceSwitch!configDeviceSwitchStatus.action'
 API_ENDPOINT_PTZCONTROL = "/ptzControl"
 API_ENDPOINT_ALARM_SOUND = "/alarm/sound"
 API_ENDPOINT_DATA_REPORT = "/api/other/data/report"
@@ -142,7 +142,7 @@ class EzvizClient(object):
 
         return json_result
 
-    def _get_deviceinfo(self, max_retries=0):
+    def _get_deviceinfo(self, serial, max_retries=0):
         """Get data from a device info API."""
         if max_retries > MAX_RETRIES:
             raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
@@ -165,10 +165,19 @@ class EzvizClient(object):
 
         try:
             json_output = req.json()
+
         except (OSError, json.decoder.JSONDecodeError) as e:
             raise PyEzvizError("Impossible to decode response: " + str(e) + "\nResponse was: " + str(req.text))
 
-        return json_output
+        for device in json_output['devices']:
+            if device['subSerial'] == serial:
+                json_result = device
+                break
+
+        if not json_result:
+            raise PyEzvizError("Impossible to load the devices, here is the returned response: %s ", str(req.text))
+
+        return json_result
 
     #Get Alarm info
     def _get_alarminfo(self, serial, alarmType=-1, pageStart=0, pageSize=1, max_retries=0):
@@ -213,25 +222,28 @@ class EzvizClient(object):
             req = self._session.post(SWITCH_STATUS_URL,
                                     data={  'enable': enable,
                                             'serial': serial,
-                                            'channel': '0',
-                                            'netType' : 'WIFI',
-                                            'clientType': '1',
+                                            'channelNo': '0',
                                             'type': status_type},
                                     timeout=self._timeout)
 
-
-            if req.status_code == 401:
-            # session is wrong, need to relogin
-                self.login()
-                logging.info("Got 401, relogging (max retries: %s)",str(max_retries))
-                return self._switch_status(serial, type, enable, max_retries+1)
-
-            response_json = req.json()
-            if response_json['resultCode'] and response_json['resultCode'] != '0':
-                raise PyEzvizError("Could not set the switch, maybe a permission issue ?: Got %s : %s)",str(req.status_code), str(req.text))
-                return False
         except OSError as e:
             raise PyEzvizError("Could not access Ezviz' API: " + str(e))
+
+        if req.status_code == 401 or req.status_code == 302:
+        #session is wrong, need to relogin
+           self.login()
+           logging.info("Got 302 or 401, relogging (max retries: %s)",str(max_retries))
+           return self._switch_status(max_retries+1)
+
+        try:
+            json_output = req.json()
+        
+        except (OSError, json.decoder.JSONDecodeError) as e:
+            raise PyEzvizError("Impossible to decode response: " + str(e) + "\nResponse was: " + str(req.text))
+            
+        if json_output['resultCode'] != '0':
+            raise PyEzvizError("Could not set the switch, maybe a permission issue ?: Got %s : %s)",str(req.status_code), str(req.text))
+            return False
 
         return True
 
@@ -254,7 +266,6 @@ class EzvizClient(object):
         """Load and return all cameras objects"""
 
         # get all devices
-        camerainfo = self._get_deviceinfo()
         devices = self.get_DEVICE()
         cameras = []
         supported_categories = [COMMON_DEVICE_CATEGORY, CAMERA_DEVICE_CATEGORY, BATTERY_CAMERA_DEVICE_CATEGORY, DOORBELL_DEVICE_CATEGORY]
@@ -267,7 +278,7 @@ class EzvizClient(object):
                     next
 
                 # Create camera object
-                camera = EzvizCamera(self, device['deviceSerial'], camerainfo)
+                camera = EzvizCamera(self, device['deviceSerial'])
                 camera.load()
                 cameras.append(camera.status())
 

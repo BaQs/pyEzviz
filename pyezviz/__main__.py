@@ -39,9 +39,9 @@ def main():
     parser_camera_switch.add_argument('--enable', required=False, help='Enable (or not)', default=1, type=int, choices=[0,1] )
 
     parser_camera_alarm = subparsers_camera.add_parser('alarm', help='Configure the camera alarm')
-    parser_camera_alarm.add_argument('--notify', required=False, help='Enable (or not)', default=0, type=int, choices=[0,1] )
+    parser_camera_alarm.add_argument('--notify', required=False, help='Enable (or not)', type=int, choices=[0,1] )
     parser_camera_alarm.add_argument('--sound', required=False, help='Sound level (2 is disabled, 1 intensive, 0 software)', type=int, choices=[0,1,2])
-    parser_camera_alarm.add_argument('--sensibility', required=False, help='Sensibility level (form 1 to 6)', default=3, type=int, choices=[0,1,2,3,4,5,6] )
+    parser_camera_alarm.add_argument('--sensibility', required=False, help='Sensibility level (from 1 to 6)', type=int, choices=[0,1,2,3,4,5,6] )
 
 
     args = parser.parse_args()
@@ -198,12 +198,12 @@ def main():
 
         elif args.camera_action == 'alarm':
             try:
-                if args.sound:
-                        camera.alarm_sound(args.sound)
-                if args.notify:
-                        camera.alarm_notify(args.notify)
-                if args.sensibility:
-                        camera.alarm_detection_sensibility(args.sensibility)
+                if args.sound != None:
+                    camera.alarm_sound(args.sound)
+                if args.notify != None:
+                    camera.alarm_notify(args.notify)
+                if args.sensibility != None:
+                    camera.alarm_detection_sensibility(args.sensibility)
             except BaseException as exp:
                 print(exp)
                 return 1

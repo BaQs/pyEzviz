@@ -222,7 +222,7 @@ class EzvizClient(object):
             req = self._session.post(SWITCH_STATUS_URL,
                                     data={  'enable': enable,
                                             'serial': serial,
-                                            'channelNo': '0',
+                                            'channelNo': '1',
                                             'type': status_type},
                                     timeout=self._timeout)
 
@@ -244,7 +244,7 @@ class EzvizClient(object):
         if json_output['resultCode'] != '0':
             raise PyEzvizError("Could not set the switch, maybe a permission issue ?: Got %s : %s)",str(req.status_code), str(req.text))
             return False
-
+            
         return True
 
     def _switch_devices_privacy(self, enable=0):
@@ -314,6 +314,8 @@ class EzvizClient(object):
             self.login()
             logging.info("Got 401, relogging (max retries: %s)",str(max_retries))
             return self.ptzControl(max_retries+1)
+        
+        return True
 
     def login(self):
         """Set http session."""
@@ -321,19 +323,29 @@ class EzvizClient(object):
             self._session = requests.session()
             self._login()
 
-        else:
-            try:
-                req = self._session.get(API_BASE_URI + API_ENDPOINT_CHECKLOGIN,
-                                timeout=self._timeout)
+        try:
+            req = self._session.get(API_BASE_URI + API_ENDPOINT_CHECKLOGIN,
+                                                     timeout=self._timeout)
 
-            except OSError as e:
-                raise PyEzvizError("Could not access Ezviz' API: " + str(e))
+        except OSError as e:
+            raise PyEzvizError("Could not access Ezviz login check API: " + str(e))
 
+        if req.status_code != 200:
+            #session is wrong, need to relogin
+            close_session()
+            self._session = requests.session()
+            self._login()
+
+        try:
             response_json = req.json()
             if response_json["success"] == "failure":
+                close_session()
                 self._session = requests.session()
                 self._login()
-
+        
+        except (OSError, json.decoder.JSONDecodeError) as e:
+                raise PyEzvizError("Impossible to decode response: " + str(e) + "\nResponse was: " + str(req.text))
+            
         return True
 
     def data_report(self, serial, enable=1, max_retries=0):
@@ -346,7 +358,7 @@ class EzvizClient(object):
                                     data={  'deviceSerial' : serial,
                                             'defenceType': 'Global',
                                             'enablePlan': enable,
-                                            'channelNo': '0',
+                                            'channelNo': '1',
                                     },
                                     timeout=self._timeout)
 

@@ -5,7 +5,7 @@ import setuptools
 
 setuptools.setup(
     name='pyEzviz',
-    version="0.1.6.2",
+    version="0.1.6.3",
     license='Apache Software License',
     author='Pierre Ourdouille',
     author_email='baqs@users.github.com',

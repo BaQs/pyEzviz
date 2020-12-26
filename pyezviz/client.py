@@ -30,6 +30,7 @@ API_ENDPOINT_DETECTION_SENSIBILITY_GET = "/api/device/queryAlgorithmConfig"
 API_ENDPOINT_CAMERA_INFO_GET = "/camera/cameraAction!findAllDevices.action"
 API_ENDPOINT_ALARMINFO_GET = "/alarmlog/alarmLogAction!findAlarmLogs.action"
 API_ENDPOINT_CHECKLOGIN = "/user/user/userAction!checkLoginInfo.action"
+API_ENDPOINT_SET_DEFENCE_SCHEDULE = "/camera/cameraAction!modifyTimerDefence.action"
 
 LOGIN_URL = API_BASE_URI + API_ENDPOINT_LOGIN
 CLOUDDEVICES_URL = API_BASE_URI + API_ENDPOINT_CLOUDDEVICES
@@ -365,6 +366,41 @@ class EzvizClient(object):
            self.login()
            logging.info("Got 302 or 401, relogging (max retries: %s)",str(max_retries))
            return self.data_report(max_retries+1)
+
+        try:
+            json_output = req.json()
+        
+        except (OSError, json.decoder.JSONDecodeError) as e:
+            raise PyEzvizError("Impossible to decode response: " + str(e) + "\nResponse was: " + str(req.text))
+            
+        if json_output['resultCode'] != '0':
+            raise PyEzvizError("Could not set the switch, maybe a permission issue ?: Got %s : %s)",str(req.status_code), str(req.text))
+            return False
+
+        return True
+
+    def api_set_defence_schdule(self, serial, schedule, enable, max_retries=0):
+        """Set defence schedules."""
+        if max_retries > MAX_RETRIES:
+            raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
+        schedule = '{"WD":0,"TP":[{"BT":"00:00","ET":"05:00"},{"BT":"21:00","ET":"23:59"}]},{"WD":1,"TP":[{"BT":"00:00","ET":"05:00"},{"BT":"21:00","ET":"23:59"}]},{"WD":2,"TP":[{"BT":"00:00","ET":"05:00"},{"BT":"21:00","ET":"23:59"}]},{"WD":3,"TP":[{"BT":"00:00","ET":"05:00"},{"BT":"21:00","ET":"23:59"}]},{"WD":4,"TP":[{"BT":"00:00","ET":"05:00"},{"BT":"21:00","ET":"23:59"}]},{"WD":5,"TP":[{"BT":"00:00","ET":"05:00"},{"BT":"21:00","ET":"23:59"}]},{"WD":6,"TP":[{"BT":"00:00","ET":"05:00"},{"BT":"21:00","ET":"23:59"}'
+        schedulestring = '{"CN":0,"EL":' + str(enable) +',"SS":"' + serial + '","WP":[' + schedule + ']}]}'
+        try:
+            req = self._session.post(API_BASE_URI + API_ENDPOINT_SET_DEFENCE_SCHEDULE,
+                                    data={  'serial' : serial,
+                                            'csrfToken': self._csrfToken,
+                                            'devTimingPlan': schedulestring,
+                                    },
+                                    timeout=self._timeout)
+
+        except OSError as e:
+            raise PyEzvizError("Could not access Ezviz' API: " + str(e))
+
+        if req.status_code != 200:
+        #session is wrong, need to relogin
+           self.login()
+           logging.info("Got", req.status_code," relogging (max retries: %s)",str(max_retries))
+           return api_set_defence_schdule(max_retries+1)
 
         try:
             json_output = req.json()

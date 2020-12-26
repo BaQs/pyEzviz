@@ -128,4 +128,8 @@ class EzvizCamera(object):
         """Switch follow move."""
         return self._client.switch_status(self._serial, DeviceSwitchType.MOBILE_TRACKING.value, enable)
 
+    def change_defence_schedule(self, schedule, enable=0):
+        """Change defence schedule. Requires json formatted schedules"""
+        return self._client.api_set_defence_schdule(self._serial, schedule, enable)
+
         return None

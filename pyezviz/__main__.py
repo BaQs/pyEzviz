@@ -168,7 +168,7 @@ def main():
                 #     print(camera._wifi)
                 # print(camera.status())
                 print(json.dumps(camera.status(), indent=2))
-
+               
             except BaseException as exp:
                 print(exp)
                 return 1

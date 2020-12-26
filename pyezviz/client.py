@@ -71,6 +71,7 @@ class EzvizClient(object):
 
         try:
             req = self._session.post("https://" + EU_AUTH_DOMAIN + "." + API_BASE_TLD + "/doLogin",
+                                allow_redirects=False,
                                 data=payload,
                                 timeout=self._timeout)
         
@@ -325,27 +326,21 @@ class EzvizClient(object):
 
         try:
             req = self._session.get(API_BASE_URI + API_ENDPOINT_CHECKLOGIN,
+                                                     allow_redirects=False,
                                                      timeout=self._timeout)
 
         except OSError as e:
             raise PyEzvizError("Could not access Ezviz login check API: " + str(e))
-
+ 
         if req.status_code != 200:
             #session is wrong, need to relogin
-            close_session()
-            self._session = requests.session()
             self._login()
 
-        try:
-            response_json = req.json()
-            if response_json["success"] == "failure":
-                close_session()
-                self._session = requests.session()
-                self._login()
-        
-        except (OSError, json.decoder.JSONDecodeError) as e:
-                raise PyEzvizError("Impossible to decode response: " + str(e) + "\nResponse was: " + str(req.text))
-            
+        else:
+           response_json = req.json()
+           if response_json["success"] != "success":
+               self._login()
+   
         return True
 
     def data_report(self, serial, enable=1, max_retries=0):

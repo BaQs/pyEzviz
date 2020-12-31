@@ -1,5 +1,4 @@
 import time
-import pyezviz.DeviceSwitchType
 from pyezviz.DeviceSwitchType import DeviceSwitchType
 
 class PyEzvizError(Exception):
@@ -27,7 +26,7 @@ class EzvizCamera(object):
 
         # load detection sensibility
         if self._device['deviceCategory']['link'] != "COMMON" and not "BatteryCamera":
-            self._detection_sensibility = self._client.get_detection_sensibility(self._serial)
+            self._detection_sensibility = self._client.get_detection_sensibility(self._serial,type_value=3)
         else:
             self._detection_sensibility = None
 
@@ -51,7 +50,9 @@ class EzvizCamera(object):
         return {
             'serial': self._serial,
             'name': self._device['name'],
-            'status': self._device['status'],
+            'version': self._device['version'],
+            'upgrade_available': self._device['upgradeAvailable'],
+            'status': self._device['deviceExtStatus']['OnlineStatus'],
             'device_sub_category': self._device['deviceCategory']['category'],
 
             'sleep': self.get_switch(DeviceSwitchType.SLEEP),
@@ -99,10 +100,10 @@ class EzvizCamera(object):
         # we force enable = 1 , to make sound...
         return self._client.alarm_sound(self._serial, sound_type, 1)
 
-    def alarm_detection_sensibility(self, sensibility):
+    def alarm_detection_sensibility(self, sensibility, type_value=3):
         """Enable/Disable camera sound when movement is detected."""
         # we force enable = 1 , to make sound...
-        return self._client.detection_sensibility(self._serial, sensibility)
+        return self._client.detection_sensibility(self._serial, sensibility, type_value)
 
     def switch_device_audio(self, enable=0):
         """Switch audio status on a device."""

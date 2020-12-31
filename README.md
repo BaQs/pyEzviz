@@ -1,3 +1,9 @@
+******Now on PyPi under project "py-ezviz"
+https://pypi.org/project/py-ezviz
+
+******New github for PyPi project:
+https://github.com/RenierM26/py-Ezviz
+
 # Ezviz PyPi
 
 Pilot your Ezviz cameras with this module.

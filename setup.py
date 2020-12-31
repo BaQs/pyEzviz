@@ -5,7 +5,7 @@ import setuptools
 
 setuptools.setup(
     name='pyezviz',
-    version="0.1.6.7",
+    version="0.1.6.8",
     license='GPL-3.0 License',
     author='Renier Moorcroft',
     author_email='RenierM26@gmail.com',

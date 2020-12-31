@@ -36,7 +36,7 @@ class PyEzvizError(Exception):
 
 
 class EzvizClient(object):
-    def __init__(self, account, password, session=None, timeout=None, cloud=None, connection=None, region="eu"):
+    def __init__(self, account, password, region="eu", session=None, timeout=None, cloud=None, connection=None):
         """Initialize the client object."""
         self.account = account
         self.password = password

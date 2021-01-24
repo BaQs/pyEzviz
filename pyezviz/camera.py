@@ -90,11 +90,11 @@ class EzvizCamera(object):
             'status': self._device['status'],
             'device_sub_category': self._device['deviceSubCategory'],
 
-            'privacy': self._switch.get(TYPE_PRIVACY_MODE)['enable'],
-            'audio': self._switch.get(TYPE_AUDIO)['enable'],
-            'ir_led': self._switch.get(TYPE_IR_LED)['enable'],
-            'state_led': self._switch.get(TYPE_STATE_LED)['enable'],
-            'follow_move': self._switch.get(TYPE_FOLLOW_MOVE)['enable'],
+            'privacy': self._switch.get(TYPE_PRIVACY_MODE, {'enable': False})['enable'],
+            'audio': self._switch.get(TYPE_AUDIO, {'enable': False})['enable'],
+            'ir_led': self._switch.get(TYPE_IR_LED, {'enable': False})['enable'],
+            'state_led': self._switch.get(TYPE_STATE_LED, {'enable': False})['enable'],
+            'follow_move': self._switch.get(TYPE_FOLLOW_MOVE, {'enable': False})['enable'],
 
             'alarm_notify': bool(self._status[KEY_ALARM_NOTIFICATION]),
             'alarm_sound_mod': ALARM_SOUND_MODE[int(self._status['alarmSoundMode'])],

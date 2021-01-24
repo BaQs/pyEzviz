@@ -7,6 +7,7 @@ from fake_useragent import UserAgent
 from uuid import uuid4
 from .camera import EzvizCamera
 # from pyezviz.camera import EzvizCamera
+from pprint import pprint
 
 COOKIE_NAME = "sessionId"
 CAMERA_DEVICE_CATEGORY = "IPC"
@@ -130,7 +131,7 @@ class EzvizClient(object):
             logging.info("Got 401, relogging (max retries: %s)",str(max_retries))
             return self._get_pagelist(max_retries+1)
 
-        if req.text is "":
+        if req.text == "":
             raise PyEzvizError("No data")
 
         try:
@@ -210,7 +211,6 @@ class EzvizClient(object):
                 camera = EzvizCamera(self, device['deviceSerial'])
                 camera.load()
                 cameras.append(camera.status())
-
         return cameras
 
     def ptzControl(self, command, serial, action, speed=5, max_retries=0):

@@ -7,7 +7,6 @@ import pandas
 
 from pyezviz import EzvizClient, EzvizCamera
 
-
 def main():
     """Main function"""
     parser = argparse.ArgumentParser(prog='pyezviz')

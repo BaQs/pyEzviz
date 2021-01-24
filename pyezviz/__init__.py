@@ -1,2 +1,2 @@
-from pyezviz.client import EzvizClient
+from pyezviz.client import EzvizClient, PyEzvizError
 from pyezviz.camera import EzvizCamera

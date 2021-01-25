@@ -4,7 +4,7 @@ import logging
 import hashlib
 import time
 from fake_useragent import UserAgent
-from uuid import uuid4
+# from uuid import uuid4
 from .camera import EzvizCamera
 # from pyezviz.camera import EzvizCamera
 from pprint import pprint
@@ -230,7 +230,7 @@ class EzvizClient(object):
                                         'action': action,
                                         'channelNo': "1",
                                         'speed': speed,
-                                        'uuid': str(uuid4()),
+                                        # 'uuid': str(uuid4()),
                                         'serial': serial},
                                     headers={ 'sessionId': self._sessionId,
                                     'clientType': "1"},

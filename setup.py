@@ -5,7 +5,7 @@ import setuptools
 
 setuptools.setup(
     name='pyEzviz',
-    version="0.1.5.6",
+    version="0.1.5.7",
     license='Apache Software License',
     author='Pierre Ourdouille',
     author_email='baqs@users.github.com',
@@ -20,7 +20,7 @@ setuptools.setup(
     install_requires=[
         'requests',
         'fake_useragent',
-        'uuid',
+        # 'uuid',
         'pandas'
     ],
     entry_points={

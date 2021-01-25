@@ -2,7 +2,6 @@ import time
 import pyezviz.DeviceSwitchType
 from pyezviz.DeviceSwitchType import DeviceSwitchType
 
-
 KEY_ALARM_NOTIFICATION = 'globalStatus'
 
 ALARM_SOUND_MODE= { 0 : 'Software',
@@ -63,11 +62,11 @@ class EzvizCamera(object):
             'status': self._device['status'],
             'device_sub_category': self._device['deviceSubCategory'],
 
-            'privacy': self._switch.get(TYPE_PRIVACY_MODE, {'enable': False})['enable'],
-            'audio': self._switch.get(TYPE_AUDIO, {'enable': False})['enable'],
-            'ir_led': self._switch.get(TYPE_IR_LED, {'enable': False})['enable'],
-            'state_led': self._switch.get(TYPE_STATE_LED, {'enable': False})['enable'],
-            'follow_move': self._switch.get(TYPE_FOLLOW_MOVE, {'enable': False})['enable'],
+            'privacy': self._switch.get(DeviceSwitchType.SLEEP, {'enable': False})['enable'],
+            'audio': self._switch.get(DeviceSwitchType.SOUND, {'enable': False})['enable'],
+            'ir_led': self._switch.get(DeviceSwitchType.INFRARED_LIGHT, {'enable': False})['enable'],
+            'state_led': self._switch.get(DeviceSwitchType.LIGHT, {'enable': False})['enable'],
+            'follow_move': self._switch.get(DeviceSwitchType.MOBILE_TRACKING, {'enable': False})['enable'],
             
 
             'alarm_notify': bool(self._status[KEY_ALARM_NOTIFICATION]),

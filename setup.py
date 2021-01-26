@@ -6,7 +6,7 @@ import setuptools
 setuptools.setup(
     name='pyEzviz',
     version="0.1.5.7",
-    license='Apache Software License',
+    license='Apache Software License 2.0',
     author='Pierre Ourdouille',
     author_email='baqs@users.github.com',
     description='Pilot your Ezviz cameras',

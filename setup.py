@@ -19,13 +19,10 @@ setuptools.setup(
     ],
     install_requires=[
         'requests',
-        'fake_useragent',
-        # 'uuid',
         'pandas'
     ],
     entry_points={
-    'console_scripts': [
-        'pyezviz = pyezviz.__main__:main'
-    ]
-    }
+    'console_scripts': ['pyezviz = pyezviz.__main__:main']
+    },
+    python_requires = '>=3.6'
 )

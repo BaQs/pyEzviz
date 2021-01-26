@@ -1,6 +1,7 @@
 # Ezviz PyPi
 
 [![Build Status](https://travis-ci.org/BaQs/pyEzviz.svg?branch=master)](https://travis-ci.org/BaQs/pyEzviz)
+![Upload Python Package](https://github.com/BaQs/pyEzviz/workflows/Upload%20Python%20Package/badge.svg)
 
 Pilot your Ezviz cameras with this module.
 

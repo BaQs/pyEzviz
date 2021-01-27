@@ -15,7 +15,7 @@ pip install pyezviz
 ## Playing with it
 
 ```
-pyezviz -u em@il -p PASS device -h
+pyezviz -u em@il -p PASS devices -h
 ...
 pyezviz -u em@il -p PASS --debug devices status
       serial            name  status  privacy  audio  ir_led  state_led  follow_move  alarm_notify alarm_sound_mod  encrypted       local_ip detection_sensibility

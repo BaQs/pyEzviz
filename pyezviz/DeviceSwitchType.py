@@ -1,8 +1,12 @@
+"""Device switch types relationship."""
 from enum import Enum
+
 
 # @unique
 class DeviceSwitchType(Enum):
-    ALARM_TONE  = 1
+    """Device switch name and number."""
+
+    ALARM_TONE = 1
     STREAM_ADAPTIVE = 2
     LIGHT = 3
     INTELLIGENT_ANALYSIS = 4

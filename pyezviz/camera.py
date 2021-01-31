@@ -1,17 +1,18 @@
 """pyezviz camera api."""
 import datetime
 
-from pyezviz.DeviceSwitchType import DeviceSwitchType
+from pyezviz.device_switch_type import DeviceSwitchType
 
 
 class PyEzvizError(Exception):
     """handle exception."""
 
-    pass
 
-
-class EzvizCamera(object):
+class EzvizCamera:
     """Initialize Ezviz camera object."""
+
+    # pylint: disable=too-many-instance-attributes
+    # This class presents attributes.
 
     def __init__(self, client, serial):
         """Initialize the camera object."""
@@ -19,25 +20,25 @@ class EzvizCamera(object):
         self._serial = serial
         self._switch = {}
         self._alarmmotiontrigger = {}
+        self._device = self._client._get_deviceinfo(self._serial)
+        self._alarmlist = self._client._get_alarminfo(self._serial)
+        self._alarmlist_time = None
+        self._alarmlist_pic = None
+        self._detection_sensibility = None
 
     def load(self):
         """Update device info for camera serial."""
-        self._device = self._client._get_deviceinfo(self._serial)
 
-        """get last alarm info for this camera's self._serial"""
-        self._alarmlist = self._client._get_alarminfo(self._serial)
-        if self._alarmlist["totalCount"] == 0:
-            self._alarmlist_time = None
-            self._alarmlist_pic = None
-        else:
+        # Get last alarm info for this camera's self._serial.
+        if self._alarmlist.get("totalCount") > 0:
             self._alarmlist_time = self._alarmlist["alarmLogs"][0]["alarmOccurTime"]
             self._alarmlist_pic = self._alarmlist["alarmLogs"][0]["alarmPicUrl"]
 
-        """load device switches"""
+        # Load device switches.
         for switch in self._device["deviceSwitchStatuses"]:
             self._switch.update({switch["type"]: switch["enable"]})
 
-        """load detection sensibility if supported"""
+        # load detection sensibility if supported.
         if self._device["supportExt"]["support_sensibility_adjust"]:
             if self._switch.get(DeviceSwitchType.AUTO_SLEEP.value) is not True:
                 self._detection_sensibility = self._client.get_detection_sensibility(
@@ -55,17 +56,14 @@ class EzvizCamera(object):
     def motionalarm(self):
         """Create motion sensor based on last alarm time."""
         now = datetime.datetime.now().replace(microsecond=0)
-        AlarmTriggerActive = 0
+        alarm_trigger_active = 0
         today_date = datetime.date.today()
+        fix = datetime.datetime.now().replace(microsecond=0)
 
-        """Need to handle error if time format different"""
-        try:
-            fix = datetime.datetime.strptime(
-                self._alarmlist_time.replace("Today", str(today_date)),
-                "%Y-%m-%d %H:%M:%S",
-            )
-        except Exception:
-            fix = datetime.datetime.now().replace(microsecond=0)
+        fix = datetime.datetime.strptime(
+            self._alarmlist_time.replace("Today", str(today_date)),
+            "%Y-%m-%d %H:%M:%S",
+        )
 
         fix = fix.replace(tzinfo=datetime.timezone.utc).timestamp()
         now = now.replace(tzinfo=datetime.timezone.utc).timestamp()
@@ -75,10 +73,10 @@ class EzvizCamera(object):
         # timepassed = timepassed.seconds
 
         if timepassed < 60:
-            AlarmTriggerActive = 1
+            alarm_trigger_active = 1
 
         self._alarmmotiontrigger = {
-            "AlarmTriggerActive": AlarmTriggerActive,
+            "AlarmTriggerActive": alarm_trigger_active,
             "timepassed": timepassed,
         }
 
@@ -129,7 +127,7 @@ class EzvizCamera(object):
     def move(self, direction, speed=5):
         """Move camera."""
         if direction not in ["right", "left", "down", "up"]:
-            raise PyEzvizError("Invalid direction: %s ", direction)
+            raise PyEzvizError(f"Invalid direction : {direction}")
 
         # launch the start command
         self._client.ptzControl(str(direction).upper(), self._serial, "START", speed)
@@ -191,5 +189,3 @@ class EzvizCamera(object):
     def change_defence_schedule(self, schedule, enable=0):
         """Change defence schedule. Requires json formatted schedules."""
         return self._client.api_set_defence_schdule(self._serial, schedule, enable)
-
-        return None

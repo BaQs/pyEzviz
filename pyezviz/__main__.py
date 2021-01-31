@@ -1,11 +1,25 @@
 """pyezviz command line."""
 import argparse
+import http.client
 import json
 import logging
 import sys
 
 import pandas
 from pyezviz import EzvizCamera, EzvizClient
+
+# pylint: disable=W0703
+# Catching too general exception BaseException
+# pylint: disable=W0612
+# Unused variable 'parser_camera_status'
+# pylint: disable=R1710
+# Either all return statements in a function should return an expression, or none of them should.
+# pylint: disable=R0911
+# Too many return statements
+# pylint: disable=R0912
+# Too many branches
+# pylint: disable=R0915
+# Too many statements
 
 
 def main():
@@ -30,7 +44,7 @@ def main():
         type=str,
         default="status",
         help="Device action to perform",
-        choices=["device", "status", "switch", "connection", "switch-all"],
+        choices=["device", "status", "switch", "connection", "infos-all"],
     )
 
     parser_camera = subparsers.add_parser("camera", help="Camera actions")
@@ -101,15 +115,9 @@ def main():
 
     args = parser.parse_args()
 
-    # print("--------------args")
-    # print("--------------args: %s",args)
-    # print("--------------args")
-
     client = EzvizClient(args.username, args.password, args.region)
 
     if args.debug:
-
-        import http.client
 
         http.client.HTTPConnection.debuglevel = 5
         # You must initialize logging, otherwise you'll not see debug output.
@@ -124,7 +132,7 @@ def main():
         if args.device_action == "device":
             try:
                 client.login()
-                print(json.dumps(client.get_DEVICE(), indent=2))
+                print(json.dumps(client.get_device(), indent=2))
             except BaseException as exp:
                 print(exp)
                 return 1
@@ -134,12 +142,11 @@ def main():
         if args.device_action == "status":
             try:
                 client.login()
-                # print(json.dumps(client.load_cameras(), indent=2))
                 print(
                     pandas.DataFrame(client.load_cameras()).to_string(
                         columns=[
                             "serial",
-                            "name",  # version  upgrade_available
+                            "name",
                             "status",
                             "device_category",
                             "device_sub_category",
@@ -147,12 +154,21 @@ def main():
                             "privacy",
                             "audio",
                             "ir_led",
-                            "state_led",  # follow_move  alarm_notify  alarm_schedules_enabled alarm_sound_mod  encrypted
+                            "state_led",
                             "local_ip",
                             "local_rtsp_port",
                             "detection_sensibility",
                             "battery_level",
-                            "PIR_Status",  # last_alarm_time last_alarm_pic
+                            "PIR_Status",
+                            # follow_move,
+                            # alarm_notify,
+                            # alarm_schedules_enabled,
+                            # alarm_sound_mod,
+                            # encrypted,
+                            # last_alarm_time,
+                            # last_alarm_pic,
+                            # version,
+                            # upgrade_available
                         ]
                     )
                 )
@@ -165,7 +181,7 @@ def main():
         if args.device_action == "switch":
             try:
                 client.login()
-                print(json.dumps(client.get_SWITCH(), indent=2))
+                print(json.dumps(client.get_switch(), indent=2))
             except BaseException as exp:
                 print(exp)
                 return 1
@@ -175,17 +191,18 @@ def main():
         elif args.device_action == "connection":
             try:
                 client.login()
-                print(json.dumps(client.get_CONNECTION(), indent=2))
+                print(json.dumps(client.get_connection(), indent=2))
             except BaseException as exp:
                 print(exp)
                 return 1
             finally:
                 client.close_session()
 
-        elif args.device_action == "switch-all":
+        # add json filter here json_key="deviceInfos"
+        elif args.device_action == "infos-all":
             try:
                 client.login()
-                print(json.dumps(client.switch_devices(args.enable), indent=2))
+                print(json.dumps(client.get_page_list(json_key=None), indent=2))
             except BaseException as exp:
                 print(exp)
                 return 1
@@ -203,18 +220,6 @@ def main():
             print(exp)
             return 1
 
-        # if args.camera_action == 'list':
-        #     try:
-        #         pagelist = client.get_PAGE_LIST()
-        #         df = pandas.DataFrame(pagelist['statusInfos'])
-        #         df
-
-        #     except BaseException as exp:
-        #         print(exp)
-        #         return 1
-        #     finally:
-        #         client.close_session()
-
         if args.camera_action == "move":
             try:
                 camera.move(args.direction, args.speed)
@@ -226,21 +231,6 @@ def main():
 
         elif args.camera_action == "status":
             try:
-                # camera.load()
-                # if args.status == 'device':
-                #     print(camera._device)
-                # elif args.status == 'status':
-                #     print(camera._status)
-                # elif args.status == 'switch':
-                #     # print(json.dumps(camera._switch, indent=2))
-                #     print(camera._switch)
-                # elif args.status == 'connection':
-                #     # print(json.dumps(camera._switch, indent=2))
-                #     print(camera._connection)
-                # elif args.status == 'wifi':
-                #     # print(json.dumps(camera._switch, indent=2))
-                #     print(camera._wifi)
-                # print(camera.status())
                 print(json.dumps(camera.status(), indent=2))
 
             except BaseException as exp:

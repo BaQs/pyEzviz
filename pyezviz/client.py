@@ -6,6 +6,7 @@ from random import randint
 from uuid import uuid4
 
 from pyezviz.camera import EzvizCamera
+from pyezviz.DefenseModeType import DefenseModeType
 import requests
 
 COMMON_DEVICE_CATEGORY = "COMMON"
@@ -29,6 +30,7 @@ API_ENDPOINT_CAMERA_INFO_GET = "/camera/cameraAction!findAllDevices.action"
 API_ENDPOINT_ALARMINFO_GET = "/alarmlog/alarmLogAction!findAlarmLogs.action"
 API_ENDPOINT_CHECKLOGIN = "/user/user/userAction!checkLoginInfo.action"
 API_ENDPOINT_SET_DEFENCE_SCHEDULE = "/camera/cameraAction!modifyTimerDefence.action"
+API_ENDPOINT_SWITCH_DEFENCE_MODE = '/v3/userdevices/v1/group/switchDefenceMode'
 
 DEFAULT_TIMEOUT = 10
 MAX_RETRIES = 3
@@ -220,16 +222,7 @@ class EzvizClient(object):
                 + "\nResponse was: "
                 + str(req.text)
             )
-
-        for device in json_output["devices"]:
-            if device["subSerial"] == serial:
-                device["supportExt"] = json.loads(device["supportExt"])
-                device["deviceExtStatus"]["AlgorithmInfo"] = json.loads(
-                    device["deviceExtStatus"]["AlgorithmInfo"]
-                )
-                json_result = device
-                break
-
+            
         if not json_result:
             raise PyEzvizError(
                 "Impossible to load the devices, here is the returned response: %s ",
@@ -542,6 +535,58 @@ class EzvizClient(object):
             )
 
         if json_output["resultCode"] != "0":
+            raise PyEzvizError(
+                "Could not set the switch, maybe a permission issue ?: Got %s : %s)",
+                str(req.status_code),
+                str(req.text),
+            )
+            return False
+
+        return True
+
+    def api_set_defence_mode(self, serial, mode: DefenseModeType, max_retries=0):
+        """Set defence mode."""
+        if max_retries > MAX_RETRIES:
+            raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
+
+        try:
+            req = self._session.post(
+                "https://"
+                + self._API_DOMAIN
+                + API_BASE_TLD
+                + API_ENDPOINT_SWITCH_DEFENCE_MODE,
+                data={
+                    "groupId": -1,
+                    "mode": mode,
+                },
+                timeout=self._timeout,
+            )
+
+        except OSError as e:
+            raise PyEzvizError("Could not access Ezviz' API: " + str(e))
+
+        if req.status_code != 200:
+            # session is wrong, need to relogin
+            self.login()
+            logging.info(
+                "Got", req.status_code, " relogging (max retries: %s)", str(max_retries)
+            )
+            return self.api_set_defence_mode(
+                serial, mode, max_retries + 1
+            )
+
+        try:
+            json_output = req.json()
+
+        except (OSError, json.decoder.JSONDecodeError) as e:
+            raise PyEzvizError(
+                "Impossible to decode response: "
+                + str(e)
+                + "\nResponse was: "
+                + str(req.text)
+            )
+
+        if json_output["meta"]["code"] != "200":
             raise PyEzvizError(
                 "Could not set the switch, maybe a permission issue ?: Got %s : %s)",
                 str(req.status_code),

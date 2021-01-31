@@ -1,8 +1,8 @@
 """Device switch types relationship."""
-from enum import Enum
+from enum import Enum, unique
 
 
-# @unique
+@unique
 class DeviceSwitchType(Enum):
     """Device switch name and number."""
 

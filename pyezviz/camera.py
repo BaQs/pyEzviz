@@ -19,14 +19,15 @@ class EzvizCamera(object):
         self._serial = serial
         self._switch = {}
         self._alarmmotiontrigger = {}
+        self._device = client._get_deviceinfo(self._serial)
+        self._alarmlist = self._client._get_alarminfo(self._serial)
+        self._detection_sensibility = None
 
     def load(self):
         """Update device info for camera serial."""
-        self._device = self._client._get_deviceinfo(self._serial)
-
-        """get last alarm info for this camera's self._serial"""
-        self._alarmlist = self._client._get_alarminfo(self._serial)
-        if self._alarmlist["totalCount"] == 0:
+        
+        #get last alarm info for this camera's self._serial
+        if self._alarmlist.get("totalCount") == 0:
             self._alarmlist_time = None
             self._alarmlist_pic = None
         else:
@@ -34,21 +35,17 @@ class EzvizCamera(object):
             self._alarmlist_pic = self._alarmlist["alarmLogs"][0]["alarmPicUrl"]
 
         """load device switches"""
-        for switch in self._device["deviceSwitchStatuses"]:
+        for switch in self._device.get("deviceSwitchStatuses"):
             self._switch.update({switch["type"]: switch["enable"]})
 
-        """load detection sensibility if supported"""
-        if self._device["supportExt"]["support_sensibility_adjust"]:
-            if self._switch.get(DeviceSwitchType.AUTO_SLEEP.value) is not True:
+        """load detection sensibility"""
+        if self._switch.get(DeviceSwitchType.AUTO_SLEEP.value) is not True:
                 self._detection_sensibility = self._client.get_detection_sensibility(
                     self._serial,
-                    self._device["supportExt"]["support_sensibility_adjust"],
+                    self._device.get("supportExt").get("support_sensibility_adjust"),
                 )
-            if self._switch.get(DeviceSwitchType.AUTO_SLEEP.value) is True:
+        if self._switch.get(DeviceSwitchType.AUTO_SLEEP.value) is True:
                 self._detection_sensibility = "Hibernate"
-
-        else:
-            self._detection_sensibility = None
 
         return True
 

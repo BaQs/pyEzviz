@@ -34,16 +34,18 @@ class EzvizCamera(object):
             self._alarmlist_time = self._alarmlist["alarmLogs"][0]["alarmOccurTime"]
             self._alarmlist_pic = self._alarmlist["alarmLogs"][0]["alarmPicUrl"]
 
+        
         """load device switches"""
         for switch in self._device.get("deviceSwitchStatuses"):
             self._switch.update({switch["type"]: switch["enable"]})
 
         """load detection sensibility"""
         if self._switch.get(DeviceSwitchType.AUTO_SLEEP.value) is not True:
+            if "supportExt" in self._device:
                 self._detection_sensibility = self._client.get_detection_sensibility(
                     self._serial,
                     self._device.get("supportExt").get("support_sensibility_adjust"),
-                )
+                    )
         if self._switch.get(DeviceSwitchType.AUTO_SLEEP.value) is True:
                 self._detection_sensibility = "Hibernate"
 

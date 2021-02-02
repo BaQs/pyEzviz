@@ -221,6 +221,9 @@ class EzvizClient(object):
            
         for device in json_output["devices"]:
             if device["subSerial"] == serial:
+                if "supportExt" not in device:
+                    json_result = device
+                    continue
                 device["supportExt"] = json.loads(device.get("supportExt"))
                 json_result = device
                 break

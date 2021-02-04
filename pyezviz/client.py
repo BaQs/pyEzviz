@@ -218,13 +218,9 @@ class EzvizClient(object):
                 + "\nResponse was: "
                 + str(req.text)
             )
-           
+
         for device in json_output["devices"]:
-            if device["subSerial"] == serial:
-                if "supportExt" not in device:
-                    json_result = device
-                    continue
-                device["supportExt"] = json.loads(device.get("supportExt"))
+            if device["subSerial"] == serial:             
                 json_result = device
                 break
 
@@ -237,11 +233,10 @@ class EzvizClient(object):
         return json_result
 
 
-    # Get Alarm info
     def _get_alarminfo(
         self, serial, alarmType=-1, pageStart=0, pageSize=1, max_retries=0
     ):
-        """Get data from a device info API."""
+        """Get data from alarm info API."""
         if max_retries > MAX_RETRIES:
             raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
 

@@ -41,11 +41,15 @@ class EzvizCamera(object):
 
         """load detection sensibility"""
         if self._switch.get(DeviceSwitchType.AUTO_SLEEP.value) is not True:
-            if "supportExt" in self._device:
+            if self._device["deviceCategory"]["link"] == "BatteryCamera":
                 self._detection_sensibility = self._client.get_detection_sensibility(
                     self._serial,
-                    self._device.get("supportExt").get("support_sensibility_adjust"),
+                    "3",
                     )
+            else:
+                self._detection_sensibility = self._client.get_detection_sensibility(
+                    self._serial)
+
         if self._switch.get(DeviceSwitchType.AUTO_SLEEP.value) is True:
                 self._detection_sensibility = "Hibernate"
 
@@ -93,7 +97,7 @@ class EzvizCamera(object):
             "name": self._device["name"],
             "version": self._device["version"],
             "upgrade_available": self._device["upgradeAvailable"],
-            "status": self._device["deviceExtStatus"]["OnlineStatus"],
+            "status": self._device["status"],
             "device_category": self._device["deviceCategory"]["link"],
             "device_sub_category": self._device["deviceCategory"]["category"],
             "sleep": self._switch.get(DeviceSwitchType.SLEEP.value)

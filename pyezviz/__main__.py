@@ -7,6 +7,7 @@ import sys
 import pandas
 from pyezviz import EzvizCamera, EzvizClient
 
+
 def main():
     """Initiate arg parser."""
     parser = argparse.ArgumentParser(prog="pyezviz")
@@ -151,7 +152,7 @@ def main():
                             "local_rtsp_port",
                             "detection_sensibility",
                             "battery_level",
-                            "PIR_Status",  # last_alarm_time last_alarm_pic
+                            "Motion_Trigger",  # last_alarm_time last_alarm_pic
                         ]
                     )
                 )

@@ -148,7 +148,7 @@ class EzvizClient:
                 + str(req.text)
             ) from err
 
-        if json_output["meta"]["code"] != 200:
+        if json_output.get("meta").get("code") != 200:
             # session is wrong, need to relogin
             self.login()
             logging.info("Got 401, relogging (max retries: %s)", str(max_retries))
@@ -311,11 +311,11 @@ class EzvizClient:
                 + str(req.text)
             ) from err
 
-        if json_output["resultCode"] != "0":
+        if json_output.get("meta").get("code") != 200:
             raise PyEzvizError(
                 f"Could not set the switch, maybe a permission issue ?: Got {req.status_code} : {req.text})"
             )
-
+        
         return True
 
     def load_cameras(self):
@@ -551,7 +551,7 @@ class EzvizClient:
                 + str(req.text)
             ) from err
 
-        if json_output["resultCode"] != "0":
+        if json_output.get("resultCode") != 0:
             raise PyEzvizError(
                 f"Could not set the switch, maybe a permission issue ?: Got {req.status_code} : {req.text})"
             )
@@ -607,7 +607,7 @@ class EzvizClient:
                 + str(req.text)
             ) from err
 
-        if json_output["resultCode"] != "0":
+        if json_output.get("resultCode") != 0:
             raise PyEzvizError(
                 f"Could not set the switch, maybe a permission issue ?: Got {req.status_code} : {req.text})"
             )
@@ -652,7 +652,7 @@ class EzvizClient:
                 + str(req.text)
             ) from err
 
-        if json_output["meta"]["code"] != "200":
+        if json_output.get("meta").get("code") != 200:
             raise PyEzvizError(
                 f"Could not set the switch, maybe a permission issue ?: Got {req.status_code} : {req.text})"
             )

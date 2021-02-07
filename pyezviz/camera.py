@@ -119,14 +119,17 @@ class EzvizCamera:
             "ir_led": self._switch.get(DeviceSwitchType.INFRARED_LIGHT.value),
             "state_led": self._switch.get(DeviceSwitchType.LIGHT.value),
             "follow_move": self._switch.get(DeviceSwitchType.MOBILE_TRACKING.value),
-            #            "alarm_notify": bool(self._device.get("defence")),
-            #            "alarm_schedules_enabled": bool(self._device.get("defencePlanEnable")),
+            "alarm_notify": bool(self._device.get("deviceinfo").get("defence")),
+            "alarm_schedules_enabled": bool(
+                self._device.get("deviceinfo").get("defencePlanEnable")
+            ),
             "alarm_sound_mod": str(
                 SoundMode(self._device.get("statusInfos").get("alarmSoundMode"))
             ),
             "encrypted": bool(self._device.get("statusInfos").get("isEncrypted")),
             "local_ip": self._device.get("wifiInfos", {}).get("address", "0.0.0.0"),
             "wan_ip": self._device.get("connectionInfos", {}).get("netIp", "0.0.0.0"),
+            "mac": self._device.get("deviceinfo").get("mac"),
             "net_type": self._device.get("wifiInfos", {}).get("netType"),
             "wireless_signal": self._device.get("wifiInfos", {}).get("signal"),
             "local_rtsp_port": self._device.get("connectionInfos").get("localRtspPort"),
@@ -135,6 +138,7 @@ class EzvizCamera:
             "battery_level": self._device.get("statusInfos")
             .get("optionals", {})
             .get("powerRemaining"),
+            "PIR_Status": self._device.get("statusInfos").get("pirStatus"),
             "Motion_Trigger": self._alarmmotiontrigger.get("alarm_trigger_active"),
             "Seconds_Last_Trigger": self._alarmmotiontrigger.get("timepassed"),
             "last_alarm_time": self.alarmlist_time,

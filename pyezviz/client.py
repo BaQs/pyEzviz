@@ -166,7 +166,7 @@ class EzvizClient:
 
         return json_result
 
-    def _get_deviceinfo(self, serial, max_retries=0):
+    def _get_deviceinfo(self, serial=None, max_retries=0):
         """Get data from a device info API."""
         if max_retries > MAX_RETRIES:
             raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
@@ -203,15 +203,19 @@ class EzvizClient:
                 + str(req.text)
             ) from err
 
+        json_result = {}
+
         for device in json_output["devices"]:
-            if device["subSerial"] == serial:
-                json_result = device
-                break
+            json_result[device["subSerial"]] = {}
+            json_result[device["subSerial"]] = device
 
         if not json_result:
             raise PyEzvizError(
                 f"Impossible to load the devices, here is the returned response: {req.text} "
             )
+
+        if serial:
+            return json_result.get(serial)
 
         return json_result
 
@@ -323,8 +327,6 @@ class EzvizClient:
             DeviceCatagories.BASE_STATION_DEVICE_CATEGORY.value,
         ]
 
-        # foreach, launch a switchstatus for the proper serial
-
         for device in devices:
             if (
                 devices.get(device).get("deviceInfos").get("deviceCategory")
@@ -354,6 +356,7 @@ class EzvizClient:
     def get_all_device_infos(self):
         """Load all devices and build dict per device serial"""
 
+        deviceinfo = self._get_deviceinfo()
         devices = self.get_page_list()
         result = {}
 
@@ -384,6 +387,9 @@ class EzvizClient:
             result[device["deviceSerial"]]["switchStatusInfos"] = devices.get(
                 "switchStatusInfos"
             ).get(device["deviceSerial"])
+            result[device["deviceSerial"]]["deviceinfo"] = deviceinfo.get(
+                device["deviceSerial"]
+            )
             for item in devices["cameraInfos"]:
                 if item["deviceSerial"] == device["deviceSerial"]:
                     result[device["deviceSerial"]]["cameraInfos"] = item
@@ -397,8 +403,9 @@ class EzvizClient:
         """Load all devices and build dict per device serial"""
 
         if serial is None:
-            raise PyEzvizError("Need serial number for this query)")
+            raise PyEzvizError("Need serial number for this query")
 
+        deviceinfo = self._get_deviceinfo(serial)
         devices = self.get_page_list()
         result = {serial: {}}
 
@@ -430,6 +437,7 @@ class EzvizClient:
                 result[device["deviceSerial"]]["switchStatusInfos"] = devices.get(
                     "switchStatusInfos"
                 ).get(device["deviceSerial"])
+                result[device["deviceSerial"]]["deviceinfo"] = deviceinfo
                 for item in devices["cameraInfos"]:
                     if item["deviceSerial"] == device["deviceSerial"]:
                         result[device["deviceSerial"]]["cameraInfos"] = item
@@ -437,7 +445,7 @@ class EzvizClient:
                             "cloudInfos"
                         ).get(item["cameraId"])
 
-                break
+            break
 
         return result.get(serial)
 

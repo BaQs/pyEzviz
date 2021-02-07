@@ -151,6 +151,8 @@ def main():
                             "local_rtsp_port",
                             "detection_sensibility",
                             "battery_level",
+                            "alarm_schedules_enabled",
+                            "alarm_notify",
                             "Motion_Trigger",  # last_alarm_time last_alarm_pic
                         ]
                     )

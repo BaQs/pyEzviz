@@ -14,7 +14,7 @@ API_ENDPOINT_AUTH = "/doLogin"
 API_ENDPOINT_CLOUDDEVICES = "/api/cloud/v2/cloudDevices/getAll"
 API_ENDPOINT_PAGELIST = "/v3/userdevices/v1/devices/pagelist"
 API_ENDPOINT_DEVICES = "/v3/devices/"
-API_ENDPOINT_SWITCH_STATUS = "/device/deviceSwitch!configDeviceSwitchStatus.action"
+API_ENDPOINT_SWITCH_STATUS = "/switchStatus"
 API_ENDPOINT_PTZCONTROL = "/ptzControl"
 API_ENDPOINT_ALARM_SOUND = "/alarm/sound"
 API_ENDPOINT_SET_DEFENCE = "/camera/cameraAction!enableDefence.action"
@@ -271,10 +271,14 @@ class EzvizClient:
         """Switch status on a device."""
 
         try:
-            req = self._session.post(
+            req = self._session.put(
                 "https://"
                 + self.api_domain
                 + API_BASE_TLD
+                + API_ENDPOINT_DEVICES
+                + serial
+                + "/1/1/"
+                + str(status_type)
                 + API_ENDPOINT_SWITCH_STATUS,
                 data={
                     "enable": enable,
@@ -444,8 +448,6 @@ class EzvizClient:
                         result[device["deviceSerial"]]["cloudInfos"] = devices.get(
                             "cloudInfos"
                         ).get(item["cameraId"])
-
-            break
 
         return result.get(serial)
 

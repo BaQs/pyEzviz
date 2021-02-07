@@ -38,3 +38,28 @@ class DeviceSwitchType(Enum):
     ALARM_LIGHT_RELEVANCE = 305
     OUTLET_RECOVER = 600
     TRACKING = 650
+
+
+class SoundMode(Enum):
+    """Alarm sound level descryption """
+
+    silent = 2
+    soft = 0
+    intense = 1
+
+
+class DefenseModeType(Enum):
+    """Defense mode name and number."""
+
+    HOME_MODE = 1
+    AWAY_MODE = 2
+
+
+class DeviceCatagories(Enum):
+    """Supported device catagories"""
+
+    COMMON_DEVICE_CATEGORY = "COMMON"
+    CAMERA_DEVICE_CATEGORY = "IPC"
+    BATTERY_CAMERA_DEVICE_CATEGORY = "BatteryCamera"
+    DOORBELL_DEVICE_CATEGORY = "BDoorBell"
+    BASE_STATION_DEVICE_CATEGORY = "XVR"

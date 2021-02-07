@@ -1,5 +1,6 @@
 """pyezviz command line."""
 import argparse
+import http.client
 import json
 import logging
 import sys
@@ -109,8 +110,6 @@ def main():
 
     if args.debug:
 
-        import http.client
-
         http.client.HTTPConnection.debuglevel = 5
         # You must initialize logging, otherwise you'll not see debug output.
         logging.basicConfig()
@@ -124,7 +123,7 @@ def main():
         if args.device_action == "device":
             try:
                 client.login()
-                print(json.dumps(client.get_DEVICE(), indent=2))
+                print(json.dumps(client.get_device(), indent=2))
             except BaseException as exp:
                 print(exp)
                 return 1
@@ -165,7 +164,7 @@ def main():
         if args.device_action == "switch":
             try:
                 client.login()
-                print(json.dumps(client.get_SWITCH(), indent=2))
+                print(json.dumps(client.get_switch(), indent=2))
             except BaseException as exp:
                 print(exp)
                 return 1
@@ -175,7 +174,7 @@ def main():
         elif args.device_action == "connection":
             try:
                 client.login()
-                print(json.dumps(client.get_CONNECTION(), indent=2))
+                print(json.dumps(client.get_connection(), indent=2))
             except BaseException as exp:
                 print(exp)
                 return 1
@@ -203,18 +202,6 @@ def main():
             print(exp)
             return 1
 
-        # if args.camera_action == 'list':
-        #     try:
-        #         pagelist = client.get_PAGE_LIST()
-        #         df = pandas.DataFrame(pagelist['statusInfos'])
-        #         df
-
-        #     except BaseException as exp:
-        #         print(exp)
-        #         return 1
-        #     finally:
-        #         client.close_session()
-
         if args.camera_action == "move":
             try:
                 camera.move(args.direction, args.speed)
@@ -226,21 +213,6 @@ def main():
 
         elif args.camera_action == "status":
             try:
-                # camera.load()
-                # if args.status == 'device':
-                #     print(camera._device)
-                # elif args.status == 'status':
-                #     print(camera._status)
-                # elif args.status == 'switch':
-                #     # print(json.dumps(camera._switch, indent=2))
-                #     print(camera._switch)
-                # elif args.status == 'connection':
-                #     # print(json.dumps(camera._switch, indent=2))
-                #     print(camera._connection)
-                # elif args.status == 'wifi':
-                #     # print(json.dumps(camera._switch, indent=2))
-                #     print(camera._wifi)
-                # print(camera.status())
                 print(json.dumps(camera.status(), indent=2))
 
             except BaseException as exp:

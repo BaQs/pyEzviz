@@ -1,9 +1,7 @@
 """pyezviz camera api."""
 import datetime
 
-from pyezviz.DeviceSwitchType import DeviceSwitchType
-
-BATTERY_CAMERA_DEVICE_CATEGORY = "BatteryCamera"
+from pyezviz.constants import DeviceCatagories, DeviceSwitchType, SoundMode
 
 
 class PyEzvizError(Exception):
@@ -19,49 +17,58 @@ class EzvizCamera:
         self._serial = serial
         self._switch = {}
         self._alarmmotiontrigger = {}
-        self._device = self._client.get_all_per_serial_infos(self._serial)
-        self._alarmlist = self._client._get_alarminfo(self._serial)
-        self._detection_sensibility = None
-        self._device_obj = device_obj
-        self._alarmlist_time = None
-        self._alarmlist_pic = None
+        self._device = device_obj
+        self.alarmlist_time = None
+        self.alarmlist_pic = None
 
     def load(self):
         """Update device info for camera serial."""
 
-        if self._device_obj is not None:
-            self._device = self._device_obj
+        if self._device is None:
+            self._device = self._client.get_all_per_serial_infos(self._serial)
 
-        # get last alarm info for this camera's self._serial
-        if self._alarmlist.get("totalCount") > 0:
-            self._alarmlist_time = self._alarmlist["alarmLogs"][0]["alarmOccurTime"]
-            self._alarmlist_pic = self._alarmlist["alarmLogs"][0]["alarmPicUrl"]
+        self.alarm_list()
 
-        # load device switches
+        if self.alarmlist_time:
+            self.motion_trigger()
+
+        self.switch_status()
+
+    def switch_status(self):
+        """load device switches"""
         for switch in self._device.get("switchStatusInfos"):
             self._switch.update({switch["type"]: switch["enable"]})
 
-        # load detection sensibility
+    def detection_sensibility(self):
+        """load detection sensibility"""
+        result = "Unkown"
+
         if self._switch.get(DeviceSwitchType.AUTO_SLEEP.value) is not True:
             if (
                 self._device.get("deviceInfos").get("deviceCategory")
-                == BATTERY_CAMERA_DEVICE_CATEGORY
+                == DeviceCatagories.BATTERY_CAMERA_DEVICE_CATEGORY.value
             ):
-                self._detection_sensibility = self._client.get_detection_sensibility(
+                result = self._client.get_detection_sensibility(
                     self._serial,
                     "3",
                 )
             else:
-                self._detection_sensibility = self._client.get_detection_sensibility(
-                    self._serial
-                )
+                result = self._client.get_detection_sensibility(self._serial)
 
         if self._switch.get(DeviceSwitchType.AUTO_SLEEP.value) is True:
-            self._detection_sensibility = "Hibernate"
+            result = "Hibernate"
 
-        return True
+        return result
 
-    def motionalarm(self):
+    def alarm_list(self):
+        """get last alarm info for this camera's self._serial"""
+        alarmlist = self._client.get_alarminfo(self._serial)
+
+        if alarmlist.get("totalCount") > 0:
+            self.alarmlist_time = alarmlist["alarmLogs"][0]["alarmOccurTime"]
+            self.alarmlist_pic = alarmlist["alarmLogs"][0]["alarmPicUrl"]
+
+    def motion_trigger(self):
         """Create motion sensor based on last alarm time."""
         now = datetime.datetime.now().replace(microsecond=0)
         alarm_trigger_active = 0
@@ -70,7 +77,7 @@ class EzvizCamera:
 
         # Need to handle error if time format different
         fix = datetime.datetime.strptime(
-            self._alarmlist_time.replace("Today", str(today_date)),
+            self.alarmlist_time.replace("Today", str(today_date)),
             "%Y-%m-%d %H:%M:%S",
         )
 
@@ -93,14 +100,11 @@ class EzvizCamera:
         """Return the status of the camera."""
         self.load()
 
-        if self._alarmlist_time:
-            self.motionalarm()
-
         return {
             "serial": self._serial,
             "name": self._device.get("deviceInfos").get("name"),
             "version": self._device.get("deviceInfos").get("version"),
-            "upgrade_available": self._device.get("statusExtInfos").get(
+            "upgrade_available": self._device.get("statusInfos").get(
                 "upgradeAvailable"
             ),
             "status": self._device.get("deviceInfos").get("status"),
@@ -117,9 +121,9 @@ class EzvizCamera:
             "follow_move": self._switch.get(DeviceSwitchType.MOBILE_TRACKING.value),
             #            "alarm_notify": bool(self._device.get("defence")),
             #            "alarm_schedules_enabled": bool(self._device.get("defencePlanEnable")),
-            "alarm_sound_mod": self._device.get("statusInfos").get(
-                "alarmSoundMode"
-            ),  # Check code for sound type?
+            "alarm_sound_mod": str(
+                SoundMode(self._device.get("statusInfos").get("alarmSoundMode"))
+            ),
             "encrypted": bool(self._device.get("statusInfos").get("isEncrypted")),
             "local_ip": self._device.get("wifiInfos", {}).get("address", "0.0.0.0"),
             "wan_ip": self._device.get("connectionInfos", {}).get("netIp", "0.0.0.0"),
@@ -127,14 +131,14 @@ class EzvizCamera:
             "wireless_signal": self._device.get("wifiInfos", {}).get("signal"),
             "local_rtsp_port": self._device.get("connectionInfos").get("localRtspPort"),
             "supported_channels": self._device.get("deviceInfos").get("channelNumber"),
-            "detection_sensibility": self._detection_sensibility,
+            "detection_sensibility": self.detection_sensibility(),
             "battery_level": self._device.get("statusInfos")
             .get("optionals", {})
             .get("powerRemaining"),
             "Motion_Trigger": self._alarmmotiontrigger.get("alarm_trigger_active"),
             "Seconds_Last_Trigger": self._alarmmotiontrigger.get("timepassed"),
-            "last_alarm_time": self._alarmlist_time,
-            "last_alarm_pic": self._alarmlist_pic,
+            "last_alarm_time": self.alarmlist_time,
+            "last_alarm_pic": self.alarmlist_pic,
         }
 
     def move(self, direction, speed=5):

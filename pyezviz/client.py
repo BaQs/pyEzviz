@@ -173,42 +173,16 @@ class EzvizClient:
             raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
 
         try:
-            req = self._session.get(
-                "https://"
-                + self.api_domain
-                + API_BASE_TLD
-                + API_ENDPOINT_CAMERA_INFO_GET,
-                timeout=self._timeout,
-            )
-
+            devices = self.get_devices()
         except OSError as err:
-            raise PyEzvizError("Could not access Ezviz' API: " + str(err)) from err
-
-        if req.status_code == 401 or req.status_code == 302:
-            # session is wrong, need to relogin
-            self.login()
-            logging.info("Got 302, relogging (max retries: %s)", str(max_retries))
-            return self._get_deviceinfo(serial, max_retries + 1)
-
-        if req.text == "":
-            raise PyEzvizError("No data")
-
-        try:
-            json_output = req.json()
-
-        except (OSError, json.decoder.JSONDecodeError) as err:
-            raise PyEzvizError(
-                "Impossible to decode response: "
-                + str(err)
-                + "\nResponse was: "
-                + str(req.text)
-            ) from err
+            raise PyEzvizError("Could not load device infos: " + str(err)) from err
 
         json_result = {}
 
-        for device in json_output["devices"]:
-            json_result[device["subSerial"]] = {}
-            json_result[device["subSerial"]] = device
+        for device in devices:
+            logging.info(f"Device: {device}")
+            json_result[device["deviceSerial"]] = {}
+            json_result[device["deviceSerial"]] = device
 
         if not json_result:
             raise PyEzvizError(
@@ -796,7 +770,7 @@ class EzvizClient:
             json_key=None,
         )
 
-    def get_device(self):
+    def get_devices(self):
         """Get ezviz devices filter."""
         return self._get_pagelist(page_filter="CLOUD", json_key="deviceInfos")
 

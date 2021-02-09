@@ -132,10 +132,10 @@ class EzvizClient:
         if req.status_code == 401:
             # session is wrong, need to relogin
             self.login()
-            logging.info("Got 401, relogging (max retries: %s)", str(max_retries))
+            logging.info("Got %s, relogging", str(req.status_code))
             return self._get_pagelist(page_filter, json_key, max_retries + 1)
 
-        if req.text == "":
+        if not req.text:
             raise PyEzvizError("No data")
 
         try:
@@ -160,9 +160,10 @@ class EzvizClient:
             json_result = json_output[json_key]
 
         if not json_result:
-            raise PyEzvizError(
-                f"Impossible to load the devices, here is the returned response: {req.text} "
-            )
+            # session is wrong, need to relogin
+            self.login()
+            logging.info("Impossible to load the devices, here is the returned response: %s", str(req.text))
+            return self._get_pagelist(page_filter, json_key, max_retries + 1)
 
         return json_result
 
@@ -360,8 +361,8 @@ class EzvizClient:
     def get_all_device_infos(self):
         """Load all devices and build dict per device serial"""
 
-        deviceinfo = self._get_deviceinfo()
         devices = self.get_page_list()
+        deviceinfo = self._get_deviceinfo()
         result = {}
 
         for idx, device in enumerate(devices["deviceInfos"]):
@@ -409,8 +410,8 @@ class EzvizClient:
         if serial is None:
             raise PyEzvizError("Need serial number for this query")
 
-        deviceinfo = self._get_deviceinfo(serial)
         devices = self.get_page_list()
+        deviceinfo = self._get_deviceinfo(serial)
         result = {serial: {}}
 
         for idx, device in enumerate(devices["deviceInfos"]):

@@ -119,9 +119,9 @@ class EzvizCamera:
             "ir_led": self._switch.get(DeviceSwitchType.INFRARED_LIGHT.value),
             "state_led": self._switch.get(DeviceSwitchType.LIGHT.value),
             "follow_move": self._switch.get(DeviceSwitchType.MOBILE_TRACKING.value),
-            "alarm_notify": bool(self._device.get("deviceinfo").get("defence")),
+            "alarm_notify": bool(self._device.get("statusInfos").get("globalStatus")),
             "alarm_schedules_enabled": bool(
-                self._device.get("deviceinfo").get("defencePlanEnable")
+                self._device.get("timePlanInfos")[1].get("enable")
             ),
             "alarm_sound_mod": str(
                 SoundMode(self._device.get("statusInfos").get("alarmSoundMode"))
@@ -129,7 +129,7 @@ class EzvizCamera:
             "encrypted": bool(self._device.get("statusInfos").get("isEncrypted")),
             "local_ip": self._device.get("wifiInfos", {}).get("address", "0.0.0.0"),
             "wan_ip": self._device.get("connectionInfos", {}).get("netIp", "0.0.0.0"),
-            "mac": self._device.get("deviceinfo").get("mac"),
+           # "mac": self._device.get("deviceinfo").get("mac"),
             "net_type": self._device.get("wifiInfos", {}).get("netType"),
             "wireless_signal": self._device.get("wifiInfos", {}).get("signal"),
             "local_rtsp_port": self._device.get("connectionInfos").get("localRtspPort"),

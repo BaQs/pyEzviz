@@ -21,9 +21,9 @@ API_ENDPOINT_SET_DEFENCE = "/camera/cameraAction!enableDefence.action"
 API_ENDPOINT_DETECTION_SENSIBILITY = "/api/device/configAlgorithm"
 API_ENDPOINT_DETECTION_SENSIBILITY_GET = "/api/device/queryAlgorithmConfig"
 API_ENDPOINT_CAMERA_INFO_GET = "/camera/cameraAction!findAllDevices.action"
-API_ENDPOINT_ALARMINFO_GET = "/alarmlog/alarmLogAction!findAlarmLogs.action"
+API_ENDPOINT_ALARMINFO_GET = "/v3/alarms/v2/advanced"
 API_ENDPOINT_CHECKLOGIN = "/user/user/userAction!checkLoginInfo.action"
-API_ENDPOINT_SET_DEFENCE_SCHEDULE = "/camera/cameraAction!modifyTimerDefence.action"
+API_ENDPOINT_SET_DEFENCE_SCHEDULE = "/api/device/defence/plan2"
 API_ENDPOINT_SWITCH_DEFENCE_MODE = "/v3/userdevices/v1/group/switchDefenceMode"
 
 DEFAULT_TIMEOUT = 10
@@ -162,7 +162,10 @@ class EzvizClient:
         if not json_result:
             # session is wrong, need to relogin
             self.login()
-            logging.info("Impossible to load the devices, here is the returned response: %s", str(req.text))
+            logging.info(
+                "Impossible to load the devices, here is the returned response: %s",
+                str(req.text),
+            )
             return self._get_pagelist(page_filter, json_key, max_retries + 1)
 
         return json_result
@@ -204,6 +207,11 @@ class EzvizClient:
                 + str(req.text)
             ) from err
 
+        if json_output.get("sessionInvalid") == "true":
+            self.login()
+            logging.info("Got error %s", str(json_output))
+            return self._get_deviceinfo(serial, max_retries + 1)
+
         json_result = {}
 
         for device in json_output["devices"]:
@@ -220,24 +228,22 @@ class EzvizClient:
 
         return json_result
 
-    def get_alarminfo(self, serial, page_start=0, page_size=1, max_retries=0):
+    def get_alarminfo(self, serial, max_retries=0):
         """Get data from alarm info API."""
         if max_retries > MAX_RETRIES:
             raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
 
         try:
-            req = self._session.post(
+            req = self._session.get(
                 "https://"
                 + self.api_domain
                 + API_BASE_TLD
                 + API_ENDPOINT_ALARMINFO_GET,
-                data={
-                    "objectName": serial,
-                    "alarmType": -1,
-                    "queryType": 3,
-                    "checkState": 2,
-                    "pageStart": page_start,
-                    "pageSize": page_size,
+                params={
+                    "deviceSerials": serial,
+                    "queryType": -1,
+                    "limit": 1,
+                    "stype": 2401,
                 },
                 timeout=self._timeout,
             )
@@ -316,7 +322,7 @@ class EzvizClient:
             raise PyEzvizError(
                 f"Could not set the switch, maybe a permission issue ?: Got {req.status_code} : {req.text})"
             )
-        
+
         return True
 
     def load_cameras(self):
@@ -563,6 +569,7 @@ class EzvizClient:
         """Set defence schedules."""
         if max_retries > MAX_RETRIES:
             raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
+
         schedulestring = (
             '{"CN":0,"EL":'
             + str(enable)
@@ -579,8 +586,6 @@ class EzvizClient:
                 + API_BASE_TLD
                 + API_ENDPOINT_SET_DEFENCE_SCHEDULE,
                 data={
-                    "serial": serial,
-                    "csrfToken": self._csrf_token,
                     "devTimingPlan": schedulestring,
                 },
                 timeout=self._timeout,

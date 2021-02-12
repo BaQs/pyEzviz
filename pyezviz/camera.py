@@ -64,9 +64,9 @@ class EzvizCamera:
         """get last alarm info for this camera's self._serial"""
         alarmlist = self._client.get_alarminfo(self._serial)
 
-        if alarmlist.get("totalCount") > 0:
-            self.alarmlist_time = alarmlist["alarmLogs"][0]["alarmOccurTime"]
-            self.alarmlist_pic = alarmlist["alarmLogs"][0]["alarmPicUrl"]
+        if alarmlist.get("page").get("totalResults") > 0:
+            self.alarmlist_time = alarmlist.get("alarms")[0].get("alarmStartTimeStr")
+            self.alarmlist_pic = alarmlist.get("alarms")[0].get("picUrl")
 
     def motion_trigger(self):
         """Create motion sensor based on last alarm time."""

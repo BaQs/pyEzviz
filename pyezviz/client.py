@@ -493,7 +493,7 @@ class EzvizClient:
                 + str(req.text)
             ) from err
 
-        if json_output.get("resultCode") != 0:
+        if json_output.get("resultCode") != "0":
             raise PyEzvizError(
                 f"Could not set the switch, maybe a permission issue ?: Got {req.status_code} : {req.text})"
             )

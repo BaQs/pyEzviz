@@ -36,8 +36,12 @@ class EzvizCamera:
 
     def switch_status(self):
         """load device switches"""
-        for switch in self._device.get("switchStatusInfos"):
-            self._switch.update({switch["type"]: switch["enable"]})
+        if self._device.get("switchStatusInfos"):
+            for switch in self._device.get("switchStatusInfos"):
+                self._switch.update({switch["type"]: switch["enable"]})
+
+        else:
+            self._switch = {"type" : "enable"}
 
     def detection_sensibility(self):
         """load detection sensibility"""

@@ -63,3 +63,17 @@ class DeviceCatagories(Enum):
     BATTERY_CAMERA_DEVICE_CATEGORY = "BatteryCamera"
     DOORBELL_DEVICE_CATEGORY = "BDoorBell"
     BASE_STATION_DEVICE_CATEGORY = "XVR"
+
+
+class SensorType(Enum):
+    """Sensor types"""
+
+    BATTERY = "battery"
+    WIFI = "wifi"
+
+
+class BinarySensorType(Enum):
+    """Binary sensor types"""
+
+    MOTION = "motion"
+    GENERIC = "None"

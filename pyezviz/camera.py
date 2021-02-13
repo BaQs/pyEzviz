@@ -129,9 +129,6 @@ class EzvizCamera:
             "encrypted": bool(self._device.get("statusInfos").get("isEncrypted")),
             "local_ip": self._device.get("wifiInfos", {}).get("address", "0.0.0.0"),
             "wan_ip": self._device.get("connectionInfos", {}).get("netIp", "0.0.0.0"),
-           # "mac": self._device.get("deviceinfo").get("mac"),
-            "net_type": self._device.get("wifiInfos", {}).get("netType"),
-            "wireless_signal": self._device.get("wifiInfos", {}).get("signal"),
             "local_rtsp_port": self._device.get("connectionInfos").get("localRtspPort"),
             "supported_channels": self._device.get("deviceInfos").get("channelNumber"),
             "detection_sensibility": self.detection_sensibility(),
@@ -143,6 +140,8 @@ class EzvizCamera:
             "Seconds_Last_Trigger": self._alarmmotiontrigger.get("timepassed"),
             "last_alarm_time": self.alarmlist_time,
             "last_alarm_pic": self.alarmlist_pic,
+            "wifiInfos": self._device.get("wifiInfos"),
+            "switches" : self._switch
         }
 
     def move(self, direction, speed=5):

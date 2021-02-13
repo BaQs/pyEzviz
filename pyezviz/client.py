@@ -24,8 +24,9 @@ API_ENDPOINT_ALARMINFO_GET = "/v3/alarms/v2/advanced"
 API_ENDPOINT_CHECKLOGIN = "/user/user/userAction!checkLoginInfo.action"
 API_ENDPOINT_SET_DEFENCE_SCHEDULE = "/api/device/defence/plan2"
 API_ENDPOINT_SWITCH_DEFENCE_MODE = "/v3/userdevices/v1/group/switchDefenceMode"
+API_ENDPOINT_SWITCH_SOUND_ALARM = "/sendAlarm"
 
-DEFAULT_TIMEOUT = 10
+DEFAULT_TIMEOUT = 15
 MAX_RETRIES = 3
 
 
@@ -247,6 +248,53 @@ class EzvizClient:
                 "Got 302 or 401, relogging (max retries: %s)", str(max_retries)
             )
             return self._switch_status(serial, status_type, enable, max_retries + 1)
+
+        try:
+            json_output = req.json()
+
+        except (OSError, json.decoder.JSONDecodeError) as err:
+            raise PyEzvizError(
+                "Impossible to decode response: "
+                + str(err)
+                + "\nResponse was: "
+                + str(req.text)
+            ) from err
+
+        if json_output.get("meta").get("code") != 200:
+            raise PyEzvizError(
+                f"Could not set the switch, maybe a permission issue ?: Got {req.status_code} : {req.text})"
+            )
+
+        return True
+
+    def _sound_alarm(self, serial, enable=1, max_retries=0):
+        """Sound alarm on a device."""
+
+        try:
+            req = self._session.put(
+                "https://"
+                + self.api_domain
+                + API_BASE_TLD
+                + API_ENDPOINT_DEVICES
+                + serial
+                + "/0"
+                + API_ENDPOINT_SWITCH_SOUND_ALARM,
+                data={
+                    "enable": enable,
+                },
+                timeout=self._timeout,
+            )
+
+        except OSError as err:
+            raise PyEzvizError("Could not access Ezviz' API: " + str(err)) from err
+
+        if req.status_code == 401 or req.status_code == 302:
+            # session is wrong, need to relogin
+            self.login()
+            logging.info(
+                "Got 302 or 401, relogging (max retries: %s)", str(max_retries)
+            )
+            return self._sound_alarm(serial, enable, max_retries + 1)
 
         try:
             json_output = req.json()

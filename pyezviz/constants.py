@@ -66,14 +66,39 @@ class DeviceCatagories(Enum):
 
 
 class SensorType(Enum):
-    """Sensor types"""
+    """Sensor types. HA sensor type or hide to not add as sensor"""
 
-    BATTERY = "battery"
-    WIFI = "wifi"
+    name = "hide"
+    serial = "hide"
+    sw_version = "None"
+    upgrade_available = "None"
+    device_category = "hide"
+    device_sub_category = "None"
+    privacy = "hide"
+    sleep = "hide"
+    audio = "hide"
+    ir_led = "hide"
+    state_led = "hide"
+    follow_move = "hide"
+    alarm_sound_mod = "None"
+    local_ip = "hide"
+    battery_level = "battery"
+    detection_sensibility = "None"
+    last_alarm_time = "None"
+    Seconds_Last_Trigger = "None"
+    last_alarm_pic = "None"
+    local_rtsp_port = "hide"
+    supported_channels = "None"
+    wifiInfos = "None"
+    wan_ip = "None"
 
 
 class BinarySensorType(Enum):
-    """Binary sensor types"""
+    """Binary sensor types. HA sensor type or hide to not add as sensor"""
 
-    MOTION = "motion"
-    GENERIC = "None"
+    Motion_Trigger = "motion"
+    PIR_Status = "motion"
+    alarm_schedules_enabled = "None"
+    encrypted = "None"
+    switches = "None"
+    alarm_notify = "hide"

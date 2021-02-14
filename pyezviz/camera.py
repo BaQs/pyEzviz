@@ -41,7 +41,7 @@ class EzvizCamera:
                 self._switch.update({switch["type"]: switch["enable"]})
 
         else:
-            self._switch = {"type" : "enable"}
+            self._switch = {"type": "enable"}
 
     def detection_sensibility(self):
         """load detection sensibility"""
@@ -131,7 +131,9 @@ class EzvizCamera:
                 SoundMode(self._device.get("statusInfos").get("alarmSoundMode"))
             ),
             "encrypted": bool(self._device.get("statusInfos").get("isEncrypted")),
-            "local_ip": self._device.get("wifiInfos", {}).get("address", "0.0.0.0"),
+            "local_ip": self._device.get("connectionInfos", {}).get(
+                "localIp", "0.0.0.0"
+            ),
             "wan_ip": self._device.get("connectionInfos", {}).get("netIp", "0.0.0.0"),
             "local_rtsp_port": self._device.get("connectionInfos").get("localRtspPort"),
             "supported_channels": self._device.get("deviceInfos").get("channelNumber"),
@@ -145,7 +147,7 @@ class EzvizCamera:
             "last_alarm_time": self.alarmlist_time,
             "last_alarm_pic": self.alarmlist_pic,
             "wifiInfos": self._device.get("wifiInfos"),
-            "switches" : self._switch
+            "switches": self._switch,
         }
 
     def move(self, direction, speed=5):

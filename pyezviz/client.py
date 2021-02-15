@@ -722,13 +722,10 @@ class EzvizClient:
         if response_json["resultCode"] != "0":
             return "Unknown"
 
-        # Looks like 0 or 1 should return item 0
-        if type_value == "1":
-            return response_json["algorithmConfig"]["algorithmList"][0]["value"]
-
-        for idx in response_json["algorithmConfig"]["algorithmList"]:
-            if idx["type"] == type_value:
-                return idx["value"]
+        if response_json["algorithmConfig"]["algorithmList"]:
+            for idx in response_json["algorithmConfig"]["algorithmList"]:
+                if idx["type"] == type_value:
+                    return idx["value"]
 
         return "Unkown"
 

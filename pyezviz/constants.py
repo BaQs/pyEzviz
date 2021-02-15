@@ -79,6 +79,7 @@ class SensorType(Enum):
     wan_ip = "None"
     PIR_Status = "motion"
 
+
 class BinarySensorType(Enum):
     """Binary_sensors and their types to expose in HA"""
 

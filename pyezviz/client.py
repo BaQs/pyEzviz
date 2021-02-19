@@ -262,7 +262,7 @@ class EzvizClient:
 
         if json_output.get("meta").get("code") != 200:
             raise PyEzvizError(
-                f"Could not set the switch, maybe a permission issue ?: Got {req.status_code} : {req.text})"
+                f"Could not set the switch: Got {req.status_code} : {req.text})"
             )
 
         return True
@@ -309,7 +309,7 @@ class EzvizClient:
 
         if json_output.get("meta").get("code") != 200:
             raise PyEzvizError(
-                f"Could not set the switch, maybe a permission issue ?: Got {req.status_code} : {req.text})"
+                f"Could not set the alarm sound: Got {req.status_code} : {req.text})"
             )
 
         return True
@@ -317,7 +317,7 @@ class EzvizClient:
     def load_cameras(self):
         """Load and return all cameras objects."""
 
-        devices = self.get_all_device_infos()
+        devices = self._get_all_device_infos()
         cameras = []
         supported_categories = [
             DeviceCatagories.COMMON_DEVICE_CATEGORY.value,
@@ -353,7 +353,7 @@ class EzvizClient:
 
         return cameras
 
-    def get_all_device_infos(self):
+    def _get_all_device_infos(self):
         """Load all devices and build dict per device serial"""
 
         devices = self.get_page_list()
@@ -543,7 +543,7 @@ class EzvizClient:
 
         if json_output.get("resultCode") != "0":
             raise PyEzvizError(
-                f"Could not set the switch, maybe a permission issue ?: Got {req.status_code} : {req.text})"
+                f"Could not set detection sensibility level: Got {req.status_code} : {req.text})"
             )
 
         return True
@@ -598,7 +598,7 @@ class EzvizClient:
 
         if json_output.get("resultCode") != 0:
             raise PyEzvizError(
-                f"Could not set the switch, maybe a permission issue ?: Got {req.status_code} : {req.text})"
+                f"Could not set the schedule: Got {req.status_code} : {req.text})"
             )
 
         return True
@@ -643,7 +643,7 @@ class EzvizClient:
 
         if json_output.get("meta").get("code") != 200:
             raise PyEzvizError(
-                f"Could not set the switch, maybe a permission issue ?: Got {req.status_code} : {req.text})"
+                f"Could not set defence mode: Got {req.status_code} : {req.text})"
             )
 
         return True
@@ -686,8 +686,7 @@ class EzvizClient:
 
         response_json = req.json()
         if response_json["resultCode"] and response_json["resultCode"] != "0":
-            # raise PyEzvizError("Could not get detection sensibility: Got %s : %s)",str(req.status_code), str(req.text))
-            return "Unknown error"
+            return "Unknown value"
 
         return True
 

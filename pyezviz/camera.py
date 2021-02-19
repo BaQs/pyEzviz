@@ -73,6 +73,17 @@ class EzvizCamera:
             self.alarmlist_time = alarmlist.get("alarms")[0].get("alarmStartTimeStr")
             self.alarmlist_pic = alarmlist.get("alarms")[0].get("picUrl")
 
+    def local_ip(self):
+        """"Fix empty ip value for certain cameras"""
+        if self._device.get("connectionInfos"):
+            if self._device.get("connectionInfos").get("localIp"):
+                return self._device.get("connectionInfos").get("localIp")
+
+        if self._device.get("wifiInfos"):
+            return self._device.get("wifiInfos").get("address")
+
+        return "0.0.0.0"
+
     def motion_trigger(self):
         """Create motion sensor based on last alarm time."""
         now = datetime.datetime.now().replace(microsecond=0)
@@ -128,13 +139,11 @@ class EzvizCamera:
             "alarm_schedules_enabled": bool(
                 self._device.get("timePlanInfos")[1].get("enable")
             ),
-            "alarm_sound_mod": str(
-                SoundMode(self._device.get("statusInfos").get("alarmSoundMode"))
-            ),
+            "alarm_sound_mod": SoundMode(
+                self._device.get("statusInfos").get("alarmSoundMode")
+            ).name,
             "encrypted": bool(self._device.get("statusInfos").get("isEncrypted")),
-            "local_ip": self._device.get("connectionInfos", {}).get(
-                "localIp", "0.0.0.0"
-            ),
+            "local_ip": self.local_ip(),
             "wan_ip": self._device.get("connectionInfos", {}).get("netIp", "0.0.0.0"),
             "local_rtsp_port": self._device.get("connectionInfos").get("localRtspPort"),
             "supported_channels": self._device.get("deviceInfos").get("channelNumber"),

@@ -603,7 +603,7 @@ class EzvizClient:
 
         return True
 
-    def api_set_defence_mode(self, serial, mode: DefenseModeType, max_retries=0):
+    def api_set_defence_mode(self, mode: DefenseModeType, max_retries=0):
         """Set defence mode."""
         if max_retries > MAX_RETRIES:
             raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
@@ -628,7 +628,7 @@ class EzvizClient:
             # session is wrong, need to relogin
             self.login()
             logging.info("Error, got status code: %s", req.status_code)
-            return self.api_set_defence_mode(serial, mode, max_retries + 1)
+            return self.api_set_defence_mode(mode, max_retries + 1)
 
         try:
             json_output = req.json()

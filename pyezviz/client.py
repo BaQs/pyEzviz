@@ -110,7 +110,7 @@ class EzvizClient:
 
         return True
 
-    def _get_pagelist(self, page_filter=None, json_key=None, max_retries=0):
+    def _api_get_pagelist(self, page_filter=None, json_key=None, max_retries=0):
         """Get data from pagelist API."""
 
         if max_retries > MAX_RETRIES:
@@ -133,7 +133,7 @@ class EzvizClient:
             # session is wrong, need to relogin
             self.login()
             logging.info("Got %s, relogging", str(req.status_code))
-            return self._get_pagelist(page_filter, json_key, max_retries + 1)
+            return self._api_get_pagelist(page_filter, json_key, max_retries + 1)
 
         if not req.text:
             raise PyEzvizError("No data")
@@ -152,7 +152,7 @@ class EzvizClient:
             # session is wrong, need to relogin
             self.login()
             logging.info("Got 401, relogging (max retries: %s)", str(max_retries))
-            return self._get_pagelist(page_filter, json_key, max_retries + 1)
+            return self._api_get_pagelist(page_filter, json_key, max_retries + 1)
 
         if json_key is None:
             json_result = json_output
@@ -166,7 +166,7 @@ class EzvizClient:
                 "Impossible to load the devices, here is the returned response: %s",
                 str(req.text),
             )
-            return self._get_pagelist(page_filter, json_key, max_retries + 1)
+            return self._api_get_pagelist(page_filter, json_key, max_retries + 1)
 
         return json_result
 
@@ -267,7 +267,7 @@ class EzvizClient:
 
         return True
 
-    def _sound_alarm(self, serial, enable=1, max_retries=0):
+    def sound_alarm(self, serial, enable=1, max_retries=0):
         """Sound alarm on a device."""
 
         try:
@@ -294,7 +294,7 @@ class EzvizClient:
             logging.info(
                 "Got 302 or 401, relogging (max retries: %s)", str(max_retries)
             )
-            return self._sound_alarm(serial, enable, max_retries + 1)
+            return self.sound_alarm(serial, enable, max_retries + 1)
 
         try:
             json_output = req.json()
@@ -356,7 +356,7 @@ class EzvizClient:
     def _get_all_device_infos(self):
         """Load all devices and build dict per device serial"""
 
-        devices = self.get_page_list()
+        devices = self._get_page_list()
         result = {}
 
         for idx, device in enumerate(devices["deviceInfos"]):
@@ -401,7 +401,7 @@ class EzvizClient:
         if serial is None:
             raise PyEzvizError("Need serial number for this query")
 
-        devices = self.get_page_list()
+        devices = self._get_page_list()
         result = {serial: {}}
 
         for idx, device in enumerate(devices["deviceInfos"]):
@@ -773,50 +773,54 @@ class EzvizClient:
         """Switch status of a device."""
         return self._switch_status(serial, status_type, enable)
 
-    def get_page_list(self):
+    def _get_page_list(self):
         """Get ezviz device info broken down in sections."""
-        return self._get_pagelist(
+        return self._api_get_pagelist(
             page_filter="CLOUD, TIME_PLAN, CONNECTION, SWITCH, STATUS, WIFI, NODISTURB, KMS, P2P, TIME_PLAN, CHANNEL, VTM, DETECTOR, FEATURE, UPGRADE, VIDEO_QUALITY, QOS",
             json_key=None,
         )
 
     def get_device(self):
         """Get ezviz devices filter."""
-        return self._get_pagelist(page_filter="CLOUD", json_key="deviceInfos")
+        return self._api_get_pagelist(page_filter="CLOUD", json_key="deviceInfos")
 
     def get_connection(self):
         """Get ezviz connection infos filter."""
-        return self._get_pagelist(page_filter="CONNECTION", json_key="connectionInfos")
+        return self._api_get_pagelist(
+            page_filter="CONNECTION", json_key="connectionInfos"
+        )
 
-    def get_status(self):
+    def _get_status(self):
         """Get ezviz status infos filter."""
-        return self._get_pagelist(page_filter="STATUS", json_key="statusInfos")
+        return self._api_get_pagelist(page_filter="STATUS", json_key="statusInfos")
 
     def get_switch(self):
         """Get ezviz switch infos filter."""
-        return self._get_pagelist(page_filter="SWITCH", json_key="switchStatusInfos")
+        return self._api_get_pagelist(
+            page_filter="SWITCH", json_key="switchStatusInfos"
+        )
 
-    def get_wifi(self):
+    def _get_wifi(self):
         """Get ezviz wifi infos filter."""
-        return self._get_pagelist(page_filter="WIFI", json_key="wifiInfos")
+        return self._api_get_pagelist(page_filter="WIFI", json_key="wifiInfos")
 
-    def get_nodisturb(self):
+    def _get_nodisturb(self):
         """Get ezviz nodisturb infos filter."""
-        return self._get_pagelist(
+        return self._api_get_pagelist(
             page_filter="NODISTURB", json_key="alarmNodisturbInfos"
         )
 
-    def get_p2p(self):
+    def _get_p2p(self):
         """Get ezviz P2P infos filter."""
-        return self._get_pagelist(page_filter="P2P", json_key="p2pInfos")
+        return self._api_get_pagelist(page_filter="P2P", json_key="p2pInfos")
 
-    def get_kms(self):
+    def _get_kms(self):
         """Get ezviz KMS infos filter."""
-        return self._get_pagelist(page_filter="KMS", json_key="kmsInfos")
+        return self._api_get_pagelist(page_filter="KMS", json_key="kmsInfos")
 
-    def get_time_plan(self):
+    def _get_time_plan(self):
         """Get ezviz TIME_PLAN infos filter."""
-        return self._get_pagelist(page_filter="TIME_PLAN", json_key="timePlanInfos")
+        return self._api_get_pagelist(page_filter="TIME_PLAN", json_key="timePlanInfos")
 
     def close_session(self):
         """Close current session."""

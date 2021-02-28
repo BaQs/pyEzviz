@@ -14,6 +14,7 @@ API_ENDPOINT_AUTH = "/doLogin"
 API_ENDPOINT_CLOUDDEVICES = "/api/cloud/v2/cloudDevices/getAll"
 API_ENDPOINT_PAGELIST = "/v3/userdevices/v1/devices/pagelist"
 API_ENDPOINT_DEVICES = "/v3/devices/"
+API_ENDPOINT_LOGIN = "/v3/users/login/v5"
 API_ENDPOINT_SWITCH_STATUS = "/switchStatus"
 API_ENDPOINT_PTZCONTROL = "/ptzControl"
 API_ENDPOINT_ALARM_SOUND = "/alarm/sound"
@@ -50,7 +51,7 @@ class EzvizClient:
         self._session = None
         self._timeout = timeout
         self._csrf_token = 0
-        self.api_domain = "i" + region
+        self.api_domain = "apii" + region
         self.auth_domain = region + "auth"
 
     def _login(self):
@@ -80,6 +81,10 @@ class EzvizClient:
 
             json_result = req.json()
 
+            if self._session.cookies.get("REDIRECTCOOKIE", domain=API_BASE_TLD):
+                print(f"Your region is incorrect!")
+                self._login_api()
+
             if json_result["retcode"] == "1001":
                 raise PyEzvizError("Incorrect login details")
 
@@ -99,6 +104,44 @@ class EzvizClient:
             self._csrf_token = self._session.cookies.get(
                 "AS_SessionID", domain=self.api_domain + API_BASE_TLD
             )
+
+        except OSError as err:
+            raise PyEzvizError("Can not login to API") from err
+
+        if req.status_code != 200:
+            raise PyEzvizError(
+                f"Login error: Please check your username/password: {req.text} "
+            )
+
+        return True
+
+    def _login_api(self):
+        """Login to Ezviz' API."""
+
+        # Ezviz API sends md5 of password
+        temp = hashlib.md5()
+        temp.update(self.password.encode("utf-8"))
+        md5pass = temp.hexdigest()
+        payload = {
+            "account": self.account,
+            "password": md5pass,
+            "featureCode": "d9edb711e6563e99d366d1a84602f51f",
+        }
+
+        try:
+            req = self._session.post(
+                "https://" + self.api_domain + API_BASE_TLD + API_ENDPOINT_LOGIN,
+                allow_redirects=False,
+                headers={"clientType": "3"},
+                data=payload,
+                timeout=self._timeout,
+            )
+
+            json_result = req.json()
+
+            if json_result["meta"]["code"] == 1100:
+                region = json_result["loginArea"]["apiDomain"]
+                raise PyEzvizError(f"region url: {region} ")
 
         except OSError as err:
             raise PyEzvizError("Can not login to API") from err

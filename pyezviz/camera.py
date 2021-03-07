@@ -145,7 +145,9 @@ class EzvizCamera:
             "encrypted": bool(self._device.get("statusInfos").get("isEncrypted")),
             "local_ip": self.local_ip(),
             "wan_ip": self._device.get("connectionInfos", {}).get("netIp", "0.0.0.0"),
-            "local_rtsp_port": self._device.get("connectionInfos").get("localRtspPort"),
+            "local_rtsp_port": self._device.get("connectionInfos").get(
+                "localRtspPort", "554"
+            ),
             "supported_channels": self._device.get("deviceInfos").get("channelNumber"),
             "detection_sensibility": self.detection_sensibility(),
             "battery_level": self._device.get("statusInfos")

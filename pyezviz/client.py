@@ -184,13 +184,13 @@ class EzvizClient:
             req.raise_for_status()
 
         except requests.HTTPError as err:
-            raise PyEzvizError("Could not access Ezviz' API: " + str(err)) from err
+            if err.response.status_code == 401 or 504:
+                # session is wrong, need to relogin
+                self.login()
+                logging.info("Got %s, relogging", str(req.status_code))
+                return self._api_get_pagelist(page_filter, json_key, max_retries + 1)
 
-        if req.status_code == 401:
-            # session is wrong, need to relogin
-            self.login()
-            logging.info("Got %s, relogging", str(req.status_code))
-            return self._api_get_pagelist(page_filter, json_key, max_retries + 1)
+            raise PyEzvizError("Could not access Ezviz' API: " + str(err)) from err
 
         if not req.text:
             raise PyEzvizError("No data")
@@ -251,15 +251,15 @@ class EzvizClient:
             req.raise_for_status()
 
         except requests.HTTPError as err:
-            raise PyEzvizError("Could not access Ezviz' API: " + str(err)) from err
+            if err.response.status_code == 401 or 501:
+                # session is wrong, need to relogin
+                self.login()
+                logging.info(
+                    "Got 302 or 401, relogging (max retries: %s)", str(max_retries)
+                )
+                return self.get_alarminfo(serial, max_retries + 1)
 
-        if req.status_code == 401 or req.status_code == 302:
-            # session is wrong, need to relogin
-            self.login()
-            logging.info(
-                "Got 302 or 401, relogging (max retries: %s)", str(max_retries)
-            )
-            return self.get_alarminfo(serial, max_retries + 1)
+            raise PyEzvizError("Could not access Ezviz' API: " + str(err)) from err
 
         if req.text == "":
             raise PyEzvizError("No data")
@@ -302,15 +302,15 @@ class EzvizClient:
             req.raise_for_status()
 
         except requests.HTTPError as err:
-            raise PyEzvizError("Could not access Ezviz' API: " + str(err)) from err
+            if err.response.status_code == 401 or 504:
+                # session is wrong, need to relogin
+                self.login()
+                logging.info(
+                    "Got 504 or 401, relogging (max retries: %s)", str(max_retries)
+                )
+                return self._switch_status(serial, status_type, enable, max_retries + 1)
 
-        if req.status_code == 401 or req.status_code == 302:
-            # session is wrong, need to relogin
-            self.login()
-            logging.info(
-                "Got 302 or 401, relogging (max retries: %s)", str(max_retries)
-            )
-            return self._switch_status(serial, status_type, enable, max_retries + 1)
+            raise PyEzvizError("Could not access Ezviz' API: " + str(err)) from err
 
         try:
             json_output = req.json()
@@ -351,15 +351,15 @@ class EzvizClient:
             req.raise_for_status()
 
         except requests.HTTPError as err:
-            raise PyEzvizError("Could not access Ezviz' API: " + str(err)) from err
+            if err.response.status_code == 401 or 504:
+                # session is wrong, need to relogin
+                self.login()
+                logging.info(
+                    "Got 504 or 401, relogging (max retries: %s)", str(max_retries)
+                )
+                return self.sound_alarm(serial, enable, max_retries + 1)
 
-        if req.status_code == 401 or req.status_code == 302:
-            # session is wrong, need to relogin
-            self.login()
-            logging.info(
-                "Got 302 or 401, relogging (max retries: %s)", str(max_retries)
-            )
-            return self.sound_alarm(serial, enable, max_retries + 1)
+            raise PyEzvizError("Could not access Ezviz' API: " + str(err)) from err
 
         try:
             json_output = req.json()
@@ -556,13 +556,12 @@ class EzvizClient:
             req.raise_for_status()
 
         except requests.HTTPError as err:
+            if err.response.status_code == 401 or 504:
+                self._login()
+
             raise PyEzvizError(
                 "Could not access Ezviz login check API: " + str(err)
             ) from err
-
-        if req.status_code != 200:
-            # session is wrong, need to relogin
-            self._login()
 
         try:
             response_json = req.json()
@@ -595,15 +594,15 @@ class EzvizClient:
             req.raise_for_status()
 
         except requests.HTTPError as err:
-            raise PyEzvizError("Could not access Ezviz' API: " + str(err)) from err
+            if err.response.status_code == 401 or 504:
+                # session is wrong, need to relogin
+                self.login()
+                logging.info(
+                    "Got 504 or 401, relogging (max retries: %s)", str(max_retries)
+                )
+                return self.data_report(serial, enable, max_retries + 1)
 
-        if req.status_code == 401 or req.status_code == 302:
-            # session is wrong, need to relogin
-            self.login()
-            logging.info(
-                "Got 302 or 401, relogging (max retries: %s)", str(max_retries)
-            )
-            return self.data_report(serial, enable, max_retries + 1)
+            raise PyEzvizError("Could not access Ezviz' API: " + str(err)) from err
 
         try:
             json_output = req.json()
@@ -652,15 +651,15 @@ class EzvizClient:
             req.raise_for_status()
 
         except requests.HTTPError as err:
-            raise PyEzvizError("Could not access Ezviz' API: " + str(err)) from err
+            if err.response.status_code == 401 or 504:
+                # session is wrong, need to relogin
+                self.login()
+                logging.info("Error, got status code: %s", req.status_code)
+                return self.api_set_defence_schedule(
+                    serial, schedule, enable, max_retries + 1
+                )
 
-        if req.status_code != 200:
-            # session is wrong, need to relogin
-            self.login()
-            logging.info("Error, got status code: %s", req.status_code)
-            return self.api_set_defence_schedule(
-                serial, schedule, enable, max_retries + 1
-            )
+            raise PyEzvizError("Could not access Ezviz' API: " + str(err)) from err
 
         try:
             json_output = req.json()
@@ -701,13 +700,13 @@ class EzvizClient:
             req.raise_for_status()
 
         except requests.HTTPError as err:
-            raise PyEzvizError("Could not access Ezviz' API: " + str(err)) from err
+            if err.response.status_code == 401 or 504:
+                # session is wrong, need to relogin
+                self.login()
+                logging.info("Error, got status code: %s", req.status_code)
+                return self.api_set_defence_mode(mode, max_retries + 1)
 
-        if req.status_code != 200:
-            # session is wrong, need to relogin
-            self.login()
-            logging.info("Error, got status code: %s", req.status_code)
-            return self.api_set_defence_mode(mode, max_retries + 1)
+            raise PyEzvizError("Could not access Ezviz' API: " + str(err)) from err
 
         try:
             json_output = req.json()
@@ -755,15 +754,15 @@ class EzvizClient:
             req.raise_for_status()
 
         except requests.HTTPError as err:
-            raise PyEzvizError("Could not access Ezviz' API: " + str(err)) from err
+            if err.response.status_code == 401 or 504:
+                # session is wrong, need to re-log-in
+                self.login()
+                logging.info("Got 401, relogging (max retries: %s)", str(max_retries))
+                return self.detection_sensibility(
+                    serial, sensibility, type_value, max_retries + 1
+                )
 
-        if req.status_code == 401:
-            # session is wrong, need to re-log-in
-            self.login()
-            logging.info("Got 401, relogging (max retries: %s)", str(max_retries))
-            return self.detection_sensibility(
-                serial, sensibility, type_value, max_retries + 1
-            )
+            raise PyEzvizError("Could not access Ezviz' API: " + str(err)) from err
 
         try:
             response_json = req.json()
@@ -796,13 +795,15 @@ class EzvizClient:
             req.raise_for_status()
 
         except requests.HTTPError as err:
-            raise PyEzvizError("Could not access Ezviz' API: " + str(err)) from err
+            if err.response.status_code == 401 or 504:
+                # session is wrong, need to re-log-in
+                self.login()
+                logging.info("Got 401, relogging (max retries: %s)", str(max_retries))
+                return self.get_detection_sensibility(
+                    serial, type_value, max_retries + 1
+                )
 
-        if req.status_code == 401:
-            # session is wrong, need to re-log-in
-            self.login()
-            logging.info("Got 401, relogging (max retries: %s)", str(max_retries))
-            return self.get_detection_sensibility(serial, type_value, max_retries + 1)
+            raise PyEzvizError("Could not access Ezviz' API: " + str(err)) from err
 
         try:
             response_json = req.json()
@@ -851,15 +852,13 @@ class EzvizClient:
             req.raise_for_status()
 
         except requests.HTTPError as err:
-            raise PyEzvizError("Could not access Ezviz' API: " + str(err)) from err
+            if err.response.status_code == 401 or 504:
+                # session is wrong, need to re-log-in
+                self.login()
+                logging.info("Got 401, relogging (max retries: %s)", str(max_retries))
+                return self.alarm_sound(serial, sound_type, enable, max_retries + 1)
 
-        if req.status_code == 401:
-            # session is wrong, need to re-log-in
-            self.login()
-            logging.info("Got 401, relogging (max retries: %s)", str(max_retries))
-            return self.alarm_sound(serial, sound_type, enable, max_retries + 1)
-        if req.status_code != 200:
-            logging.error("Got %s : %s)", str(req.status_code), str(req.text))
+            raise PyEzvizError("Could not access Ezviz' API: " + str(err)) from err
 
         return True
 

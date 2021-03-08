@@ -251,7 +251,7 @@ class EzvizClient:
             req.raise_for_status()
 
         except requests.HTTPError as err:
-            if err.response.status_code == 401 or 501:
+            if err.response.status_code == 401 or 504:
                 # session is wrong, need to relogin
                 self.login()
                 logging.info(

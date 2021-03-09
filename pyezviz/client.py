@@ -87,7 +87,7 @@ class EzvizClient:
             json_result = req.json()
 
         except ValueError as err:
-            raise PyEzvizError("Can't decode response") from err
+            raise PyEzvizError("Can't login response") from err
 
         if self._session.cookies.get("REDIRECTCOOKIE", domain=API_BASE_TLD):
             print("Your region is incorrect!")
@@ -97,7 +97,7 @@ class EzvizClient:
             raise PyEzvizError("Incorrect login details")
 
         if json_result["retcode"] == "1002":
-            raise PyEzvizError("Login error: Captcha required")
+            raise PyEzvizError("Login error: Check your password!")
 
         if json_result["retcode"] == "1005":
             raise PyEzvizError("Login error: Incorrect Captcha code")
@@ -149,19 +149,16 @@ class EzvizClient:
 
             req.raise_for_status()
 
-            json_result = req.json()
-
-            if json_result["meta"]["code"] == 1100:
-                region = json_result["loginArea"]["apiDomain"]
-                raise PyEzvizError(f"region url: {region} ")
-
         except requests.HTTPError as err:
-            raise PyEzvizError("Can not login to API") from err
-
-        if req.status_code != 200:
             raise PyEzvizError(
-                f"Login error: Please check your username/password: {req.text} "
-            )
+                "Login error: Please check your username/password"
+            ) from err
+
+        json_result = req.json()
+
+        if json_result["meta"]["code"] == 1100:
+            region = json_result["loginArea"]["apiDomain"]
+            raise PyEzvizError(f"region url: {region} ")
 
         return True
 
@@ -556,9 +553,6 @@ class EzvizClient:
             req.raise_for_status()
 
         except requests.HTTPError as err:
-            if err.response.status_code == 401 or 504:
-                self._login()
-
             raise PyEzvizError(
                 "Could not access Ezviz login check API: " + str(err)
             ) from err
@@ -566,8 +560,8 @@ class EzvizClient:
         try:
             response_json = req.json()
 
-        except ValueError as err:
-            raise PyEzvizError("Can't decode response" + str(err)) from err
+        except ValueError:
+            self._login()
 
         if response_json["success"] != "success":
             self._login()

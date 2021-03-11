@@ -683,7 +683,7 @@ class EzvizClient:
             if err.response.status_code == 401 or 504:
                 # session is wrong, need to relogin
                 self.login()
-                return self.api_set_defence_mode(DefenseModeType, max_retries + 1)
+                return self.api_set_defence_mode(mode, max_retries + 1)
 
             raise requests.HTTPError(err)
 

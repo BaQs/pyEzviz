@@ -15,7 +15,11 @@ def main():
     parser.add_argument("-u", "--username", required=True, help="Ezviz username")
     parser.add_argument("-p", "--password", required=True, help="Ezviz Password")
     parser.add_argument(
-        "-r", "--region", required=False, default="eu", help="Ezviz API region"
+        "-r",
+        "--region",
+        required=False,
+        default="apiieu.ezvizlife.com",
+        help="Ezviz API region",
     )
     parser.add_argument(
         "--debug", "-d", action="store_true", help="Print debug messages to stderr"

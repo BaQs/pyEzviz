@@ -46,7 +46,7 @@ class EzvizCamera:
 
     def detection_sensibility(self):
         """load detection sensibility"""
-        result = "Unkown"
+        result = "Unknown"
 
         if self._switch.get(DeviceSwitchType.AUTO_SLEEP.value) is not True:
             if (

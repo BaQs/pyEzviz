@@ -41,7 +41,7 @@ class DeviceSwitchType(Enum):
 
 
 class SoundMode(Enum):
-    """Alarm sound level descryption """
+    """Alarm sound level description."""
 
     silent = 2
     soft = 0
@@ -56,7 +56,7 @@ class DefenseModeType(Enum):
 
 
 class DeviceCatagories(Enum):
-    """Supported device catagories"""
+    """Supported device categories."""
 
     COMMON_DEVICE_CATEGORY = "COMMON"
     CAMERA_DEVICE_CATEGORY = "IPC"
@@ -66,7 +66,7 @@ class DeviceCatagories(Enum):
 
 
 class SensorType(Enum):
-    """Sensors and their types to expose in HA"""
+    """Sensors and their types to expose in HA."""
 
     sw_version = "None"
     alarm_sound_mod = "None"
@@ -76,12 +76,13 @@ class SensorType(Enum):
     Seconds_Last_Trigger = "None"
     last_alarm_pic = "None"
     supported_channels = "None"
+    local_ip = "None"
     wan_ip = "None"
     PIR_Status = "motion"
 
 
 class BinarySensorType(Enum):
-    """Binary_sensors and their types to expose in HA"""
+    """Binary_sensors and their types to expose in HA."""
 
     Motion_Trigger = "motion"
     alarm_schedules_enabled = "None"

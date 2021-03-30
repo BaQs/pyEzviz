@@ -67,15 +67,15 @@ class TestRTSPAuth:
     def main(self):
         """Main function """
         session = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        
+
         try:
             session.connect(
-            (
-                self._rtsp_details["defaultServerIp"],
-                self._rtsp_details["defaultServerPort"],
+                (
+                    self._rtsp_details["defaultServerIp"],
+                    self._rtsp_details["defaultServerPort"],
+                )
             )
-        )
-        
+
         except TimeoutError:
             sys.exit("Invalid ip or camera hibernating")
 
@@ -113,12 +113,12 @@ class TestRTSPAuth:
             start = msg1.decode().find("realm")
             begin = msg1.decode().find('"', start)
             end = msg1.decode().find('"', begin + 1)
-            realm = msg1[begin + 1 : end]
+            realm = msg1[begin + 1: end]
 
             start = msg1.decode().find("nonce")
             begin = msg1.decode().find('"', start)
             end = msg1.decode().find('"', begin + 1)
-            nonce = msg1[begin + 1 : end]
+            nonce = msg1[begin + 1: end]
 
             auth_seq = self.generate_auth_string(
                 realm,

@@ -1,14 +1,12 @@
 """Ezviz API."""
 import hashlib
 import logging
-from random import randint
 from uuid import uuid4
 
 import requests
 from pyezviz.camera import EzvizCamera
 from pyezviz.constants import DefenseModeType, DeviceCatagories
 
-API_ENDPOINT_AUTH = "/doLogin"
 API_ENDPOINT_CLOUDDEVICES = "/api/cloud/v2/cloudDevices/getAll"
 API_ENDPOINT_PAGELIST = "/v3/userdevices/v1/devices/pagelist"
 API_ENDPOINT_DEVICES = "/v3/devices/"
@@ -16,11 +14,10 @@ API_ENDPOINT_LOGIN = "/v3/users/login/v5"
 API_ENDPOINT_SWITCH_STATUS = "/switchStatus"
 API_ENDPOINT_PTZCONTROL = "/ptzControl"
 API_ENDPOINT_ALARM_SOUND = "/alarm/sound"
-API_ENDPOINT_SET_DEFENCE = "/camera/cameraAction!enableDefence.action"
+API_ENDPOINT_SET_DEFENCE = "/camera/cameraAction!enableDefence.action"  # Needs changing
 API_ENDPOINT_DETECTION_SENSIBILITY = "/api/device/configAlgorithm"
 API_ENDPOINT_DETECTION_SENSIBILITY_GET = "/api/device/queryAlgorithmConfig"
 API_ENDPOINT_ALARMINFO_GET = "/v3/alarms/v2/advanced"
-API_ENDPOINT_CHECKLOGIN = "/user/user/userAction!checkLoginInfo.action"
 API_ENDPOINT_SET_DEFENCE_SCHEDULE = "/api/device/defence/plan2"
 API_ENDPOINT_SWITCH_DEFENCE_MODE = "/v3/userdevices/v1/group/switchDefenceMode"
 API_ENDPOINT_SWITCH_SOUND_ALARM = "/sendAlarm"
@@ -47,86 +44,17 @@ class EzvizClient:
         self.account = account
         self.password = password
         self._session = None
+        self._sessionid = None
         self._timeout = timeout
         self.api_uri = url
 
     def _login(self):
-        """Login to Ezviz' API."""
+        """Login to Ezviz API."""
 
-        # Fix for old region code usage, should now be url.
+        # Region code to url.
         if len(self.api_uri.split(".")) == 1:
             self.api_uri = "apii" + self.api_uri + ".ezvizlife.com"
             print(f"Region code depreciated, please use full url: {self.api_uri}")
-
-        # Break up URI into components and remove api portion.
-        host_api_domain = self.api_uri.split(".", 1)[0]
-        host_api_domain = host_api_domain.replace("apii", "")
-        host_api_domain = host_api_domain.replace("api", "")
-        api_domain = "." + self.api_uri.split(".", 1)[1]
-
-        # Ezviz API sends md5 of password.
-        temp = hashlib.md5()
-        temp.update(self.password.encode("utf-8"))
-        md5pass = temp.hexdigest()
-        randommath = randint(1000000000000000000, 9999999999999999999)
-        payload = {
-            "account": self.account,
-            "password": md5pass,
-            "from": "4e4148ba90184a7cbd81",
-            "r": randommath,
-            "returnUrl": "plugin",
-            "host": self.api_uri,
-        }
-
-        try:
-            req = self._session.post(
-                "https://" + host_api_domain + "auth" + api_domain + API_ENDPOINT_AUTH,
-                allow_redirects=False,
-                data=payload,
-                timeout=self._timeout,
-            )
-
-            req.raise_for_status()
-
-        except requests.HTTPError as err:
-            raise requests.HTTPError(err)
-
-        try:
-            json_result = req.json()
-
-        except ValueError as err:
-            raise PyEzvizError("Can't decode login response") from err
-
-        if self._session.cookies.get("REDIRECTCOOKIE", domain=api_domain):
-            return self._login_api()
-
-        if json_result["retcode"] == "1001":
-            raise PyEzvizError("Incorrect login details or region url")
-
-        if json_result["retcode"] == "1002":
-            raise PyEzvizError("Login error: Check your password!")
-
-        if json_result["retcode"] == "1005":
-            raise PyEzvizError(
-                "Too many failed logins. Open API url in IE and enter Captcha code"
-            )
-
-        # Update cookie with JS Session ID.
-        try:
-            req = self._session.get(
-                "https://" + self.api_uri + "/check_plugin.jsp",
-                timeout=self._timeout,
-            )
-
-            req.raise_for_status()
-
-        except requests.HTTPError as err:
-            raise requests.HTTPError(err)
-
-        return True
-
-    def _login_api(self):
-        """Login to Ezviz' API."""
 
         # Ezviz API sends md5 of password
         temp = hashlib.md5()
@@ -152,13 +80,28 @@ class EzvizClient:
         except requests.HTTPError as err:
             raise requests.HTTPError(err)
 
-        json_result = req.json()
+        try:
+            json_result = req.json()
+
+        except ValueError as err:
+            raise PyEzvizError(
+                "Impossible to decode response: "
+                + str(err)
+                + "\nResponse was: "
+                + str(req.text)
+            ) from err
 
         if json_result["meta"]["code"] == 1100:
             self.api_uri = json_result["loginArea"]["apiDomain"]
             print("Region incorrect!")
             print(f"Your region url: {self.api_uri}")
             return self.login()
+
+        self._sessionid = str(json_result["loginSession"]["sessionId"])
+        if not self._sessionid:
+            raise PyEzvizError(
+                f"Login error: Please check your username/password: {req.text}"
+            )
 
         return True
 
@@ -174,6 +117,7 @@ class EzvizClient:
         try:
             req = self._session.get(
                 "https://" + self.api_uri + API_ENDPOINT_PAGELIST,
+                headers={"sessionId": self._sessionid},
                 params={"filter": page_filter},
                 timeout=self._timeout,
             )
@@ -205,7 +149,9 @@ class EzvizClient:
         if json_output.get("meta").get("code") != 200:
             # session is wrong, need to relogin
             self.login()
-            logging.info("Got 401, relogging (max retries: %s)", str(max_retries))
+            logging.info(
+                "Json request error, relogging (max retries: %s)", str(max_retries)
+            )
             return self._api_get_pagelist(page_filter, json_key, max_retries + 1)
 
         if json_key is None:
@@ -232,6 +178,7 @@ class EzvizClient:
         try:
             req = self._session.get(
                 "https://" + self.api_uri + API_ENDPOINT_ALARMINFO_GET,
+                headers={"sessionId": self._sessionid},
                 params={
                     "deviceSerials": serial,
                     "queryType": -1,
@@ -281,6 +228,7 @@ class EzvizClient:
                 + "/1/1/"
                 + str(status_type)
                 + API_ENDPOINT_SWITCH_STATUS,
+                headers={"sessionId": self._sessionid},
                 data={
                     "enable": enable,
                     "serial": serial,
@@ -331,6 +279,7 @@ class EzvizClient:
                 + serial
                 + "/0"
                 + API_ENDPOINT_SWITCH_SOUND_ALARM,
+                headers={"sessionId": self._sessionid},
                 data={
                     "enable": enable,
                 },
@@ -514,7 +463,7 @@ class EzvizClient:
                     "uuid": str(uuid4()),
                     "serial": serial,
                 },
-                headers={"clientType": "1"},
+                headers={"sessionId": self._sessionid, "clientType": "1"},
                 timeout=self._timeout,
             )
 
@@ -529,30 +478,8 @@ class EzvizClient:
         """Set http session."""
         if self._session is None:
             self._session = requests.session()
-            self._login()
 
-        try:
-            req = self._session.get(
-                "https://" + self.api_uri + API_ENDPOINT_CHECKLOGIN,
-                allow_redirects=False,
-                timeout=self._timeout,
-            )
-
-            req.raise_for_status()
-
-        except requests.HTTPError as err:
-            raise requests.HTTPError(err)
-
-        try:
-            response_json = req.json()
-
-        except ValueError:
-            return self._login()
-
-        if response_json["success"] != "success":
-            self._login()
-
-        return True
+        return self._login()
 
     def data_report(self, serial, enable=1, max_retries=0):
         """Enable alarm notifications."""
@@ -562,6 +489,7 @@ class EzvizClient:
         try:
             req = self._session.post(
                 "https://" + self.api_uri + API_ENDPOINT_SET_DEFENCE,
+                headers={"sessionId": self._sessionid},
                 data={
                     "deviceSerial": serial,
                     "defenceType": "Global",
@@ -616,6 +544,7 @@ class EzvizClient:
         try:
             req = self._session.post(
                 "https://" + self.api_uri + API_ENDPOINT_SET_DEFENCE_SCHEDULE,
+                headers={"sessionId": self._sessionid},
                 data={
                     "devTimingPlan": schedulestring,
                 },
@@ -660,6 +589,7 @@ class EzvizClient:
         try:
             req = self._session.post(
                 "https://" + self.api_uri + API_ENDPOINT_SWITCH_DEFENCE_MODE,
+                headers={"sessionId": self._sessionid},
                 data={
                     "groupId": -1,
                     "mode": mode,
@@ -708,6 +638,7 @@ class EzvizClient:
         try:
             req = self._session.post(
                 "https://" + self.api_uri + API_ENDPOINT_DETECTION_SENSIBILITY,
+                headers={"sessionId": self._sessionid},
                 data={
                     "subSerial": serial,
                     "type": type_value,
@@ -748,6 +679,7 @@ class EzvizClient:
         try:
             req = self._session.post(
                 "https://" + self.api_uri + API_ENDPOINT_DETECTION_SENSIBILITY_GET,
+                headers={"sessionId": self._sessionid},
                 data={
                     "subSerial": serial,
                 },
@@ -800,6 +732,7 @@ class EzvizClient:
                 + API_ENDPOINT_DEVICES
                 + serial
                 + API_ENDPOINT_ALARM_SOUND,
+                headers={"sessionId": self._sessionid},
                 data={
                     "enable": enable,
                     "soundType": sound_type,

@@ -7,6 +7,7 @@ import sys
 
 import pandas
 from pyezviz import EzvizCamera, EzvizClient
+from pyezviz.constants import DefenseModeType
 
 
 def main():
@@ -35,7 +36,14 @@ def main():
         type=str,
         default="status",
         help="Device action to perform",
-        choices=["device", "status", "switch", "connection", "switch-all"],
+        choices=["device", "status", "switch", "connection"],
+    )
+
+    parser_home_defence_mode = subparsers.add_parser(
+        "home_defence_mode", help="Set home defence mode"
+    )
+    parser_home_defence_mode.add_argument(
+        "--mode", required=False, help="Choose mode", choices=["HOME_MODE", "AWAY_MODE"]
     )
 
     parser_camera = subparsers.add_parser("camera", help="Camera actions")
@@ -130,11 +138,10 @@ def main():
                 print(json.dumps(client.get_device(), indent=2))
             except BaseException as exp:
                 print(exp)
-                return 1
             finally:
                 client.close_session()
 
-        if args.device_action == "status":
+        elif args.device_action == "status":
             try:
                 client.login()
                 # print(json.dumps(client.load_cameras(), indent=2))
@@ -142,7 +149,9 @@ def main():
                     pandas.DataFrame(client.load_cameras()).to_string(
                         columns=[
                             "serial",
-                            "name",  # version  upgrade_available
+                            "name",
+                            # version,
+                            # upgrade_available,
                             "status",
                             "device_category",
                             "device_sub_category",
@@ -150,30 +159,35 @@ def main():
                             "privacy",
                             "audio",
                             "ir_led",
-                            "state_led",  # follow_move  alarm_notify  alarm_schedules_enabled alarm_sound_mod  encrypted
+                            "state_led",
+                            # follow_move,
+                            # alarm_notify,
+                            # alarm_schedules_enabled,
+                            # alarm_sound_mod,
+                            # encrypted,
                             "local_ip",
                             "local_rtsp_port",
                             "detection_sensibility",
                             "battery_level",
                             "alarm_schedules_enabled",
                             "alarm_notify",
-                            "Motion_Trigger",  # last_alarm_time last_alarm_pic
+                            "Motion_Trigger",
+                            # last_alarm_time,
+                            # last_alarm_pic
                         ]
                     )
                 )
             except BaseException as exp:
                 print(exp)
-                return 1
             finally:
                 client.close_session()
 
-        if args.device_action == "switch":
+        elif args.device_action == "switch":
             try:
                 client.login()
                 print(json.dumps(client.get_switch(), indent=2))
             except BaseException as exp:
                 print(exp)
-                return 1
             finally:
                 client.close_session()
 
@@ -183,17 +197,27 @@ def main():
                 print(json.dumps(client.get_connection(), indent=2))
             except BaseException as exp:
                 print(exp)
-                return 1
             finally:
                 client.close_session()
 
-        elif args.device_action == "switch-all":
+        else:
+            print("Action not implemented: %s", args.device_action)
+
+    elif args.action == "home_defence_mode":
+
+        if args.mode:
             try:
                 client.login()
-                print(json.dumps(client.switch_devices(args.enable), indent=2))
+                print(
+                    json.dumps(
+                        client.api_set_defence_mode(
+                            getattr(DefenseModeType, args.mode).value
+                        ),
+                        indent=2,
+                    )
+                )
             except BaseException as exp:
                 print(exp)
-                return 1
             finally:
                 client.close_session()
 
@@ -206,14 +230,14 @@ def main():
             logging.debug("Camera loaded")
         except BaseException as exp:
             print(exp)
-            return 1
+        finally:
+            client.close_session()
 
         if args.camera_action == "move":
             try:
                 camera.move(args.direction, args.speed)
             except BaseException as exp:
                 print(exp)
-                return 1
             finally:
                 client.close_session()
 
@@ -223,7 +247,6 @@ def main():
 
             except BaseException as exp:
                 print(exp)
-                return 1
             finally:
                 client.close_session()
 
@@ -244,7 +267,6 @@ def main():
                     camera.switch_follow_move(args.enable)
             except BaseException as exp:
                 print(exp)
-                return 1
             finally:
                 client.close_session()
 
@@ -260,7 +282,6 @@ def main():
                     camera.change_defence_schedule(args.schedule)
             except BaseException as exp:
                 print(exp)
-                return 1
             finally:
                 client.close_session()
     else:

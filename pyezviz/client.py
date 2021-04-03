@@ -11,6 +11,7 @@ API_ENDPOINT_CLOUDDEVICES = "/api/cloud/v2/cloudDevices/getAll"
 API_ENDPOINT_PAGELIST = "/v3/userdevices/v1/devices/pagelist"
 API_ENDPOINT_DEVICES = "/v3/devices/"
 API_ENDPOINT_LOGIN = "/v3/users/login/v5"
+API_ENDPOINT_REFRESH_SESSION_ID = "/v3/apigateway/login"
 API_ENDPOINT_SWITCH_STATUS = "/switchStatus"
 API_ENDPOINT_PTZCONTROL = "/ptzControl"
 API_ENDPOINT_ALARM_SOUND = "/alarm/sound"
@@ -45,6 +46,7 @@ class EzvizClient:
         self.password = password
         self._session = None
         self._sessionid = None
+        self._rfsessionid = None
         self._timeout = timeout
         self.api_uri = url
 
@@ -54,7 +56,6 @@ class EzvizClient:
         # Region code to url.
         if len(self.api_uri.split(".")) == 1:
             self.api_uri = "apii" + self.api_uri + ".ezvizlife.com"
-            print(f"Region code depreciated, please use full url: {self.api_uri}")
 
         # Ezviz API sends md5 of password
         temp = hashlib.md5()
@@ -63,7 +64,7 @@ class EzvizClient:
         payload = {
             "account": self.account,
             "password": md5pass,
-            "featureCode": "d9edb711e6563e99d366d1a84602f51f",
+            "featureCode": "f57ac347d68dcf8baf907a906f59c01f",
         }
 
         try:
@@ -95,9 +96,20 @@ class EzvizClient:
             self.api_uri = json_result["loginArea"]["apiDomain"]
             print("Region incorrect!")
             print(f"Your region url: {self.api_uri}")
+            self._session = None
             return self.login()
 
+        if json_result["meta"]["code"] == 1013:
+            raise PyEzvizError("Incorrect Username.")
+
+        if json_result["meta"]["code"] == 1014:
+            raise PyEzvizError("Incorrect Password.")
+
+        if json_result["meta"]["code"] == 1015:
+            raise PyEzvizError("The user is locked.")
+
         self._sessionid = str(json_result["loginSession"]["sessionId"])
+        self._rfsessionid = str(json_result["loginSession"]["rfSessionId"])
         if not self._sessionid:
             raise PyEzvizError(
                 f"Login error: Please check your username/password: {req.text}"
@@ -478,8 +490,41 @@ class EzvizClient:
         """Set http session."""
         if self._session is None:
             self._session = requests.session()
+            return self._login()
 
-        return self._login()
+        if self._sessionid and self._rfsessionid:
+            try:
+                req = self._session.put(
+                    "https://" + self.api_uri + API_ENDPOINT_REFRESH_SESSION_ID,
+                    data={
+                        "refreshSessionId": self._rfsessionid,
+                        "featureCode": "f57ac347d68dcf8baf907a906f59c01f",
+                    },
+                    headers={"sessionId": self._sessionid},
+                    timeout=self._timeout,
+                )
+                req.raise_for_status()
+
+            except requests.HTTPError as err:
+                raise requests.HTTPError(err)
+
+            try:
+                json_result = req.json()
+
+            except ValueError as err:
+                raise PyEzvizError(
+                    "Impossible to decode response: "
+                    + str(err)
+                    + "\nResponse was: "
+                    + str(req.text)
+                ) from err
+
+            self._sessionid = str(json_result["sessionInfo"]["sessionId"])
+            self._rfsessionid = str(json_result["sessionInfo"]["refreshSessionId"])
+            if not self._sessionid:
+                raise PyEzvizError(f"Relogin required: {req.text}")
+
+        return True
 
     def data_report(self, serial, enable=1, max_retries=0):
         """Enable alarm notifications."""

@@ -25,6 +25,8 @@ API_ENDPOINT_SWITCH_SOUND_ALARM = "/sendAlarm"
 
 DEFAULT_TIMEOUT = 25
 MAX_RETRIES = 3
+FEATURE_CODE = "c22cb01f8cb83351422d82fad59c8e4e"
+# token = {"sessionId": None, "refreshSessionId": None}
 
 
 class PyEzvizError(Exception):
@@ -40,13 +42,13 @@ class EzvizClient:
         password,
         url="apiieu.ezvizlife.com",
         timeout=DEFAULT_TIMEOUT,
+        token=None,
     ):
         """Initialize the client object."""
         self.account = account
         self.password = password
         self._session = None
-        self._sessionid = None
-        self._rfsessionid = None
+        self._token = token or {"session_id": None, "rf_session_id": None}
         self._timeout = timeout
         self.api_uri = url
 
@@ -64,7 +66,7 @@ class EzvizClient:
         payload = {
             "account": self.account,
             "password": md5pass,
-            "featureCode": "f57ac347d68dcf8baf907a906f59c01f",
+            "featureCode": FEATURE_CODE,
         }
 
         try:
@@ -108,14 +110,14 @@ class EzvizClient:
         if json_result["meta"]["code"] == 1015:
             raise PyEzvizError("The user is locked.")
 
-        self._sessionid = str(json_result["loginSession"]["sessionId"])
-        self._rfsessionid = str(json_result["loginSession"]["rfSessionId"])
-        if not self._sessionid:
+        self._token["session_id"] = str(json_result["loginSession"]["sessionId"])
+        self._token["rf_session_id"] = str(json_result["loginSession"]["rfSessionId"])
+        if not self._token["session_id"]:
             raise PyEzvizError(
                 f"Login error: Please check your username/password: {req.text}"
             )
 
-        return True
+        return self._token
 
     def _api_get_pagelist(self, page_filter=None, json_key=None, max_retries=0):
         """Get data from pagelist API."""
@@ -129,7 +131,7 @@ class EzvizClient:
         try:
             req = self._session.get(
                 "https://" + self.api_uri + API_ENDPOINT_PAGELIST,
-                headers={"sessionId": self._sessionid},
+                headers={"sessionId": self._token["session_id"]},
                 params={"filter": page_filter},
                 timeout=self._timeout,
             )
@@ -190,7 +192,7 @@ class EzvizClient:
         try:
             req = self._session.get(
                 "https://" + self.api_uri + API_ENDPOINT_ALARMINFO_GET,
-                headers={"sessionId": self._sessionid},
+                headers={"sessionId": self._token["session_id"]},
                 params={
                     "deviceSerials": serial,
                     "queryType": -1,
@@ -240,7 +242,7 @@ class EzvizClient:
                 + "/1/1/"
                 + str(status_type)
                 + API_ENDPOINT_SWITCH_STATUS,
-                headers={"sessionId": self._sessionid},
+                headers={"sessionId": self._token["session_id"]},
                 data={
                     "enable": enable,
                     "serial": serial,
@@ -291,7 +293,7 @@ class EzvizClient:
                 + serial
                 + "/0"
                 + API_ENDPOINT_SWITCH_SOUND_ALARM,
-                headers={"sessionId": self._sessionid},
+                headers={"sessionId": self._token["session_id"]},
                 data={
                     "enable": enable,
                 },
@@ -475,7 +477,7 @@ class EzvizClient:
                     "uuid": str(uuid4()),
                     "serial": serial,
                 },
-                headers={"sessionId": self._sessionid, "clientType": "1"},
+                headers={"sessionId": self._token["session_id"], "clientType": "1"},
                 timeout=self._timeout,
             )
 
@@ -492,15 +494,15 @@ class EzvizClient:
             self._session = requests.session()
             return self._login()
 
-        if self._sessionid and self._rfsessionid:
+        if self._token["session_id"] and self._token["rf_session_id"]:
             try:
                 req = self._session.put(
                     "https://" + self.api_uri + API_ENDPOINT_REFRESH_SESSION_ID,
                     data={
-                        "refreshSessionId": self._rfsessionid,
-                        "featureCode": "f57ac347d68dcf8baf907a906f59c01f",
+                        "refreshSessionId": self._token["rf_session_id"],
+                        "featureCode": FEATURE_CODE,
                     },
-                    headers={"sessionId": self._sessionid},
+                    headers={"sessionId": self._token["session_id"]},
                     timeout=self._timeout,
                 )
                 req.raise_for_status()
@@ -519,10 +521,14 @@ class EzvizClient:
                     + str(req.text)
                 ) from err
 
-            self._sessionid = str(json_result["sessionInfo"]["sessionId"])
-            self._rfsessionid = str(json_result["sessionInfo"]["refreshSessionId"])
-            if not self._sessionid:
+            self._token["session_id"] = str(json_result["sessionInfo"]["sessionId"])
+            self._token["rf_session_id"] = str(
+                json_result["sessionInfo"]["refreshSessionId"]
+            )
+            if not self._token["session_id"]:
                 raise PyEzvizError(f"Relogin required: {req.text}")
+
+            return self._token
 
         return True
 
@@ -534,7 +540,7 @@ class EzvizClient:
         try:
             req = self._session.post(
                 "https://" + self.api_uri + API_ENDPOINT_SET_DEFENCE,
-                headers={"sessionId": self._sessionid},
+                headers={"sessionId": self._token["session_id"]},
                 data={
                     "deviceSerial": serial,
                     "defenceType": "Global",
@@ -589,7 +595,7 @@ class EzvizClient:
         try:
             req = self._session.post(
                 "https://" + self.api_uri + API_ENDPOINT_SET_DEFENCE_SCHEDULE,
-                headers={"sessionId": self._sessionid},
+                headers={"sessionId": self._token["session_id"]},
                 data={
                     "devTimingPlan": schedulestring,
                 },
@@ -634,7 +640,7 @@ class EzvizClient:
         try:
             req = self._session.post(
                 "https://" + self.api_uri + API_ENDPOINT_SWITCH_DEFENCE_MODE,
-                headers={"sessionId": self._sessionid},
+                headers={"sessionId": self._token["session_id"]},
                 data={
                     "groupId": -1,
                     "mode": mode,
@@ -683,7 +689,7 @@ class EzvizClient:
         try:
             req = self._session.post(
                 "https://" + self.api_uri + API_ENDPOINT_DETECTION_SENSIBILITY,
-                headers={"sessionId": self._sessionid},
+                headers={"sessionId": self._token["session_id"]},
                 data={
                     "subSerial": serial,
                     "type": type_value,
@@ -724,7 +730,7 @@ class EzvizClient:
         try:
             req = self._session.post(
                 "https://" + self.api_uri + API_ENDPOINT_DETECTION_SENSIBILITY_GET,
-                headers={"sessionId": self._sessionid},
+                headers={"sessionId": self._token["session_id"]},
                 data={
                     "subSerial": serial,
                 },
@@ -777,7 +783,7 @@ class EzvizClient:
                 + API_ENDPOINT_DEVICES
                 + serial
                 + API_ENDPOINT_ALARM_SOUND,
-                headers={"sessionId": self._sessionid},
+                headers={"sessionId": self._token["session_id"]},
                 data={
                     "enable": enable,
                     "soundType": sound_type,

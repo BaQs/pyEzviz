@@ -40,8 +40,6 @@ class TestRTSPAuth:
             "defaultPassword": password,
         }
 
-    # IRWGYJ
-
     def generate_auth_string(self, realm, method, uri, nonce):
         """Generate digest auth string """
         map_return_info = {}
@@ -113,12 +111,12 @@ class TestRTSPAuth:
             start = msg1.decode().find("realm")
             begin = msg1.decode().find('"', start)
             end = msg1.decode().find('"', begin + 1)
-            realm = msg1[begin + 1: end]
+            realm = msg1[begin + 1 : end]
 
             start = msg1.decode().find("nonce")
             begin = msg1.decode().find('"', start)
             end = msg1.decode().find('"', begin + 1)
-            nonce = msg1[begin + 1: end]
+            nonce = msg1[begin + 1 : end]
 
             auth_seq = self.generate_auth_string(
                 realm,

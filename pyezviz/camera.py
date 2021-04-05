@@ -126,7 +126,7 @@ class EzvizCamera:
         if time_plans:
             return bool(time_plans[0].get("enable"))
 
-        return "unknown"
+        return None
 
     def status(self):
         """Return the status of the camera."""

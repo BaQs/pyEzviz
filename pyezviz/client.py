@@ -38,8 +38,8 @@ class EzvizClient:
 
     def __init__(
         self,
-        account,
-        password,
+        account=None,
+        password=None,
         url="apiieu.ezvizlife.com",
         timeout=DEFAULT_TIMEOUT,
         token=None,
@@ -863,5 +863,6 @@ class EzvizClient:
 
     def close_session(self):
         """Close current session."""
-        self._session.close()
-        self._session = None
+        if self._session:
+            self._session.close()
+            self._session = None

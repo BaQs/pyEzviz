@@ -230,7 +230,6 @@ def main():
             logging.debug("Camera loaded")
         except BaseException as exp:
             print(exp)
-        finally:
             client.close_session()
 
         if args.camera_action == "move":
@@ -284,6 +283,10 @@ def main():
                 print(exp)
             finally:
                 client.close_session()
+
+        else:
+            print("Action not implemented, try running with -h switch for help")
+
     else:
         print("Action not implemented: %s", args.action)
 

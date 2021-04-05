@@ -27,14 +27,14 @@ class EzvizCamera:
         if self._device is None:
             self._device = self._client.get_all_per_serial_infos(self._serial)
 
-        self.alarm_list()
+        self._alarm_list()
 
         if self.alarmlist_time:
-            self.motion_trigger()
+            self._motion_trigger()
 
-        self.switch_status()
+        self._switch_status()
 
-    def switch_status(self):
+    def _switch_status(self):
         """load device switches"""
 
         if self._device.get("switchStatusInfos"):
@@ -44,7 +44,7 @@ class EzvizCamera:
         else:
             self._switch = {"type": "enable"}
 
-    def detection_sensibility(self):
+    def _detection_sensibility(self):
         """load detection sensibility"""
         result = "Unknown"
 
@@ -65,7 +65,7 @@ class EzvizCamera:
 
         return result
 
-    def alarm_list(self):
+    def _alarm_list(self):
         """get last alarm info for this camera's self._serial"""
         alarmlist = self._client.get_alarminfo(self._serial)
 
@@ -73,7 +73,7 @@ class EzvizCamera:
             self.alarmlist_time = alarmlist.get("alarms")[0].get("alarmStartTimeStr")
             self.alarmlist_pic = alarmlist.get("alarms")[0].get("picUrl")
 
-    def local_ip(self):
+    def _local_ip(self):
         """"Fix empty ip value for certain cameras"""
         if self._device.get("connectionInfos"):
             if self._device.get("connectionInfos").get("localIp"):
@@ -84,7 +84,7 @@ class EzvizCamera:
 
         return "0.0.0.0"
 
-    def motion_trigger(self):
+    def _motion_trigger(self):
         """Create motion sensor based on last alarm time."""
         now = datetime.datetime.now().replace(microsecond=0)
         alarm_trigger_active = 0
@@ -112,6 +112,22 @@ class EzvizCamera:
             "timepassed": timepassed,
         }
 
+    def _is_alarm_schedules_enabled(self):
+        """Checks if alarm schedules enabled"""
+        time_plans = None
+
+        if self._device.get("timePlanInfos"):
+            time_plans = [
+                item
+                for item in self._device.get("timePlanInfos")
+                if item.get("type") == 2
+            ]
+
+        if time_plans:
+            return bool(time_plans[0].get("enable"))
+
+        return "unknown"
+
     def status(self):
         """Return the status of the camera."""
         self.load()
@@ -136,20 +152,18 @@ class EzvizCamera:
             "state_led": self._switch.get(DeviceSwitchType.LIGHT.value),
             "follow_move": self._switch.get(DeviceSwitchType.MOBILE_TRACKING.value),
             "alarm_notify": bool(self._device.get("statusInfos").get("globalStatus")),
-            "alarm_schedules_enabled": bool(
-                self._device.get("timePlanInfos")[1].get("enable")
-            ),
+            "alarm_schedules_enabled": self._is_alarm_schedules_enabled(),
             "alarm_sound_mod": SoundMode(
                 self._device.get("statusInfos").get("alarmSoundMode")
             ).name,
             "encrypted": bool(self._device.get("statusInfos").get("isEncrypted")),
-            "local_ip": self.local_ip(),
+            "local_ip": self._local_ip(),
             "wan_ip": self._device.get("connectionInfos", {}).get("netIp", "0.0.0.0"),
             "local_rtsp_port": self._device.get("connectionInfos").get(
                 "localRtspPort", "554"
             ),
             "supported_channels": self._device.get("deviceInfos").get("channelNumber"),
-            "detection_sensibility": self.detection_sensibility(),
+            "detection_sensibility": self._detection_sensibility(),
             "battery_level": self._device.get("statusInfos")
             .get("optionals", {})
             .get("powerRemaining"),

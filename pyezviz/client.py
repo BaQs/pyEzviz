@@ -30,7 +30,15 @@ FEATURE_CODE = "c22cb01f8cb83351422d82fad59c8e4e"
 
 
 class PyEzvizError(Exception):
-    """Handle exception."""
+    """Ezviz api exception."""
+
+
+class InvalidURL(PyEzvizError):
+    """Invalid url exception."""
+
+
+class HTTPError(PyEzvizError):
+    """Invalid host exception."""
 
 
 class EzvizClient:
@@ -80,8 +88,11 @@ class EzvizClient:
 
             req.raise_for_status()
 
+        except requests.ConnectionError as err:
+            raise InvalidURL from err
+
         except requests.HTTPError as err:
-            raise requests.HTTPError(err)
+            raise HTTPError from err
 
         try:
             json_result = req.json()
@@ -144,7 +155,7 @@ class EzvizClient:
                 self.login()
                 return self._api_get_pagelist(page_filter, json_key, max_retries + 1)
 
-            raise requests.HTTPError(err)
+            raise HTTPError from err
 
         if not req.text:
             raise PyEzvizError("No data")
@@ -210,7 +221,7 @@ class EzvizClient:
                 self.login()
                 return self.get_alarminfo(serial, max_retries + 1)
 
-            raise requests.HTTPError(err)
+            raise HTTPError from err
 
         if req.text == "":
             raise PyEzvizError("No data")
@@ -260,7 +271,7 @@ class EzvizClient:
                 self.login()
                 return self._switch_status(serial, status_type, enable, max_retries + 1)
 
-            raise requests.HTTPError(err)
+            raise HTTPError from err
 
         try:
             json_output = req.json()
@@ -308,7 +319,7 @@ class EzvizClient:
                 self.login()
                 return self.sound_alarm(serial, enable, max_retries + 1)
 
-            raise requests.HTTPError(err)
+            raise HTTPError from err
 
         try:
             json_output = req.json()
@@ -484,7 +495,7 @@ class EzvizClient:
             req.raise_for_status()
 
         except requests.HTTPError as err:
-            raise requests.HTTPError(err)
+            raise HTTPError from err
 
         return req.text
 
@@ -508,7 +519,7 @@ class EzvizClient:
                 req.raise_for_status()
 
             except requests.HTTPError as err:
-                raise requests.HTTPError(err)
+                raise HTTPError from err
 
             try:
                 json_result = req.json()
@@ -558,7 +569,7 @@ class EzvizClient:
                 self.login()
                 return self.data_report(serial, enable, max_retries + 1)
 
-            raise requests.HTTPError(err)
+            raise HTTPError from err
 
         try:
             json_output = req.json()
@@ -612,7 +623,7 @@ class EzvizClient:
                     serial, schedule, enable, max_retries + 1
                 )
 
-            raise requests.HTTPError(err)
+            raise HTTPError from err
 
         try:
             json_output = req.json()
@@ -656,7 +667,7 @@ class EzvizClient:
                 self.login()
                 return self.api_set_defence_mode(mode, max_retries + 1)
 
-            raise requests.HTTPError(err)
+            raise HTTPError from err
 
         try:
             json_output = req.json()
@@ -709,7 +720,7 @@ class EzvizClient:
                     serial, sensibility, type_value, max_retries + 1
                 )
 
-            raise requests.HTTPError(err)
+            raise HTTPError from err
 
         try:
             response_json = req.json()
@@ -747,7 +758,7 @@ class EzvizClient:
                     serial, type_value, max_retries + 1
                 )
 
-            raise requests.HTTPError(err)
+            raise HTTPError from err
 
         try:
             response_json = req.json()
@@ -801,7 +812,7 @@ class EzvizClient:
                 self.login()
                 return self.alarm_sound(serial, sound_type, enable, max_retries + 1)
 
-            raise requests.HTTPError(err)
+            raise HTTPError from err
 
         return True
 

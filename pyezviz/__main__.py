@@ -97,7 +97,7 @@ def main():
     parser_camera_alarm.add_argument(
         "--sound",
         required=False,
-        help="Sound level (2 is disabled, 1 intensive, 0 software)",
+        help="Sound level (2 is silent, 1 intensive, 0 soft)",
         type=int,
         choices=[0, 1, 2],
     )
@@ -136,7 +136,7 @@ def main():
             try:
                 client.login()
                 print(json.dumps(client.get_device(), indent=2))
-            except BaseException as exp:
+            except Exception as exp:  # pylint: disable=broad-except
                 print(exp)
             finally:
                 client.close_session()
@@ -177,7 +177,7 @@ def main():
                         ]
                     )
                 )
-            except BaseException as exp:
+            except Exception as exp:  # pylint: disable=broad-except
                 print(exp)
             finally:
                 client.close_session()
@@ -186,7 +186,7 @@ def main():
             try:
                 client.login()
                 print(json.dumps(client.get_switch(), indent=2))
-            except BaseException as exp:
+            except Exception as exp:  # pylint: disable=broad-except
                 print(exp)
             finally:
                 client.close_session()
@@ -195,7 +195,7 @@ def main():
             try:
                 client.login()
                 print(json.dumps(client.get_connection(), indent=2))
-            except BaseException as exp:
+            except Exception as exp:  # pylint: disable=broad-except
                 print(exp)
             finally:
                 client.close_session()
@@ -216,7 +216,7 @@ def main():
                         indent=2,
                     )
                 )
-            except BaseException as exp:
+            except Exception as exp:  # pylint: disable=broad-except
                 print(exp)
             finally:
                 client.close_session()
@@ -228,14 +228,14 @@ def main():
             client.login()
             camera = EzvizCamera(client, args.serial)
             logging.debug("Camera loaded")
-        except BaseException as exp:
+        except Exception as exp:  # pylint: disable=broad-except
             print(exp)
             client.close_session()
 
         if args.camera_action == "move":
             try:
                 camera.move(args.direction, args.speed)
-            except BaseException as exp:
+            except Exception as exp:  # pylint: disable=broad-except
                 print(exp)
             finally:
                 client.close_session()
@@ -244,7 +244,7 @@ def main():
             try:
                 print(json.dumps(camera.status(), indent=2))
 
-            except BaseException as exp:
+            except Exception as exp:  # pylint: disable=broad-except
                 print(exp)
             finally:
                 client.close_session()
@@ -264,7 +264,7 @@ def main():
                     camera.switch_sleep_mode(args.enable)
                 elif args.switch == "follow_move":
                     camera.switch_follow_move(args.enable)
-            except BaseException as exp:
+            except Exception as exp:  # pylint: disable=broad-except
                 print(exp)
             finally:
                 client.close_session()
@@ -279,7 +279,7 @@ def main():
                     camera.alarm_detection_sensibility(args.sensibility)
                 if args.schedule is not None:
                     camera.change_defence_schedule(args.schedule)
-            except BaseException as exp:
+            except Exception as exp:  # pylint: disable=broad-except
                 print(exp)
             finally:
                 client.close_session()

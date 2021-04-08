@@ -43,9 +43,9 @@ class DeviceSwitchType(Enum):
 class SoundMode(Enum):
     """Alarm sound level description."""
 
-    silent = 2
-    soft = 0
-    intense = 1
+    SILENT = 2
+    SOFT = 0
+    INTENSE = 1
 
 
 class DefenseModeType(Enum):
@@ -68,6 +68,7 @@ class DeviceCatagories(Enum):
 class SensorType(Enum):
     """Sensors and their types to expose in HA."""
 
+    # pylint: disable=invalid-name
     sw_version = "None"
     alarm_sound_mod = "None"
     battery_level = "battery"
@@ -84,6 +85,7 @@ class SensorType(Enum):
 class BinarySensorType(Enum):
     """Binary_sensors and their types to expose in HA."""
 
+    # pylint: disable=invalid-name
     Motion_Trigger = "motion"
     alarm_schedules_enabled = "None"
     encrypted = "None"

@@ -6,7 +6,11 @@ import sys
 
 
 class AuthTestResultFailed(Exception):
-    """Digest authentication failed"""
+    """Authentication failed"""
+
+
+class InvalidHost(AuthTestResultFailed):
+    """Invalid host exception."""
 
 
 def genmsg_describe(url, seq, user_agent, auth_seq):
@@ -26,8 +30,8 @@ class TestRTSPAuth:
     def __init__(
         self,
         ip_addr,
-        username,
-        password,
+        username=None,
+        password=None,
         test_uri="",
     ):
         self._rtsp_details = {
@@ -74,8 +78,11 @@ class TestRTSPAuth:
                 )
             )
 
-        except TimeoutError:
-            sys.exit("Invalid ip or camera hibernating")
+        except TimeoutError as err:
+            raise AuthTestResultFailed("Invalid ip or camera hibernating") from err
+
+        except (socket.gaierror, ConnectionRefusedError) as err:
+            raise InvalidHost("Invalid IP or Hostname") from err
 
         seq = 1
 

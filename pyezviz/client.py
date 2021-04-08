@@ -503,6 +503,9 @@ class EzvizClient:
         """Set http session."""
         if self._session is None:
             self._session = requests.session()
+            self._session.headers.update(
+                {"User-Agent": "okhttp/3.12.1"}
+            )  # Android generic user agent.
             return self._login()
 
         if self._token["session_id"] and self._token["rf_session_id"]:

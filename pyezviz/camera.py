@@ -75,12 +75,13 @@ class EzvizCamera:
 
     def _local_ip(self):
         """"Fix empty ip value for certain cameras"""
+        if self._device.get("wifiInfos"):
+            return self._device.get("wifiInfos").get("address")
+
+        # Seems to return none or 0.0.0.0 on some. This should run 2nd.
         if self._device.get("connectionInfos"):
             if self._device.get("connectionInfos").get("localIp"):
                 return self._device.get("connectionInfos").get("localIp")
-
-        if self._device.get("wifiInfos"):
-            return self._device.get("wifiInfos").get("address")
 
         return "0.0.0.0"
 

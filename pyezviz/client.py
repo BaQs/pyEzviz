@@ -89,7 +89,7 @@ class EzvizClient:
             req.raise_for_status()
 
         except requests.ConnectionError as err:
-            raise InvalidURL from err
+            raise InvalidURL("A Invalid URL or Proxy error occured") from err
 
         except requests.HTTPError as err:
             raise HTTPError from err

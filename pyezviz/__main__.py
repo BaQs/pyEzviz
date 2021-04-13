@@ -6,7 +6,7 @@ import logging
 import sys
 
 import pandas
-from pyezviz import EzvizCamera, EzvizClient
+from pyezviz import EzvizCamera, EzvizClient, MQTTClient
 from pyezviz.constants import DefenseModeType
 
 
@@ -42,6 +42,11 @@ def main():
     parser_home_defence_mode = subparsers.add_parser(
         "home_defence_mode", help="Set home defence mode"
     )
+
+    parser_mqtt = subparsers.add_parser(
+        "mqtt", help="Set home defence mode"
+    )
+
     parser_home_defence_mode.add_argument(
         "--mode", required=False, help="Choose mode", choices=["HOME_MODE", "AWAY_MODE"]
     )
@@ -220,6 +225,18 @@ def main():
                 print(exp)
             finally:
                 client.close_session()
+
+    elif args.action == "mqtt":
+
+        try:
+            token = client.login()
+            mqtt = MQTTClient(token)
+            mqtt.start()
+
+        except Exception as exp:  # pylint: disable=broad-except
+            print(exp)
+        finally:
+            client.close_session()
 
     elif args.action == "camera":
 

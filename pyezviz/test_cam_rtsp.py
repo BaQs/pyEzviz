@@ -2,7 +2,6 @@
 import base64
 import hashlib
 import socket
-import sys
 
 
 class AuthTestResultFailed(Exception):
@@ -153,9 +152,3 @@ class TestRTSPAuth:
                 raise AuthTestResultFailed("Credentials not valid!!")
 
         return print("Basic Auth test passed. Credentials Valid!")
-
-
-if __name__ == "__main__":
-    test = TestRTSPAuth()
-    test.main()
-    sys.exit()

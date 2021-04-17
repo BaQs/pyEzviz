@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name='pyezviz',
-    version="0.1.8.7",
+    version="0.1.8.8",
     license='Apache Software License 2.0',
     author='Pierre Ourdouille',
     author_email='baqs@users.github.com',
@@ -19,7 +19,8 @@ setuptools.setup(
     ],
     install_requires=[
         'requests',
-        'pandas'
+        'pandas',
+        'paho-mqtt'
     ],
     entry_points={
     'console_scripts': ['pyezviz = pyezviz.__main__:main']

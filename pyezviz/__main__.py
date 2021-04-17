@@ -43,9 +43,7 @@ def main():
         "home_defence_mode", help="Set home defence mode"
     )
 
-    parser_mqtt = subparsers.add_parser(
-        "mqtt", help="Set home defence mode"
-    )
+    parser_mqtt = subparsers.add_parser("mqtt", help="Set home defence mode")
 
     parser_home_defence_mode.add_argument(
         "--mode", required=False, help="Choose mode", choices=["HOME_MODE", "AWAY_MODE"]
@@ -149,7 +147,6 @@ def main():
         elif args.device_action == "status":
             try:
                 client.login()
-                # print(json.dumps(client.load_cameras(), indent=2))
                 print(
                     pandas.DataFrame(client.load_cameras()).to_string(
                         columns=[

@@ -1,6 +1,7 @@
 """Ezviz cloud MQTT client for push messages."""
 
 import base64
+import json
 import logging
 
 import paho.mqtt.client as mqtt
@@ -21,7 +22,7 @@ MQTT_APP_KEY = "4c6b3cc2-b5eb-4813-a592-612c1374c1fe"
 APP_SECRET = "17454517-cc1c-42b3-a845-99b4a15dd3e6"
 
 # hassio or other mqtt broker to receive messages.
-STATE_TOPIC = "home-assistant/ezviz/messages"
+STATE_TOPIC = "homeassistant/sensor"
 
 
 def on_subscribe(client, userdata, mid, granted_qos):
@@ -67,11 +68,24 @@ class MQTTClient:
     def on_message(self, client, userdata, msg):
         """On MQTT message receive."""
         # pylint: disable=unused-argument
-        print(msg.payload)
+        mqtt_message = json.loads(msg.payload)
+        mqtt_message["ext"] = mqtt_message["ext"].split(",")
+
+        # Restructure payload message
+        new_mqtt_message = {}
+        new_mqtt_message["id"] = mqtt_message["id"]
+        new_mqtt_message["alert"] = mqtt_message["alert"]
+        new_mqtt_message["ezviz_alert_type"] = mqtt_message["ext"][4]
+        new_mqtt_message["serial"] = mqtt_message["ext"][2]
+        new_mqtt_message["msg_time"] = mqtt_message["ext"][1]
+        new_mqtt_message["img_url"] = mqtt_message["ext"][16]
+        print(new_mqtt_message)
+
         if self._broker:
+            # Register and update HA sensor
             publish.single(
-                STATE_TOPIC,
-                msg.payload,
+                f"{STATE_TOPIC}/{new_mqtt_message['serial']}/state",
+                json.dumps(new_mqtt_message),
                 hostname=self._broker["broker_ip"],
                 auth={
                     "username": self._broker["username"],
@@ -134,10 +148,6 @@ class MQTTClient:
             raise InvalidURL("A Invalid URL or Proxy error occured") from err
 
         except requests.HTTPError as err:
-            if err.response.status_code == 401:
-                # session is wrong, need to relogin
-                client = EzvizClient(token=self._token)
-                self._token = client.login()
             raise HTTPError from err
 
         try:

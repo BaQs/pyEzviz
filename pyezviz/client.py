@@ -668,9 +668,8 @@ class EzvizClient:
         # Get CAS Encryption Key
         try:
             my_socket.send(payload + payload_end_padding)
-            print(payload + payload_end_padding)
             response = my_socket.recv(1024)
-            print(response)
+            print(f'Get Encryption Key: {response}')
 
         except (socket.gaierror, ConnectionRefusedError) as err:
             raise InvalidHost("Invalid IP or Hostname") from err
@@ -746,8 +745,7 @@ class EzvizClient:
         try:
             msg = cipher.encrypt(defence_msg_string)
             my_socket.send(payload + msg + payload_end_padding + payload_end_padding)
-            print(payload + msg + payload_end_padding + payload_end_padding)
-            print(f"receive1: {my_socket.recv()}")
+            print(f"Set camera response: {my_socket.recv()}")
 
         except (socket.gaierror, ConnectionRefusedError) as err:
             raise InvalidHost("Invalid IP or Hostname") from err

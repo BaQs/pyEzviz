@@ -2,7 +2,6 @@
 
 import base64
 import json
-import logging
 
 import paho.mqtt.client as mqtt
 import paho.mqtt.publish as publish
@@ -56,6 +55,7 @@ class MQTTClient:
             "session_id": None,
             "rf_session_id": None,
             "username": None,
+            "api_url": "apiieu.ezvizlife.com",
         }
         self._timeout = timeout
         self._mqtt_data = {"mqtt_clientid": None, "ticket": None, "push_url": None}
@@ -79,13 +79,122 @@ class MQTTClient:
         new_mqtt_message["serial"] = mqtt_message["ext"][2]
         new_mqtt_message["msg_time"] = mqtt_message["ext"][1]
         new_mqtt_message["img_url"] = mqtt_message["ext"][16]
+        new_mqtt_message["name"] = mqtt_message["ext"][17]
         print(new_mqtt_message)
 
         if self._broker:
-            # Register and update HA sensor
+            # Register HA alert sensor
             publish.single(
-                f"{STATE_TOPIC}/{new_mqtt_message['serial']}/state",
-                json.dumps(new_mqtt_message),
+                f"{STATE_TOPIC}/{new_mqtt_message['serial']}/alert/config",
+                json.dumps(
+                    {
+                        "name": "alert",
+                        "device": f"[mf: Ezviz, ids: (ezviz_cloud, {new_mqtt_message['serial']})]",
+                        "state_topic": f"{STATE_TOPIC}/{new_mqtt_message['serial']}/alert/state",
+                        "platform": "mqtt",
+                    }
+                ),
+                hostname=self._broker["broker_ip"],
+                auth={
+                    "username": self._broker["username"],
+                    "password": self._broker["password"],
+                },
+            )
+
+            # Register HA alert_type sensor
+            publish.single(
+                f"{STATE_TOPIC}/{new_mqtt_message['serial']}/ezviz_alert_type/config",
+                json.dumps(
+                    {
+                        "name": "ezviz_alert_type",
+                        "device": {
+                            "mf": "Ezviz",
+                            "ids": f"(ezviz_cloud, {new_mqtt_message['serial']}",
+                        },
+                        "state_topic": f"{STATE_TOPIC}/{new_mqtt_message['serial']}/ezviz_alert_type/state",
+                        "platform": "mqtt",
+                    }
+                ),
+                hostname=self._broker["broker_ip"],
+                auth={
+                    "username": self._broker["username"],
+                    "password": self._broker["password"],
+                },
+            )
+
+            # Register HA msg_time sensor
+            publish.single(
+                f"{STATE_TOPIC}/{new_mqtt_message['serial']}/msg_time/config",
+                json.dumps(
+                    {
+                        "name": "msg_time",
+                        "device": f"[mf: Ezviz, ids: (ezviz_cloud, {new_mqtt_message['serial']})]",
+                        "state_topic": f"{STATE_TOPIC}/{new_mqtt_message['serial']}/msg_time/state",
+                        "platform": "mqtt",
+                    }
+                ),
+                hostname=self._broker["broker_ip"],
+                auth={
+                    "username": self._broker["username"],
+                    "password": self._broker["password"],
+                },
+            )
+
+            # Register HA img_url sensor
+            publish.single(
+                f"{STATE_TOPIC}/{new_mqtt_message['serial']}/img_url/config",
+                json.dumps(
+                    {
+                        "name": "img_url",
+                        "device": f"[mf: Ezviz, ids: (ezviz_cloud, {new_mqtt_message['serial']})]",
+                        "state_topic": f"{STATE_TOPIC}/{new_mqtt_message['serial']}/img_url/state",
+                        "platform": "mqtt",
+                    }
+                ),
+                hostname=self._broker["broker_ip"],
+                auth={
+                    "username": self._broker["username"],
+                    "password": self._broker["password"],
+                },
+            )
+
+            # Update HA Alert sensor
+            publish.single(
+                f"{STATE_TOPIC}/{new_mqtt_message['serial']}/alert/state",
+                f"{new_mqtt_message['alert']}",
+                hostname=self._broker["broker_ip"],
+                auth={
+                    "username": self._broker["username"],
+                    "password": self._broker["password"],
+                },
+            )
+
+            # Update HA ezviz_alert_type sensor
+            publish.single(
+                f"{STATE_TOPIC}/{new_mqtt_message['serial']}/ezviz_alert_type/state",
+                f"{new_mqtt_message['ezviz_alert_type']}",
+                hostname=self._broker["broker_ip"],
+                auth={
+                    "username": self._broker["username"],
+                    "password": self._broker["password"],
+                },
+            )
+
+            # Update HA msg_time sensor
+            publish.single(
+                f"{STATE_TOPIC}/{new_mqtt_message['serial']}/msg_time/state",
+                f"{new_mqtt_message['msg_time']}",
+                hostname=self._broker["broker_ip"],
+                auth={
+                    "username": self._broker["username"],
+                    "password": self._broker["password"],
+                },
+            )
+
+            # Update HA img_url sensor
+            publish.single(
+                f"{STATE_TOPIC}/{new_mqtt_message['serial']}/img_url/state",
+                f"{new_mqtt_message['img_url']}",
                 hostname=self._broker["broker_ip"],
                 auth={
                     "username": self._broker["username"],
@@ -174,7 +283,10 @@ class MQTTClient:
                 {"User-Agent": "okhttp/3.12.1"}
             )  # Android generic user agent.
 
-        self._get_service_urls()
+        client = EzvizClient(token=self._token)
+        service_urls = client.get_service_urls()
+        self._mqtt_data["push_url"] = service_urls["systemConfigInfo"]["pushAddr"]
+
         self._register_ezviz_push()
         self._start_ezviz_push()
 
@@ -252,54 +364,5 @@ class MQTTClient:
             ) from err
 
         self._mqtt_data["ticket"] = json_result["ticket"]
-
-        return True
-
-    def _get_service_urls(self, max_retries=0):
-        if max_retries > MAX_RETRIES:
-            raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
-
-        try:
-            req = self._session.get(
-                f"https://{self._token['api_url']}{API_ENDPOINT_SERVER_INFO}",
-                headers={
-                    "sessionId": self._token["session_id"],
-                    "featureCode": FEATURE_CODE,
-                },
-                timeout=self._timeout,
-            )
-
-            req.raise_for_status()
-
-        except requests.ConnectionError as err:
-            raise InvalidURL("A Invalid URL or Proxy error occured") from err
-
-        except requests.HTTPError as err:
-            if err.response.status_code == 401:
-                # session is wrong, need to relogin
-                client = EzvizClient(token=self._token)
-                self._token = client.login()
-                raise HTTPError from err
-
-        if not req.text:
-            raise PyEzvizError("No data")
-
-        try:
-            json_output = req.json()
-
-        except ValueError as err:
-            raise PyEzvizError(
-                "Impossible to decode response: "
-                + str(err)
-                + "\nResponse was: "
-                + str(req.text)
-            ) from err
-
-        if json_output.get("meta").get("code") != 200:
-            logging.info(
-                "Json request error, relogging (max retries: %s)", str(max_retries)
-            )
-
-        self._mqtt_data["push_url"] = json_output["systemConfigInfo"]["pushAddr"]
 
         return True

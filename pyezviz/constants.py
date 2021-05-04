@@ -2,6 +2,7 @@
 from enum import Enum, unique
 
 FEATURE_CODE = "c22cb01f8cb83351422d82fad59c8e4e"
+XOR_KEY = b"\x0c\x0eJ^X\x15@Rr"
 
 
 @unique

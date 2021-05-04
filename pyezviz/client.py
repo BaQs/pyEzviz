@@ -1,11 +1,19 @@
 """Ezviz API."""
 import hashlib
 import logging
+import random
+import socket
+import ssl
+from io import BytesIO
+from itertools import cycle
 from uuid import uuid4
 
 import requests
+import xmltodict
+from Crypto.Cipher import AES
 from pyezviz.camera import EzvizCamera
-from pyezviz.constants import FEATURE_CODE, DefenseModeType, DeviceCatagories
+from pyezviz.constants import (FEATURE_CODE, XOR_KEY, DefenseModeType,
+                               DeviceCatagories)
 
 API_ENDPOINT_CLOUDDEVICES = "/api/cloud/v2/cloudDevices/getAll"
 API_ENDPOINT_PAGELIST = "/v3/userdevices/v1/devices/pagelist"
@@ -23,6 +31,7 @@ API_ENDPOINT_SET_DEFENCE_SCHEDULE = "/api/device/defence/plan2"
 API_ENDPOINT_SWITCH_DEFENCE_MODE = "/v3/userdevices/v1/group/switchDefenceMode"
 API_ENDPOINT_SWITCH_SOUND_ALARM = "/sendAlarm"
 API_ENDPOINT_MQTT_SERVER = "pusheu.ezvizlife.com"
+API_ENDPOINT_SERVER_INFO = "/v3/configurations/system/info"
 
 DEFAULT_TIMEOUT = 25
 MAX_RETRIES = 3
@@ -38,6 +47,17 @@ class InvalidURL(PyEzvizError):
 
 class HTTPError(PyEzvizError):
     """Invalid host exception."""
+
+
+class InvalidHost(PyEzvizError):
+    """Invalid host exception."""
+
+
+def xor_enc_dec(msg, xor_key=XOR_KEY):
+    """Xor encodes camera serial"""
+    with BytesIO(msg) as stream:
+        xor_msg = bytes(a ^ b for a, b in zip(stream.read(), cycle(xor_key)))
+    return xor_msg
 
 
 class EzvizClient:
@@ -62,6 +82,7 @@ class EzvizClient:
             "api_url": url,
         }
         self._timeout = timeout
+        self._service_urls = None
 
     def _login(self):
         """Login to Ezviz API."""
@@ -78,13 +99,21 @@ class EzvizClient:
             "account": self.account,
             "password": md5pass,
             "featureCode": FEATURE_CODE,
+            "msgType": "0",
+            "cuName": "SFRDIDEw",
         }
 
         try:
             req = self._session.post(
                 "https://" + self._token["api_url"] + API_ENDPOINT_LOGIN,
                 allow_redirects=False,
-                headers={"clientType": "3"},
+                headers={
+                    "clientType": "3",
+                    "customno": "1000001",
+                    "clientNo": "web_site",
+                    "appId": "ys7",
+                    "lang": "en",
+                },
                 data=payload,
                 timeout=self._timeout,
             )
@@ -133,7 +162,60 @@ class EzvizClient:
                 f"Login error: Please check your username/password: {req.text}"
             )
 
+        self._service_urls = self.get_service_urls()
+
         return self._token
+
+    def get_service_urls(self, max_retries=0):
+        """Get Ezviz service urls."""
+        if max_retries > MAX_RETRIES:
+            raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
+
+        try:
+            req = self._session.get(
+                f"https://{self._token['api_url']}{API_ENDPOINT_SERVER_INFO}",
+                headers={
+                    "sessionId": self._token["session_id"],
+                    "featureCode": FEATURE_CODE,
+                },
+                timeout=self._timeout,
+            )
+
+            req.raise_for_status()
+
+        except requests.ConnectionError as err:
+            raise InvalidURL("A Invalid URL or Proxy error occured") from err
+
+        except requests.HTTPError as err:
+            if err.response.status_code == 401:
+                # session is wrong, need to relogin
+                self.login()
+
+            raise HTTPError from err
+
+        if not req.text:
+            raise PyEzvizError("No data")
+
+        try:
+            json_output = req.json()
+
+        except ValueError as err:
+            raise PyEzvizError(
+                "Impossible to decode response: "
+                + str(err)
+                + "\nResponse was: "
+                + str(req.text)
+            ) from err
+
+        if json_output.get("meta").get("code") != 200:
+            logging.info(
+                "Json request error, relogging (max retries: %s)", str(max_retries)
+            )
+
+        service_urls = json_output["systemConfigInfo"]
+        service_urls["sysConf"] = service_urls["sysConf"].split("|")
+
+        return service_urls
 
     def _api_get_pagelist(self, page_filter=None, json_key=None, max_retries=0):
         """Get data from pagelist API."""
@@ -552,49 +634,126 @@ class EzvizClient:
 
         return self._login()
 
-    def data_report(self, serial, enable=1, max_retries=0):
+    def _cas_get_encryption(self, devserial):
+        """Fetch encryption code from ezviz cas server """
+        ran = random.randrange(10 ** 80)
+        myhex = "%064x" % ran
+        myhex = myhex[:32]
+
+        payload = (
+            f"\x9e\xba\xac\xe9\x01\x00\x00\x00\x00\x00"
+            f"\x00\x02"  # Check or order?
+            f"\x00\x00\x00\x00\x00\x00 "
+            f"\x01"  # Check or order?
+            f"\x00\x00\x00\x00\x00\x00\x02\t\x00\x00\x00\x00"
+            f'<?xml version="1.0" encoding="utf-8"?>\n<Request>\n\t'
+            f'<ClientID>{self._token["session_id"]}</ClientID>'
+            f"\n\t<Sign>{FEATURE_CODE}</Sign>\n\t"
+            f"<DevSerial>{devserial}</DevSerial>"
+            f"\n\t<ClientType>0</ClientType>\n</Request>\n"
+        ).encode("latin1")
+
+        payload_end_padding = myhex.encode("latin1")
+
+        context = ssl._create_unverified_context()
+
+        # Create a TCP/IP socket
+        my_socket = socket.create_connection(
+            (self._service_urls["sysConf"][15], self._service_urls["sysConf"][16])
+        )
+        my_socket = context.wrap_socket(
+            my_socket, server_hostname=self._service_urls["sysConf"][15]
+        )
+
+        # Get CAS Encryption Key
+        try:
+            my_socket.send(payload + payload_end_padding)
+            print(payload + payload_end_padding)
+            response = my_socket.recv(1024)
+            print(response)
+
+        except (socket.gaierror, ConnectionRefusedError) as err:
+            raise InvalidHost("Invalid IP or Hostname") from err
+
+        return response
+
+    def set_camera_defence(self, serial, enable=1):
         """Enable alarm notifications."""
-        if max_retries > MAX_RETRIES:
-            raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
+
+        # Random hex 32 characters long
+        ran = random.randrange(10 ** 80)
+        myhex = "%064x" % ran
+        myhex = myhex[:32]
+
+        payload = (
+            f"\x9e\xba\xac\xe9\x01\x00\x00\x00\x00\x00"
+            f"\x00\x14"  # Check or order?
+            f"\x00\x00\x00\x00\x00\x00 "
+            f"\x05"
+            f"\x00\x00\x00\x00\x00\x00\x02\xd0\x00\x00\x01\xe0"
+            f'<?xml version="1.0" encoding="utf-8"?>\n<Request>\n\t'
+            f'<Verify ClientSession="{self._token["session_id"]}" '
+            f'ToDevice="{serial}" ClientType="0" />\n\t'
+            f'<Message Length="240" />\n</Request>\n'
+            f"\x9e\xba\xac\xe9\x01\x00\x00\x00\x00\x00"
+            f"\x00\x13"
+            f"\x00\x00\x00\x00\x00\x000\x0f\xff\xff\xff\xff"
+            f"\x00\x00\x00\xb0\x00\x00\x00\x00"
+        ).encode("latin1")
+
+        payload_end_padding = myhex.encode("latin1")
+
+        # xor camera serial
+        xor_cam_serial = xor_enc_dec(serial.encode("latin1"))
+
+        defence_msg_string = (
+            f'{xor_cam_serial.decode()}2+,*xdv.0" '
+            f'encoding="utf-8"?>\n'
+            f"<Request>\n"
+            f"\t<OperationCode>ABCDEFG</OperationCode>\n"
+            f'\t<Defence Type="Global" Status="{enable}" Actor="V" Channel="0" />\n'
+            f"</Request>\n"
+            f"\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10"
+        ).encode("latin1")
+
+        context = ssl._create_unverified_context()
+
+        # Create a TCP/IP socket
+        my_socket = socket.create_connection(
+            (self._service_urls["sysConf"][15], self._service_urls["sysConf"][16])
+        )
+        my_socket = context.wrap_socket(
+            my_socket, server_hostname=self._service_urls["sysConf"][15]
+        )
+
+        cas_client = self._cas_get_encryption(serial)
+
+        # Trim header, tail and convert xml to dict.
+        cas_client = cas_client[32::]
+        cas_client = cas_client[:-32:]
+        cas_client = xmltodict.parse(cas_client)
+
+        aes_key = cas_client["Response"]["Session"]["@Key"].encode("latin1")
+        iv_value = (
+            f"{serial}{cas_client['Response']['Session']['@OperationCode']}".encode(
+                "latin1"
+            )
+        )
+
+        # Message decryption
+        cipher = AES.new(aes_key, AES.MODE_CBC, iv_value)
 
         try:
-            req = self._session.post(
-                "https://" + self._token["api_url"] + API_ENDPOINT_SET_DEFENCE,
-                headers={"sessionId": self._token["session_id"]},
-                data={
-                    "deviceSerial": serial,
-                    "defenceType": "Global",
-                    "enablePlan": enable,
-                    "channelNo": "1",
-                },
-                timeout=self._timeout,
-            )
+            msg = cipher.encrypt(defence_msg_string)
+            my_socket.send(payload + msg + payload_end_padding + payload_end_padding)
+            print(payload + msg + payload_end_padding + payload_end_padding)
+            print(f"receive1: {my_socket.recv()}")
 
-            req.raise_for_status()
+        except (socket.gaierror, ConnectionRefusedError) as err:
+            raise InvalidHost("Invalid IP or Hostname") from err
 
-        except requests.HTTPError as err:
-            if err.response.status_code == 401:
-                # session is wrong, need to relogin
-                self.login()
-                return self.data_report(serial, enable, max_retries + 1)
-
-            raise HTTPError from err
-
-        try:
-            json_output = req.json()
-
-        except ValueError as err:
-            raise PyEzvizError(
-                "Impossible to decode response: "
-                + str(err)
-                + "\nResponse was: "
-                + str(req.text)
-            ) from err
-
-        if json_output.get("resultCode") != "0":
-            raise PyEzvizError(
-                f"Could not set alarm notification: Got {req.status_code} : {req.text})"
-            )
+        finally:
+            my_socket.close()
 
         return True
 

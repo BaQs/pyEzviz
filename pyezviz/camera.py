@@ -191,7 +191,7 @@ class EzvizCamera:
 
     def alarm_notify(self, enable):
         """Enable/Disable camera notification when movement is detected."""
-        return self._client.data_report(self._serial, enable)
+        return self._client.set_camera_defence(self._serial, enable)
 
     def alarm_sound(self, sound_type):
         """Enable/Disable camera sound when movement is detected."""

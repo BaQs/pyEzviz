@@ -6,16 +6,14 @@ import json
 import paho.mqtt.client as mqtt
 import paho.mqtt.publish as publish
 import requests
-from pyezviz.client import EzvizClient, HTTPError, InvalidURL, PyEzvizError
-from pyezviz.constants import FEATURE_CODE
+from pyezviz.constants import DEFAULT_TIMEOUT, FEATURE_CODE
+from pyezviz.exceptions import HTTPError, InvalidURL, PyEzvizError
 
 API_ENDPOINT_SERVER_INFO = "/v3/configurations/system/info"
 API_ENDPOINT_REGISTER_MQTT = "/v1/getClientId"
 API_ENDPOINT_START_MQTT = "/api/push/start"
 API_ENDPOINT_STOP_MQTT = "/api/push/stop"
 
-DEFAULT_TIMEOUT = 25
-MAX_RETRIES = 3
 
 MQTT_APP_KEY = "4c6b3cc2-b5eb-4813-a592-612c1374c1fe"
 APP_SECRET = "17454517-cc1c-42b3-a845-99b4a15dd3e6"
@@ -58,7 +56,11 @@ class MQTTClient:
             "api_url": "apiieu.ezvizlife.com",
         }
         self._timeout = timeout
-        self._mqtt_data = {"mqtt_clientid": None, "ticket": None, "push_url": None}
+        self._mqtt_data = {
+            "mqtt_clientid": None,
+            "ticket": None,
+            "push_url": token["service_urls"]["pushAddr"],
+        }
         self._broker = broker or {
             "username": "ezviz",
             "password": "ezviz",
@@ -89,7 +91,11 @@ class MQTTClient:
                 json.dumps(
                     {
                         "name": "alert",
-                        "device": f"[mf: Ezviz, ids: (ezviz_cloud, {new_mqtt_message['serial']})]",
+                        "device": {
+                            "name": f"{new_mqtt_message['name']}",
+                            "mf": "Ezviz",
+                            "ids": f"(ezviz, {new_mqtt_message['serial']})",
+                        },
                         "state_topic": f"{STATE_TOPIC}/{new_mqtt_message['serial']}/alert/state",
                         "platform": "mqtt",
                     }
@@ -108,8 +114,9 @@ class MQTTClient:
                     {
                         "name": "ezviz_alert_type",
                         "device": {
+                            "name": f"{new_mqtt_message['name']}",
                             "mf": "Ezviz",
-                            "ids": f"(ezviz_cloud, {new_mqtt_message['serial']}",
+                            "ids": f"(ezviz, {new_mqtt_message['serial']})",
                         },
                         "state_topic": f"{STATE_TOPIC}/{new_mqtt_message['serial']}/ezviz_alert_type/state",
                         "platform": "mqtt",
@@ -128,7 +135,11 @@ class MQTTClient:
                 json.dumps(
                     {
                         "name": "msg_time",
-                        "device": f"[mf: Ezviz, ids: (ezviz_cloud, {new_mqtt_message['serial']})]",
+                        "device": {
+                            "name": f"{new_mqtt_message['name']}",
+                            "mf": "Ezviz",
+                            "ids": "(ezviz, {new_mqtt_message['serial']})",
+                        },
                         "state_topic": f"{STATE_TOPIC}/{new_mqtt_message['serial']}/msg_time/state",
                         "platform": "mqtt",
                     }
@@ -146,7 +157,11 @@ class MQTTClient:
                 json.dumps(
                     {
                         "name": "img_url",
-                        "device": f"[mf: Ezviz, ids: (ezviz_cloud, {new_mqtt_message['serial']})]",
+                        "device": {
+                            "name": f"{new_mqtt_message['name']}",
+                            "mf": "Ezviz",
+                            "ids": f"(ezviz, {new_mqtt_message['serial']})",
+                        },
                         "state_topic": f"{STATE_TOPIC}/{new_mqtt_message['serial']}/img_url/state",
                         "platform": "mqtt",
                     }
@@ -203,7 +218,7 @@ class MQTTClient:
             )
 
     def _mqtt(self):
-        """Receive MQTT messages from ezviz server """
+        """Receive MQTT messages from ezviz server"""
 
         ezviz_mqtt_client = mqtt.Client(
             client_id=self._mqtt_data["mqtt_clientid"], protocol=4, transport="tcp"
@@ -283,10 +298,6 @@ class MQTTClient:
                 {"User-Agent": "okhttp/3.12.1"}
             )  # Android generic user agent.
 
-        client = EzvizClient(token=self._token)
-        service_urls = client.get_service_urls()
-        self._mqtt_data["push_url"] = service_urls["systemConfigInfo"]["pushAddr"]
-
         self._register_ezviz_push()
         self._start_ezviz_push()
 
@@ -346,10 +357,6 @@ class MQTTClient:
             raise InvalidURL("A Invalid URL or Proxy error occured") from err
 
         except requests.HTTPError as err:
-            if err.response.status_code == 401:
-                # session is wrong, need to relogin
-                client = EzvizClient(token=self._token)
-                self._token = client.login()
             raise HTTPError from err
 
         try:

@@ -2,14 +2,7 @@
 import base64
 import hashlib
 import socket
-
-
-class AuthTestResultFailed(Exception):
-    """Authentication failed"""
-
-
-class InvalidHost(AuthTestResultFailed):
-    """Invalid host exception."""
+from pyezviz.exceptions import AuthTestResultFailed, InvalidHost
 
 
 def genmsg_describe(url, seq, user_agent, auth_seq):

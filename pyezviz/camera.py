@@ -2,10 +2,7 @@
 import datetime
 
 from pyezviz.constants import DeviceCatagories, DeviceSwitchType, SoundMode
-
-
-class PyEzvizError(Exception):
-    """handle exception."""
+from pyezviz.exceptions import PyEzvizError
 
 
 class EzvizCamera:

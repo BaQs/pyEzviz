@@ -20,7 +20,9 @@ setuptools.setup(
     install_requires=[
         'requests',
         'pandas',
-        'paho-mqtt'
+        'paho-mqtt',
+        'xmltodict',
+        'pycryptodome'
     ],
     entry_points={
     'console_scripts': ['pyezviz = pyezviz.__main__:main']

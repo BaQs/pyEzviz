@@ -59,6 +59,8 @@ class SoundMode(Enum):
     SILENT = 2
     SOFT = 0
     INTENSE = 1
+    CUSTOM = 3
+    PLAN = 4
 
 
 class DefenseModeType(Enum):

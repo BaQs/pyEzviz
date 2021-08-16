@@ -596,6 +596,9 @@ class EzvizClient:
             if not self._token["session_id"]:
                 raise PyEzvizError(f"Relogin required: {req.text}")
 
+            if not self._token["service_urls"]:
+                self._token["service_urls"] = self.get_service_urls()
+
             return self._token
 
         return self._login()

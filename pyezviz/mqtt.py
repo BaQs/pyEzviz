@@ -43,7 +43,8 @@ def on_message(client, userdata, msg):
     mqtt_message["ext"] = mqtt_message["ext"].split(",")
 
     # Print payload message
-    print(mqtt_message)
+    decoded_message = {mqtt_message['ext'][2]:{'id':mqtt_message['id'], 'alert':mqtt_message['alert'], 'time':mqtt_message['ext'][1], 'alert type':mqtt_message['ext'][4], 'image':mqtt_message['ext'][16]}}
+    print(decoded_message)
 
 
 class MQTTClient(threading.Thread):

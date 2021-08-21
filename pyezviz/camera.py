@@ -180,9 +180,9 @@ class EzvizCamera:
             raise PyEzvizError(f"Invalid direction: {direction} ")
 
         # launch the start command
-        self._client.ptzControl(str(direction).upper(), self._serial, "START", speed)
+        self._client.ptz_control(str(direction).upper(), self._serial, "START", speed)
         # launch the stop command
-        self._client.ptzControl(str(direction).upper(), self._serial, "STOP", speed)
+        self._client.ptz_control(str(direction).upper(), self._serial, "STOP", speed)
 
         return True
 

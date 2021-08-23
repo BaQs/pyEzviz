@@ -467,9 +467,6 @@ class EzvizClient:
             for item in devices["cameraInfos"]:
                 if item["deviceSerial"] == device["deviceSerial"]:
                     result[device["deviceSerial"]]["cameraInfos"] = item
-                    result[device["deviceSerial"]]["cloudInfos"] = devices.get(
-                        "cloudInfos"
-                    ).get(item["cameraId"])
 
         return result
 
@@ -513,9 +510,6 @@ class EzvizClient:
                 for item in devices["cameraInfos"]:
                     if item["deviceSerial"] == device["deviceSerial"]:
                         result[device["deviceSerial"]]["cameraInfos"] = item
-                        result[device["deviceSerial"]]["cloudInfos"] = devices.get(
-                            "cloudInfos"
-                        ).get(item["cameraId"])
 
         return result.get(serial)
 

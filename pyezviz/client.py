@@ -1,13 +1,22 @@
 """Ezviz API."""
+from __future__ import annotations
+
 import hashlib
 import logging
+from typing import Any
 from uuid import uuid4
 
 import requests
+
 from pyezviz.camera import EzvizCamera
 from pyezviz.cas import EzvizCAS
-from pyezviz.constants import (DEFAULT_TIMEOUT, FEATURE_CODE, MAX_RETRIES,
-                               DefenseModeType, DeviceCatagories)
+from pyezviz.constants import (
+    DEFAULT_TIMEOUT,
+    FEATURE_CODE,
+    MAX_RETRIES,
+    DefenseModeType,
+    DeviceCatagories,
+)
 from pyezviz.exceptions import HTTPError, InvalidURL, PyEzvizError
 
 API_ENDPOINT_CLOUDDEVICES = "/api/cloud/v2/cloudDevices/getAll"
@@ -32,16 +41,18 @@ class EzvizClient:
 
     def __init__(
         self,
-        account=None,
-        password=None,
-        url="apiieu.ezvizlife.com",
-        timeout=DEFAULT_TIMEOUT,
-        token=None,
-    ):
+        account: str | None = None,
+        password: str | None = None,
+        url: str = "apiieu.ezvizlife.com",
+        timeout: int = DEFAULT_TIMEOUT,
+        token: dict | None = None,
+    ) -> None:
         """Initialize the client object."""
         self.account = account
         self.password = password
-        self._session = None
+        self._session = requests.session()
+        # Set Android generic user agent.
+        self._session.headers.update({"User-Agent": "okhttp/3.12.1"})
         self._token = token or {
             "session_id": None,
             "rf_session_id": None,
@@ -50,7 +61,7 @@ class EzvizClient:
         }
         self._timeout = timeout
 
-    def _login(self):
+    def _login(self, account: str, password: str) -> dict[Any, Any]:
         """Login to Ezviz API."""
 
         # Region code to url.
@@ -59,10 +70,10 @@ class EzvizClient:
 
         # Ezviz API sends md5 of password
         temp = hashlib.md5()
-        temp.update(self.password.encode("utf-8"))
+        temp.update(password.encode("utf-8"))
         md5pass = temp.hexdigest()
         payload = {
-            "account": self.account,
+            "account": account,
             "password": md5pass,
             "featureCode": FEATURE_CODE,
             "msgType": "0",
@@ -107,7 +118,7 @@ class EzvizClient:
             self._token["api_url"] = json_result["loginArea"]["apiDomain"]
             print("Region incorrect!")
             print(f"Your region url: {self._token['api_url']}")
-            self._session = None
+            self.close_session()
             return self.login()
 
         if json_result["meta"]["code"] == 1013:
@@ -132,10 +143,8 @@ class EzvizClient:
 
         return self._token
 
-    def get_service_urls(self, max_retries=0):
+    def get_service_urls(self) -> Any:
         """Get Ezviz service urls."""
-        if max_retries > MAX_RETRIES:
-            raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
 
         try:
             req = self._session.get(
@@ -174,16 +183,16 @@ class EzvizClient:
             ) from err
 
         if json_output.get("meta").get("code") != 200:
-            logging.info(
-                "Json request error, relogging (max retries: %s)", str(max_retries)
-            )
+            logging.info("Json request error")
 
         service_urls = json_output["systemConfigInfo"]
         service_urls["sysConf"] = service_urls["sysConf"].split("|")
 
         return service_urls
 
-    def _api_get_pagelist(self, page_filter=None, json_key=None, max_retries=0):
+    def _api_get_pagelist(
+        self, page_filter: str, json_key: str | None = None, max_retries: int = 0
+    ) -> Any:
         """Get data from pagelist API."""
 
         if max_retries > MAX_RETRIES:
@@ -248,21 +257,23 @@ class EzvizClient:
 
         return json_result
 
-    def get_alarminfo(self, serial, max_retries=0):
+    def get_alarminfo(self, serial: str, max_retries: int = 0) -> Any:
         """Get data from alarm info API."""
         if max_retries > MAX_RETRIES:
             raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
+
+        params: dict[str, int | str] = {
+            "deviceSerials": serial,
+            "queryType": -1,
+            "limit": 1,
+            "stype": -1,
+        }
 
         try:
             req = self._session.get(
                 "https://" + self._token["api_url"] + API_ENDPOINT_ALARMINFO_GET,
                 headers={"sessionId": self._token["session_id"]},
-                params={
-                    "deviceSerials": serial,
-                    "queryType": -1,
-                    "limit": 1,
-                    "stype": 2401,
-                },
+                params=params,
                 timeout=self._timeout,
             )
 
@@ -292,7 +303,9 @@ class EzvizClient:
 
         return json_output
 
-    def _switch_status(self, serial, status_type, enable, max_retries=0):
+    def _switch_status(
+        self, serial: str, status_type: int, enable: int, max_retries: int = 0
+    ) -> bool:
         """Switch status on a device."""
         if max_retries > MAX_RETRIES:
             raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
@@ -344,7 +357,7 @@ class EzvizClient:
 
         return True
 
-    def sound_alarm(self, serial, enable=1, max_retries=0):
+    def sound_alarm(self, serial: str, enable: int = 1, max_retries: int = 0) -> bool:
         """Sound alarm on a device."""
         if max_retries > MAX_RETRIES:
             raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
@@ -392,11 +405,11 @@ class EzvizClient:
 
         return True
 
-    def load_cameras(self):
+    def load_cameras(self) -> dict[Any, Any]:
         """Load and return all cameras objects."""
 
         devices = self._get_all_device_infos()
-        cameras = []
+        cameras = {}
         supported_categories = [
             DeviceCatagories.COMMON_DEVICE_CATEGORY.value,
             DeviceCatagories.CAMERA_DEVICE_CATEGORY.value,
@@ -405,37 +418,30 @@ class EzvizClient:
             DeviceCatagories.BASE_STATION_DEVICE_CATEGORY.value,
         ]
 
-        for device in devices:
-            if (
-                devices.get(device).get("deviceInfos").get("deviceCategory")
-                in supported_categories
-            ):
+        for device, data in devices.items():
+            if data["deviceInfos"]["deviceCategory"] in supported_categories:
                 # Add support for connected HikVision cameras
-                if devices.get(device).get("deviceInfos").get(
-                    "deviceCategory"
-                ) == DeviceCatagories.COMMON_DEVICE_CATEGORY.value and not devices.get(
-                    device
-                ).get(
-                    "deviceInfos"
-                ).get(
-                    "hik"
+                if (
+                    data["deviceInfos"]["deviceCategory"]
+                    == DeviceCatagories.COMMON_DEVICE_CATEGORY.value
+                    and not data["deviceInfos"]["hik"]
                 ):
                     continue
 
                 # Create camera object
 
-                camera = EzvizCamera(self, device, devices.get(device))
+                camera = EzvizCamera(self, device, data)
 
                 camera.load()
-                cameras.append(camera.status())
+                cameras[device] = camera.status()
 
         return cameras
 
-    def _get_all_device_infos(self):
-        """Load all devices and build dict per device serial"""
+    def _get_all_device_infos(self) -> dict[Any, Any]:
+        """Load all devices and build dict per device serial."""
 
         devices = self._get_page_list()
-        result = {}
+        result: dict[Any, Any] = {}
 
         for device in devices["deviceInfos"]:
             result[device["deviceSerial"]] = {}
@@ -470,14 +476,14 @@ class EzvizClient:
 
         return result
 
-    def get_all_per_serial_infos(self, serial=None):
-        """Load all devices and build dict per device serial"""
+    def get_all_per_serial_infos(self, serial: str) -> dict[Any, Any] | None:
+        """Load all devices and build dict per device serial."""
 
         if serial is None:
             raise PyEzvizError("Need serial number for this query")
 
         devices = self._get_page_list()
-        result = {serial: {}}
+        result: dict[str, dict] = {serial: {}}
 
         for device in devices["deviceInfos"]:
             if device["deviceSerial"] == serial:
@@ -513,7 +519,9 @@ class EzvizClient:
 
         return result.get(serial)
 
-    def ptz_control(self, command, serial, action, speed=5):
+    def ptz_control(
+        self, command: str, serial: str, action: str, speed: int = 5
+    ) -> Any:
         """PTZ Control by API."""
         if command is None:
             raise PyEzvizError("Trying to call ptzControl without command")
@@ -546,14 +554,8 @@ class EzvizClient:
 
         return req.text
 
-    def login(self):
-        """Set http session."""
-        if self._session is None:
-            self._session = requests.session()
-            self._session.headers.update(
-                {"User-Agent": "okhttp/3.12.1"}
-            )  # Android generic user agent.
-
+    def login(self) -> dict[Any, Any]:
+        """Get or refresh ezviz login token."""
         if self._token["session_id"] and self._token["rf_session_id"]:
             try:
                 req = self._session.put(
@@ -595,16 +597,21 @@ class EzvizClient:
 
             return self._token
 
-        return self._login()
+        if self.account and self.password:
+            return self._login(account=self.account, password=self.password)
 
-    def set_camera_defence(self, serial, enable):
+        raise PyEzvizError("Login with account and password required")
+
+    def set_camera_defence(self, serial: str, enable: int) -> bool:
         """Enable/Disable motion detection on camera."""
         cas_client = EzvizCAS(self._token)
         cas_client.set_camera_defence_state(serial, enable)
 
         return True
 
-    def api_set_defence_schedule(self, serial, schedule, enable, max_retries=0):
+    def api_set_defence_schedule(
+        self, serial: str, schedule: str, enable: int, max_retries: int = 0
+    ) -> bool:
         """Set defence schedules."""
         if max_retries > MAX_RETRIES:
             raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
@@ -658,7 +665,7 @@ class EzvizClient:
 
         return True
 
-    def api_set_defence_mode(self, mode: DefenseModeType, max_retries=0):
+    def api_set_defence_mode(self, mode: DefenseModeType, max_retries: int = 0) -> bool:
         """Set defence mode."""
         if max_retries > MAX_RETRIES:
             raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
@@ -702,7 +709,13 @@ class EzvizClient:
 
         return True
 
-    def detection_sensibility(self, serial, sensibility=3, type_value=3, max_retries=0):
+    def detection_sensibility(
+        self,
+        serial: str,
+        sensibility: int = 3,
+        type_value: int = 3,
+        max_retries: int = 0,
+    ) -> bool | str:
         """Set detection sensibility."""
         if max_retries > MAX_RETRIES:
             raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
@@ -750,7 +763,9 @@ class EzvizClient:
 
         return True
 
-    def get_detection_sensibility(self, serial, type_value="0", max_retries=0):
+    def get_detection_sensibility(
+        self, serial: str, type_value: str = "0", max_retries: int = 0
+    ) -> Any:
         """Get detection sensibility notifications."""
         if max_retries > MAX_RETRIES:
             raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
@@ -796,7 +811,9 @@ class EzvizClient:
         return "Unknown"
 
     # soundtype: 0 = normal, 1 = intensive, 2 = disabled ... don't ask me why...
-    def alarm_sound(self, serial, sound_type, enable=1, max_retries=0):
+    def alarm_sound(
+        self, serial: str, sound_type: int, enable: int = 1, max_retries: int = 0
+    ) -> bool:
         """Enable alarm sound by API."""
         if max_retries > MAX_RETRIES:
             raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
@@ -835,11 +852,11 @@ class EzvizClient:
 
         return True
 
-    def switch_status(self, serial, status_type, enable=0):
+    def switch_status(self, serial: str, status_type: int, enable: int = 0) -> bool:
         """Switch status of a device."""
         return self._switch_status(serial, status_type, enable)
 
-    def _get_page_list(self):
+    def _get_page_list(self) -> Any:
         """Get ezviz device info broken down in sections."""
         return self._api_get_pagelist(
             page_filter="CLOUD, TIME_PLAN, CONNECTION, SWITCH,"
@@ -849,50 +866,54 @@ class EzvizClient:
             json_key=None,
         )
 
-    def get_device(self):
+    def get_device(self) -> Any:
         """Get ezviz devices filter."""
         return self._api_get_pagelist(page_filter="CLOUD", json_key="deviceInfos")
 
-    def get_connection(self):
+    def get_connection(self) -> Any:
         """Get ezviz connection infos filter."""
         return self._api_get_pagelist(
             page_filter="CONNECTION", json_key="connectionInfos"
         )
 
-    def _get_status(self):
+    def _get_status(self) -> Any:
         """Get ezviz status infos filter."""
         return self._api_get_pagelist(page_filter="STATUS", json_key="statusInfos")
 
-    def get_switch(self):
+    def get_switch(self) -> Any:
         """Get ezviz switch infos filter."""
         return self._api_get_pagelist(
             page_filter="SWITCH", json_key="switchStatusInfos"
         )
 
-    def _get_wifi(self):
+    def _get_wifi(self) -> Any:
         """Get ezviz wifi infos filter."""
         return self._api_get_pagelist(page_filter="WIFI", json_key="wifiInfos")
 
-    def _get_nodisturb(self):
+    def _get_nodisturb(self) -> Any:
         """Get ezviz nodisturb infos filter."""
         return self._api_get_pagelist(
             page_filter="NODISTURB", json_key="alarmNodisturbInfos"
         )
 
-    def _get_p2p(self):
+    def _get_p2p(self) -> Any:
         """Get ezviz P2P infos filter."""
         return self._api_get_pagelist(page_filter="P2P", json_key="p2pInfos")
 
-    def _get_kms(self):
+    def _get_kms(self) -> Any:
         """Get ezviz KMS infos filter."""
         return self._api_get_pagelist(page_filter="KMS", json_key="kmsInfos")
 
-    def _get_time_plan(self):
+    def _get_time_plan(self) -> Any:
         """Get ezviz TIME_PLAN infos filter."""
         return self._api_get_pagelist(page_filter="TIME_PLAN", json_key="timePlanInfos")
 
-    def close_session(self):
-        """Close current session."""
+    def close_session(self) -> None:
+        """Clear current session."""
         if self._session:
             self._session.close()
-            self._session = None
+
+        self._session = requests.session()
+        self._session.headers.update(
+            {"User-Agent": "okhttp/3.12.1"}
+        )  # Android generic user agent.

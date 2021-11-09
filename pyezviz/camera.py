@@ -25,7 +25,7 @@ class EzvizCamera:
         """Update device info for camera serial."""
 
         if self._device is None:
-            self._device = self._client.get_all_per_serial_infos(self._serial)
+            self._device = self._client.get_device_infos(self._serial)
 
         self._alarm_list()
 

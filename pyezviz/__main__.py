@@ -148,9 +148,10 @@ def main():
             try:
                 client.login()
                 print(
-                    pandas.DataFrame(client.load_cameras()).to_string(
+                    pandas.DataFrame.from_dict(
+                        data=client.load_cameras(),
+                        orient="index",
                         columns=[
-                            "serial",
                             "name",
                             # version,
                             # upgrade_available,
@@ -176,7 +177,7 @@ def main():
                             "Motion_Trigger",
                             # last_alarm_time,
                             # last_alarm_pic
-                        ]
+                        ],
                     )
                 )
             except Exception as exp:  # pylint: disable=broad-except

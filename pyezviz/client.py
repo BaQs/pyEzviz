@@ -408,7 +408,7 @@ class EzvizClient:
     def load_cameras(self) -> dict[Any, Any]:
         """Load and return all cameras objects."""
 
-        devices = self._get_all_device_infos()
+        devices = self.get_device_infos()
         cameras = {}
         supported_categories = [
             DeviceCatagories.COMMON_DEVICE_CATEGORY.value,
@@ -437,85 +437,33 @@ class EzvizClient:
 
         return cameras
 
-    def _get_all_device_infos(self) -> dict[Any, Any]:
+    def get_device_infos(self, serial: str | None = None) -> dict[Any, Any]:
         """Load all devices and build dict per device serial."""
 
         devices = self._get_page_list()
         result: dict[Any, Any] = {}
 
         for device in devices["deviceInfos"]:
-            result[device["deviceSerial"]] = {}
-            result[device["deviceSerial"]]["deviceInfos"] = device
-            result[device["deviceSerial"]]["connectionInfos"] = devices.get(
-                "connectionInfos"
-            ).get(device["deviceSerial"])
-            result[device["deviceSerial"]]["p2pInfos"] = devices.get("p2pInfos").get(
-                device["deviceSerial"]
-            )
-            result[device["deviceSerial"]]["alarmNodisturbInfos"] = devices.get(
-                "alarmNodisturbInfos"
-            ).get(device["deviceSerial"])
-            result[device["deviceSerial"]]["kmsInfos"] = devices.get("kmsInfos").get(
-                device["deviceSerial"]
-            )
-            result[device["deviceSerial"]]["timePlanInfos"] = devices.get(
-                "timePlanInfos"
-            ).get(device["deviceSerial"])
-            result[device["deviceSerial"]]["statusInfos"] = devices.get(
-                "statusInfos"
-            ).get(device["deviceSerial"])
-            result[device["deviceSerial"]]["wifiInfos"] = devices.get("wifiInfos").get(
-                device["deviceSerial"]
-            )
-            result[device["deviceSerial"]]["switchStatusInfos"] = devices.get(
-                "switchStatusInfos"
-            ).get(device["deviceSerial"])
-            for item in devices["cameraInfos"]:
-                if item["deviceSerial"] == device["deviceSerial"]:
-                    result[device["deviceSerial"]]["cameraInfos"] = item
+            _serial = device["deviceSerial"]
+            result[_serial] = {
+                "deviceInfos": device,
+                "connectionInfos": devices["connectionInfos"].get(_serial),
+                "p2pInfos": devices["p2pInfos"].get(_serial),
+                "alarmNodisturbInfos": devices["alarmNodisturbInfos"].get(_serial),
+                "kmsInfos": devices["kmsInfos"].get(_serial),
+                "timePlanInfos": devices["timePlanInfos"].get(_serial),
+                "statusInfos": devices["statusInfos"].get(_serial),
+                "wifiInfos": devices["wifiInfos"].get(_serial),
+                "switchStatusInfos": devices["switchStatusInfos"].get(_serial),
+                "cameraInfos": [
+                    item
+                    for item in devices["cameraInfos"]
+                    if item["deviceSerial"] == _serial
+                ][0],
+            }
 
-        return result
-
-    def get_all_per_serial_infos(self, serial: str) -> dict[Any, Any] | None:
-        """Load all devices and build dict per device serial."""
-
-        if serial is None:
-            raise PyEzvizError("Need serial number for this query")
-
-        devices = self._get_page_list()
-        result: dict[str, dict] = {serial: {}}
-
-        for device in devices["deviceInfos"]:
-            if device["deviceSerial"] == serial:
-                result[device["deviceSerial"]]["deviceInfos"] = device
-                result[device["deviceSerial"]]["deviceInfos"] = device
-                result[device["deviceSerial"]]["connectionInfos"] = devices.get(
-                    "connectionInfos"
-                ).get(device["deviceSerial"])
-                result[device["deviceSerial"]]["p2pInfos"] = devices.get(
-                    "p2pInfos"
-                ).get(device["deviceSerial"])
-                result[device["deviceSerial"]]["alarmNodisturbInfos"] = devices.get(
-                    "alarmNodisturbInfos"
-                ).get(device["deviceSerial"])
-                result[device["deviceSerial"]]["kmsInfos"] = devices.get(
-                    "kmsInfos"
-                ).get(device["deviceSerial"])
-                result[device["deviceSerial"]]["timePlanInfos"] = devices.get(
-                    "timePlanInfos"
-                ).get(device["deviceSerial"])
-                result[device["deviceSerial"]]["statusInfos"] = devices.get(
-                    "statusInfos"
-                ).get(device["deviceSerial"])
-                result[device["deviceSerial"]]["wifiInfos"] = devices.get(
-                    "wifiInfos"
-                ).get(device["deviceSerial"])
-                result[device["deviceSerial"]]["switchStatusInfos"] = devices.get(
-                    "switchStatusInfos"
-                ).get(device["deviceSerial"])
-                for item in devices["cameraInfos"]:
-                    if item["deviceSerial"] == device["deviceSerial"]:
-                        result[device["deviceSerial"]]["cameraInfos"] = item
+        if not serial:
+            return result
 
         return result.get(serial)
 

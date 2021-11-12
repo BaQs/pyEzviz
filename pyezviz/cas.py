@@ -1,15 +1,16 @@
 """Ezviz CAS API Functions."""
 
+from io import BytesIO
+from itertools import cycle
 import random
 import socket
 import ssl
-from io import BytesIO
-from itertools import cycle
 
-import xmltodict
 from Crypto.Cipher import AES
-from pyezviz.constants import FEATURE_CODE, XOR_KEY
-from pyezviz.exceptions import InvalidHost
+import xmltodict
+
+from .constants import FEATURE_CODE, XOR_KEY
+from .exceptions import InvalidHost
 
 
 def xor_enc_dec(msg, xor_key=XOR_KEY):

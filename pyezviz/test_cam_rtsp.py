@@ -2,6 +2,7 @@
 import base64
 import hashlib
 import socket
+
 from pyezviz.exceptions import AuthTestResultFailed, InvalidHost
 
 

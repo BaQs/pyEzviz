@@ -7,8 +7,9 @@ import time
 
 import paho.mqtt.client as mqtt
 import requests
-from pyezviz.constants import DEFAULT_TIMEOUT, FEATURE_CODE
-from pyezviz.exceptions import HTTPError, InvalidURL, PyEzvizError
+
+from .constants import DEFAULT_TIMEOUT, FEATURE_CODE
+from .exceptions import HTTPError, InvalidURL, PyEzvizError
 
 API_ENDPOINT_SERVER_INFO = "/v3/configurations/system/info"
 API_ENDPOINT_REGISTER_MQTT = "/v1/getClientId"
@@ -43,7 +44,15 @@ def on_message(client, userdata, msg):
     mqtt_message["ext"] = mqtt_message["ext"].split(",")
 
     # Print payload message
-    decoded_message = {mqtt_message['ext'][2]:{'id':mqtt_message['id'], 'alert':mqtt_message['alert'], 'time':mqtt_message['ext'][1], 'alert type':mqtt_message['ext'][4], 'image':mqtt_message['ext'][16]}}
+    decoded_message = {
+        mqtt_message["ext"][2]: {
+            "id": mqtt_message["id"],
+            "alert": mqtt_message["alert"],
+            "time": mqtt_message["ext"][1],
+            "alert type": mqtt_message["ext"][4],
+            "image": mqtt_message["ext"][16],
+        }
+    }
     print(decoded_message)
 
 

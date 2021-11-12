@@ -2,44 +2,37 @@
 from __future__ import annotations
 
 import datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from pyezviz.constants import DeviceCatagories, DeviceSwitchType, SoundMode
-from pyezviz.exceptions import PyEzvizError
+from .constants import DeviceCatagories, DeviceSwitchType, SoundMode
+from .exceptions import PyEzvizError
+
+if TYPE_CHECKING:
+    from .client import EzvizClient
 
 
 class EzvizCamera:
     """Initialize Ezviz camera object."""
 
-    def __init__(self, client, serial: str, device_obj: dict | None = None) -> None:
+    def __init__(
+        self, client: EzvizClient, serial: str, device_obj: dict | None = None
+    ) -> None:
         """Initialize the camera object."""
         self._client = client
         self._serial = serial
-        self._switch: dict[int, bool] = {}
-        self._alarmmotiontrigger: dict[str, Any] = {}
-        self._device = device_obj or {}
+        self._alarmmotiontrigger: dict[str, Any] = {
+            "alarm_trigger_active": False,
+            "timepassed": None,
+        }
+        self._device = (
+            device_obj if device_obj else self._client.get_device_infos(self._serial)
+        )
         self.alarmlist_time = None
         self.alarmlist_pic = None
-
-    def load(self) -> None:
-        """Update device info for camera serial."""
-
-        if self._device is None:
-            self._device = self._client.get_device_infos(self._serial)
-
-        self._alarm_list()
-
-        self._switch_status()
-
-    def _switch_status(self) -> None:
-        """load device switches"""
-
-        if self._device.get("switchStatusInfos"):
-            for switch in self._device["switchStatusInfos"]:
-                self._switch.update({switch["type"]: switch["enable"]})
-
-        else:
-            self._switch = {0: False}
+        self._switch: dict[int, bool] = {
+            switch["type"]: switch["enable"]
+            for switch in self._device.get("switchStatusInfos", {})
+        }
 
     def _detection_sensibility(self) -> Any:
         """load detection sensibility"""
@@ -66,66 +59,64 @@ class EzvizCamera:
         """get last alarm info for this camera's self._serial"""
         alarmlist = self._client.get_alarminfo(self._serial)
 
-        if alarmlist.get("page").get("totalResults") > 0:
-            self.alarmlist_time = alarmlist.get("alarms")[0].get("alarmStartTimeStr")
-            self.alarmlist_pic = alarmlist.get("alarms")[0].get("picUrl")
+        if alarmlist["page"].get("totalResults") > 0:
+            self.alarmlist_time = alarmlist["alarms"][0].get("alarmStartTimeStr")
+            self.alarmlist_pic = alarmlist["alarms"][0].get("picUrl")
+            return self._motion_trigger(self.alarmlist_time)
 
-        if self.alarmlist_time:
-            self._motion_trigger(self.alarmlist_time)
-
-    def _local_ip(self) -> str:
-        """ "Fix empty ip value for certain cameras"""
+    def _local_ip(self) -> Any:
+        """Fix empty ip value for certain cameras"""
         if self._device.get("wifiInfos"):
-            return self._device["wifiInfos"].get("address")
+            if (
+                self._device["wifiInfos"].get("address")
+                and self._device["wifiInfos"]["address"] != "0.0.0.0"
+            ):
+                return self._device["wifiInfos"]["address"]
 
-        # Seems to return none or 0.0.0.0 on some. This should run 2nd.
+        # Seems to return none or 0.0.0.0 on some.
         if self._device.get("connectionInfos"):
-            if self._device["connectionInfos"].get("localIp"):
+            if (
+                self._device["connectionInfos"].get("localIp")
+                and self._device["connectionInfos"]["localIp"] != "0.0.0.0"
+            ):
                 return self._device["connectionInfos"]["localIp"]
 
         return "0.0.0.0"
 
-    def _motion_trigger(self, alarmlist_time: str) -> None:
+    def _motion_trigger(self, alarmlist_time: str | None) -> None:
         """Create motion sensor based on last alarm time."""
-        now = datetime.datetime.now().replace(microsecond=0)
-        alarm_trigger_active = 0
-        today_date = datetime.date.today()
-        fix = datetime.datetime.now().replace(microsecond=0)
+        if not alarmlist_time:
+            return
 
-        # Need to handle error if time format different
-        fix = datetime.datetime.strptime(
-            alarmlist_time.replace("Today", str(today_date)),
+        _today_date = datetime.date.today()
+        _now = datetime.datetime.now().replace(microsecond=0)
+
+        _last_alarm_time = datetime.datetime.strptime(
+            alarmlist_time.replace("Today", str(_today_date)),
             "%Y-%m-%d %H:%M:%S",
         )
 
         # returns a timedelta object
-        timepassed = now - fix
-
-        if timepassed < datetime.timedelta(seconds=60):
-            alarm_trigger_active = 1
+        timepassed = _now - _last_alarm_time
 
         self._alarmmotiontrigger = {
-            "alarm_trigger_active": alarm_trigger_active,
+            "alarm_trigger_active": bool(timepassed < datetime.timedelta(seconds=60)),
             "timepassed": timepassed.total_seconds(),
         }
 
-    def _is_alarm_schedules_enabled(self) -> bool | None:
+    def _is_alarm_schedules_enabled(self) -> bool:
         """Checks if alarm schedules enabled"""
-        time_plans = None
-
-        if self._device.get("timePlanInfos"):
-            time_plans = [
-                item for item in self._device["timePlanInfos"] if item.get("type") == 2
-            ]
-
-        if time_plans:
-            return bool(time_plans[0].get("enable"))
-
-        return None
+        return bool(
+            [
+                item
+                for item in self._device.get("timePlanInfos", {})
+                if item.get("type") == 2
+            ][0].get("enable")
+        )
 
     def status(self) -> dict[Any, Any]:
         """Return the status of the camera."""
-        self.load()
+        self._alarm_list()
 
         return {
             "serial": self._serial,
@@ -149,7 +140,7 @@ class EzvizCamera:
             ).name,
             "encrypted": bool(self._device["statusInfos"].get("isEncrypted")),
             "local_ip": self._local_ip(),
-            "wan_ip": self._device.get("connectionInfos", {}).get("netIp", "0.0.0.0"),
+            "wan_ip": self._device["connectionInfos"].get("netIp", "0.0.0.0"),
             "local_rtsp_port": self._device["connectionInfos"].get(
                 "localRtspPort", "554"
             ),
@@ -188,47 +179,49 @@ class EzvizCamera:
         # we force enable = 1 , to make sound...
         return self._client.alarm_sound(self._serial, sound_type, 1)
 
-    def alarm_detection_sensibility(self, sensibility, type_value=0):
+    def alarm_detection_sensibility(
+        self, sensibility: int, type_value: int = 0
+    ) -> bool | str:
         """Enable/Disable camera sound when movement is detected."""
         # we force enable = 1 , to make sound...
         return self._client.detection_sensibility(self._serial, sensibility, type_value)
 
-    def switch_device_audio(self, enable=0):
+    def switch_device_audio(self, enable: int = 0) -> bool:
         """Switch audio status on a device."""
         return self._client.switch_status(
             self._serial, DeviceSwitchType.SOUND.value, enable
         )
 
-    def switch_device_state_led(self, enable=0):
+    def switch_device_state_led(self, enable: int = 0) -> bool:
         """Switch led status on a device."""
         return self._client.switch_status(
             self._serial, DeviceSwitchType.LIGHT.value, enable
         )
 
-    def switch_device_ir_led(self, enable=0):
+    def switch_device_ir_led(self, enable: int = 0) -> bool:
         """Switch ir status on a device."""
         return self._client.switch_status(
             self._serial, DeviceSwitchType.INFRARED_LIGHT.value, enable
         )
 
-    def switch_privacy_mode(self, enable=0):
+    def switch_privacy_mode(self, enable: int = 0) -> bool:
         """Switch privacy mode on a device."""
         return self._client.switch_status(
             self._serial, DeviceSwitchType.PRIVACY.value, enable
         )
 
-    def switch_sleep_mode(self, enable=0):
+    def switch_sleep_mode(self, enable: int = 0) -> bool:
         """Switch sleep mode on a device."""
         return self._client.switch_status(
             self._serial, DeviceSwitchType.SLEEP.value, enable
         )
 
-    def switch_follow_move(self, enable=0):
+    def switch_follow_move(self, enable: int = 0) -> bool:
         """Switch follow move."""
         return self._client.switch_status(
             self._serial, DeviceSwitchType.MOBILE_TRACKING.value, enable
         )
 
-    def change_defence_schedule(self, schedule, enable=0):
+    def change_defence_schedule(self, schedule: str, enable: int = 0) -> bool:
         """Change defence schedule. Requires json formatted schedules."""
-        return self._client.api_set_defence_schdule(self._serial, schedule, enable)
+        return self._client.api_set_defence_schedule(self._serial, schedule, enable)

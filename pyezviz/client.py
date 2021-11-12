@@ -8,16 +8,16 @@ from uuid import uuid4
 
 import requests
 
-from pyezviz.camera import EzvizCamera
-from pyezviz.cas import EzvizCAS
-from pyezviz.constants import (
+from .camera import EzvizCamera
+from .cas import EzvizCAS
+from .constants import (
     DEFAULT_TIMEOUT,
     FEATURE_CODE,
     MAX_RETRIES,
     DefenseModeType,
     DeviceCatagories,
 )
-from pyezviz.exceptions import HTTPError, InvalidURL, PyEzvizError
+from .exceptions import HTTPError, InvalidURL, PyEzvizError
 
 API_ENDPOINT_CLOUDDEVICES = "/api/cloud/v2/cloudDevices/getAll"
 API_ENDPOINT_PAGELIST = "/v3/userdevices/v1/devices/pagelist"
@@ -431,8 +431,6 @@ class EzvizClient:
                 # Create camera object
 
                 camera = EzvizCamera(self, device, data)
-
-                camera.load()
                 cameras[device] = camera.status()
 
         return cameras
@@ -465,7 +463,7 @@ class EzvizClient:
         if not serial:
             return result
 
-        return result.get(serial)
+        return result.get(serial, {})
 
     def ptz_control(
         self, command: str, serial: str, action: str, speed: int = 5

@@ -6,8 +6,11 @@ import logging
 import sys
 
 import pandas
-from pyezviz import EzvizCamera, EzvizClient, MQTTClient
-from pyezviz.constants import DefenseModeType
+
+from .camera import EzvizCamera
+from .client import EzvizClient
+from .constants import DefenseModeType
+from .mqtt import MQTTClient
 
 
 def main():

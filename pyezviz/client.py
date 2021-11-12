@@ -430,8 +430,7 @@ class EzvizClient:
 
                 # Create camera object
 
-                camera = EzvizCamera(self, device, data)
-                cameras[device] = camera.status()
+                cameras[device] = EzvizCamera(self, device, data).status()
 
         return cameras
 

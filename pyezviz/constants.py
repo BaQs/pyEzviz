@@ -6,6 +6,7 @@ XOR_KEY = b"\x0c\x0eJ^X\x15@Rr"
 DEFAULT_TIMEOUT = 25
 MAX_RETRIES = 3
 
+
 @unique
 class DeviceSwitchType(Enum):
     """Device switch name and number."""
@@ -80,30 +81,3 @@ class DeviceCatagories(Enum):
     BATTERY_CAMERA_DEVICE_CATEGORY = "BatteryCamera"
     DOORBELL_DEVICE_CATEGORY = "BDoorBell"
     BASE_STATION_DEVICE_CATEGORY = "XVR"
-
-
-class SensorType(Enum):
-    """Sensors and their types to expose in HA."""
-
-    # pylint: disable=invalid-name
-    sw_version = "None"
-    alarm_sound_mod = "None"
-    battery_level = "battery"
-    detection_sensibility = "None"
-    last_alarm_time = "None"
-    Seconds_Last_Trigger = "None"
-    last_alarm_pic = "None"
-    supported_channels = "None"
-    local_ip = "None"
-    wan_ip = "None"
-    PIR_Status = "motion"
-
-
-class BinarySensorType(Enum):
-    """Binary_sensors and their types to expose in HA."""
-
-    # pylint: disable=invalid-name
-    Motion_Trigger = "motion"
-    alarm_schedules_enabled = "None"
-    encrypted = "None"
-    upgrade_available = "None"

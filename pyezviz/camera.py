@@ -143,7 +143,9 @@ class EzvizCamera:
             "wan_ip": self._device["connectionInfos"].get("netIp", "0.0.0.0"),
             "local_rtsp_port": self._device["connectionInfos"].get(
                 "localRtspPort", "554"
-            ),
+            )
+            if self._device["connectionInfos"].get("localRtspPort", "554") != 0
+            else "554",
             "supported_channels": self._device["deviceInfos"].get("channelNumber"),
             "detection_sensibility": self._detection_sensibility(),
             "battery_level": self._device["statusInfos"]

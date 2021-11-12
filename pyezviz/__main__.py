@@ -1,9 +1,9 @@
 """pyezviz command line."""
 import argparse
-import http.client
 import json
 import logging
 import sys
+from typing import Any
 
 import pandas
 
@@ -13,7 +13,7 @@ from .constants import DefenseModeType
 from .mqtt import MQTTClient
 
 
-def main():
+def main() -> Any:
     """Initiate arg parser."""
     parser = argparse.ArgumentParser(prog="pyezviz")
     parser.add_argument("-u", "--username", required=True, help="Ezviz username")
@@ -127,8 +127,6 @@ def main():
     client = EzvizClient(args.username, args.password, args.region)
 
     if args.debug:
-
-        http.client.HTTPConnection.debuglevel = 5
         # You must initialize logging, otherwise you'll not see debug output.
         logging.basicConfig()
         logging.getLogger().setLevel(logging.DEBUG)

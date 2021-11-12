@@ -46,7 +46,7 @@ def main() -> Any:
         "home_defence_mode", help="Set home defence mode"
     )
 
-    parser_mqtt = subparsers.add_parser("mqtt", help="Set home defence mode")
+    subparsers.add_parser("mqtt", help="Connect to mqtt push notifications")
 
     parser_home_defence_mode.add_argument(
         "--mode", required=False, help="Choose mode", choices=["HOME_MODE", "AWAY_MODE"]
@@ -57,9 +57,7 @@ def main() -> Any:
 
     subparsers_camera = parser_camera.add_subparsers(dest="camera_action")
 
-    parser_camera_status = subparsers_camera.add_parser(
-        "status", help="Get the status of the camera"
-    )
+    subparsers_camera.add_parser("status", help="Get the status of the camera")
     parser_camera_move = subparsers_camera.add_parser("move", help="Move the camera")
     parser_camera_move.add_argument(
         "--direction",

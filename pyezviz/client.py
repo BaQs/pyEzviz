@@ -60,6 +60,7 @@ class EzvizClient:
             "api_url": url,
         }
         self._timeout = timeout
+        self._cameras: dict[str, Any] = {}
 
     def _login(self, account: str, password: str) -> dict[Any, Any]:
         """Login to Ezviz API."""
@@ -409,7 +410,6 @@ class EzvizClient:
         """Load and return all cameras objects."""
 
         devices = self.get_device_infos()
-        cameras = {}
         supported_categories = [
             DeviceCatagories.COMMON_DEVICE_CATEGORY.value,
             DeviceCatagories.CAMERA_DEVICE_CATEGORY.value,
@@ -430,9 +430,9 @@ class EzvizClient:
 
                 # Create camera object
 
-                cameras[device] = EzvizCamera(self, device, data).status()
+                self._cameras[device] = EzvizCamera(self, device, data).status()
 
-        return cameras
+        return self._cameras
 
     def get_device_infos(self, serial: str | None = None) -> dict[Any, Any]:
         """Load all devices and build dict per device serial."""

@@ -5,11 +5,11 @@ from .client import EzvizClient
 from .constants import DefenseModeType, DeviceCatagories, DeviceSwitchType, SoundMode
 from .exceptions import (
     AuthTestResultFailed,
+    EzvizAuthTokenExpired,
     HTTPError,
     InvalidHost,
     InvalidURL,
     PyEzvizError,
-    EzvizAuthTokenExpired,
 )
 from .mqtt import MQTTClient
 from .test_cam_rtsp import TestRTSPAuth

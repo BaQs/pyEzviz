@@ -17,7 +17,7 @@ from .constants import (
     DefenseModeType,
     DeviceCatagories,
 )
-from .exceptions import HTTPError, InvalidURL, PyEzvizError, EzvizAuthTokenExpired
+from .exceptions import EzvizAuthTokenExpired, HTTPError, InvalidURL, PyEzvizError
 
 API_ENDPOINT_CLOUDDEVICES = "/api/cloud/v2/cloudDevices/getAll"
 API_ENDPOINT_PAGELIST = "/v3/userdevices/v1/resources/pagelist"
@@ -34,6 +34,7 @@ API_ENDPOINT_SET_DEFENCE_SCHEDULE = "/api/device/defence/plan2"
 API_ENDPOINT_SWITCH_DEFENCE_MODE = "/v3/userdevices/v1/group/switchDefenceMode"
 API_ENDPOINT_SWITCH_SOUND_ALARM = "/sendAlarm"
 API_ENDPOINT_SERVER_INFO = "/v3/configurations/system/info"
+API_ENDPOINT_LOGOUT = "/v3/users/logout/v2"
 
 
 class EzvizClient:
@@ -573,6 +574,40 @@ class EzvizClient:
             return self._login(account=self.account, password=self.password)
 
         raise PyEzvizError("Login with account and password required")
+
+    def logout(self) -> bool:
+        """Close Ezviz session and remove login session from ezviz servers."""
+        try:
+            req = self._session.delete(
+                "https://" + self._token["api_url"] + API_ENDPOINT_LOGOUT,
+                headers={
+                    "featureCode": FEATURE_CODE,
+                    "customno": "1000001",
+                    "sessionId": self._token["session_id"],
+                    "clientNo": "web_site",
+                    "appId": "ys7",
+                },
+                timeout=self._timeout,
+            )
+            req.raise_for_status()
+
+        except requests.HTTPError as err:
+            raise HTTPError from err
+
+        try:
+            json_result = req.json()
+
+        except ValueError as err:
+            raise PyEzvizError(
+                "Impossible to decode response: "
+                + str(err)
+                + "\nResponse was: "
+                + str(req.text)
+            ) from err
+
+        self.close_session()
+
+        return bool(json_result["meta"].get("code") == 200)
 
     def set_camera_defence(self, serial: str, enable: int) -> bool:
         """Enable/Disable motion detection on camera."""

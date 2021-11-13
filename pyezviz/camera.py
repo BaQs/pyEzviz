@@ -156,7 +156,7 @@ class EzvizCamera:
             "Seconds_Last_Trigger": self._alarmmotiontrigger.get("timepassed"),
             "last_alarm_time": self.alarmlist_time,
             "last_alarm_pic": self.alarmlist_pic,
-            "WIFI": self._device.get("WIFI"),
+            "wifiInfos": self._device.get("WIFI"),
             "switches": self._switch,
         }
 

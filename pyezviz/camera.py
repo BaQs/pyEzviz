@@ -104,13 +104,14 @@ class EzvizCamera:
 
     def _is_alarm_schedules_enabled(self) -> bool:
         """Checks if alarm schedules enabled"""
-        return bool(
-            [
-                item
-                for item in self._device.get("TIME_PLAN", {})
-                if item.get("type") == 2
-            ][0].get("enable")
-        )
+        _alarm_schedules = [
+            item for item in self._device.get("TIME_PLAN", {}) if item.get("type") == 2
+        ]
+
+        if _alarm_schedules:
+            return bool(_alarm_schedules[0].get("enable"))
+
+        return False
 
     def status(self) -> dict[Any, Any]:
         """Return the status of the camera."""

@@ -17,7 +17,7 @@ from .constants import (
     DefenseModeType,
     DeviceCatagories,
 )
-from .exceptions import HTTPError, InvalidURL, PyEzvizError
+from .exceptions import HTTPError, InvalidURL, PyEzvizError, EzvizAuthTokenExpired
 
 API_ENDPOINT_CLOUDDEVICES = "/api/cloud/v2/cloudDevices/getAll"
 API_ENDPOINT_PAGELIST = "/v3/userdevices/v1/resources/pagelist"
@@ -544,6 +544,18 @@ class EzvizClient:
                     + "\nResponse was: "
                     + str(req.text)
                 ) from err
+
+            if json_result["meta"].get("code") == 403:
+                if self.account and self.password:
+                    self._token = {
+                        "session_id": None,
+                        "rf_session_id": None,
+                        "username": None,
+                        "api_url": self._token["api_url"],
+                    }
+                    return self.login()
+
+                raise EzvizAuthTokenExpired(f"Relogin required: {req.text}")
 
             self._token["session_id"] = str(json_result["sessionInfo"]["sessionId"])
             self._token["rf_session_id"] = str(

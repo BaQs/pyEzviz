@@ -1,5 +1,6 @@
 """PyEzviz Exceptions."""
 
+
 class PyEzvizError(Exception):
     """Ezviz api exception."""
 
@@ -18,3 +19,7 @@ class InvalidHost(PyEzvizError):
 
 class AuthTestResultFailed(PyEzvizError):
     """Authentication failed"""
+
+
+class EzvizAuthTokenExpired(PyEzvizError):
+    """Authentication failed because token is invalid or expired"""

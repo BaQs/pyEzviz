@@ -9,6 +9,7 @@ from .exceptions import (
     InvalidHost,
     InvalidURL,
     PyEzvizError,
+    EzvizAuthTokenExpired,
 )
 from .mqtt import MQTTClient
 from .test_cam_rtsp import TestRTSPAuth
@@ -21,6 +22,7 @@ __all__ = [
     "HTTPError",
     "InvalidHost",
     "AuthTestResultFailed",
+    "EzvizAuthTokenExpired",
     "EzvizCAS",
     "MQTTClient",
     "DefenseModeType",

@@ -20,7 +20,7 @@ from .constants import (
 from .exceptions import HTTPError, InvalidURL, PyEzvizError
 
 API_ENDPOINT_CLOUDDEVICES = "/api/cloud/v2/cloudDevices/getAll"
-API_ENDPOINT_PAGELIST = "/v3/userdevices/v1/devices/pagelist"
+API_ENDPOINT_PAGELIST = "/v3/userdevices/v1/resources/pagelist"
 API_ENDPOINT_DEVICES = "/v3/devices/"
 API_ENDPOINT_LOGIN = "/v3/users/login/v5"
 API_ENDPOINT_REFRESH_SESSION_ID = "/v3/apigateway/login"
@@ -439,24 +439,39 @@ class EzvizClient:
 
         devices = self._get_page_list()
         result: dict[Any, Any] = {}
+        _res_id = "NONE"
 
         for device in devices["deviceInfos"]:
             _serial = device["deviceSerial"]
+            _res_id = [
+                item
+                for item in devices["CLOUD"]
+                if devices["CLOUD"][item].get("deviceSerial") == _serial
+            ][0]
             result[_serial] = {
-                "deviceInfos": device,
-                "connectionInfos": devices["connectionInfos"].get(_serial),
-                "p2pInfos": devices["p2pInfos"].get(_serial),
-                "alarmNodisturbInfos": devices["alarmNodisturbInfos"].get(_serial),
-                "kmsInfos": devices["kmsInfos"].get(_serial),
-                "timePlanInfos": devices["timePlanInfos"].get(_serial),
-                "statusInfos": devices["statusInfos"].get(_serial),
-                "wifiInfos": devices["wifiInfos"].get(_serial),
-                "switchStatusInfos": devices["switchStatusInfos"].get(_serial),
-                "cameraInfos": [
+                "CLOUD": {_res_id: devices["CLOUD"].get(_res_id)},
+                "VTM": {_res_id: devices["VTM"].get(_res_id)},
+                "P2P": devices["P2P"].get(_serial),
+                "CONNECTION": devices["CONNECTION"].get(_serial),
+                "KMS": devices["KMS"].get(_serial),
+                "STATUS": devices["STATUS"].get(_serial),
+                "TIME_PLAN": devices["TIME_PLAN"].get(_serial),
+                "CHANNEL": {_res_id: devices["CHANNEL"].get(_res_id)},
+                "QOS": devices["QOS"].get(_serial),
+                "NODISTURB": devices["NODISTURB"].get(_serial),
+                "FEATURE": devices["FEATURE"].get(_serial),
+                "UPGRADE": devices["UPGRADE"].get(_serial),
+                "FEATURE_INFO": devices["FEATURE_INFO"].get(_serial),
+                "SWITCH": devices["SWITCH"].get(_serial),
+                "CUSTOM_TAG": devices["CUSTOM_TAG"].get(_serial),
+                "VIDEO_QUALITY": {_res_id: devices["VIDEO_QUALITY"].get(_res_id)},
+                "resourceInfos": [
                     item
-                    for item in devices["cameraInfos"]
+                    for item in devices["resourceInfos"]
                     if item["deviceSerial"] == _serial
-                ][0],
+                ],  # Could be more than one
+                "WIFI": devices["WIFI"].get(_serial),
+                "deviceInfos": device,
             }
 
         if not serial:
@@ -805,9 +820,10 @@ class EzvizClient:
         """Get ezviz device info broken down in sections."""
         return self._api_get_pagelist(
             page_filter="CLOUD, TIME_PLAN, CONNECTION, SWITCH,"
-            "STATUS, WIFI, NODISTURB, KMS, P2P,"
-            "TIME_PLAN, CHANNEL, VTM, DETECTOR,"
-            "FEATURE, UPGRADE, VIDEO_QUALITY, QOS",
+            "STATUS, WIFI, NODISTURB, KMS,"
+            "P2P, TIME_PLAN, CHANNEL, VTM,"
+            "DETECTOR, FEATURE, CUSTOM_TAG, UPGRADE,"
+            "VIDEO_QUALITY, QOS, PRODUCTS_INFO, FEATURE_INFO",
             json_key=None,
         )
 

@@ -31,7 +31,7 @@ class EzvizCamera:
         self.alarmlist_pic = None
         self._switch: dict[int, bool] = {
             switch["type"]: switch["enable"]
-            for switch in self._device.get("switchStatusInfos", {})
+            for switch in self._device.get("SWITCH", {})
         }
 
     def _detection_sensibility(self) -> Any:
@@ -66,20 +66,20 @@ class EzvizCamera:
 
     def _local_ip(self) -> Any:
         """Fix empty ip value for certain cameras"""
-        if self._device.get("wifiInfos"):
+        if self._device.get("WIFI"):
             if (
-                self._device["wifiInfos"].get("address")
-                and self._device["wifiInfos"]["address"] != "0.0.0.0"
+                self._device["WIFI"].get("address")
+                and self._device["WIFI"]["address"] != "0.0.0.0"
             ):
-                return self._device["wifiInfos"]["address"]
+                return self._device["WIFI"]["address"]
 
         # Seems to return none or 0.0.0.0 on some.
-        if self._device.get("connectionInfos"):
+        if self._device.get("CONNECTION"):
             if (
-                self._device["connectionInfos"].get("localIp")
-                and self._device["connectionInfos"]["localIp"] != "0.0.0.0"
+                self._device["CONNECTION"].get("localIp")
+                and self._device["CONNECTION"]["localIp"] != "0.0.0.0"
             ):
-                return self._device["connectionInfos"]["localIp"]
+                return self._device["CONNECTION"]["localIp"]
 
         return "0.0.0.0"
 
@@ -109,7 +109,7 @@ class EzvizCamera:
         return bool(
             [
                 item
-                for item in self._device.get("timePlanInfos", {})
+                for item in self._device.get("TIME_PLAN", {})
                 if item.get("type") == 2
             ][0].get("enable")
         )
@@ -122,7 +122,9 @@ class EzvizCamera:
             "serial": self._serial,
             "name": self._device["deviceInfos"].get("name"),
             "version": self._device["deviceInfos"].get("version"),
-            "upgrade_available": self._device["statusInfos"].get("upgradeAvailable"),
+            "upgrade_available": bool(
+                self._device["UPGRADE"].get("isNeedUpgrade") == 3
+            ),
             "status": self._device["deviceInfos"].get("status"),
             "device_category": self._device["deviceInfos"].get("deviceCategory"),
             "device_sub_category": self._device["deviceInfos"].get("deviceSubCategory"),
@@ -133,30 +135,28 @@ class EzvizCamera:
             "ir_led": self._switch.get(DeviceSwitchType.INFRARED_LIGHT.value),
             "state_led": self._switch.get(DeviceSwitchType.LIGHT.value),
             "follow_move": self._switch.get(DeviceSwitchType.MOBILE_TRACKING.value),
-            "alarm_notify": bool(self._device["statusInfos"].get("globalStatus")),
+            "alarm_notify": bool(self._device["STATUS"].get("globalStatus")),
             "alarm_schedules_enabled": self._is_alarm_schedules_enabled(),
             "alarm_sound_mod": SoundMode(
-                self._device["statusInfos"].get("alarmSoundMode")
+                self._device["STATUS"].get("alarmSoundMode")
             ).name,
-            "encrypted": bool(self._device["statusInfos"].get("isEncrypted")),
+            "encrypted": bool(self._device["STATUS"].get("isEncrypt")),
             "local_ip": self._local_ip(),
-            "wan_ip": self._device["connectionInfos"].get("netIp", "0.0.0.0"),
-            "local_rtsp_port": self._device["connectionInfos"].get(
-                "localRtspPort", "554"
-            )
-            if self._device["connectionInfos"].get("localRtspPort", "554") != 0
+            "wan_ip": self._device["CONNECTION"].get("netIp", "0.0.0.0"),
+            "local_rtsp_port": self._device["CONNECTION"].get("localRtspPort", "554")
+            if self._device["CONNECTION"].get("localRtspPort", "554") != 0
             else "554",
             "supported_channels": self._device["deviceInfos"].get("channelNumber"),
             "detection_sensibility": self._detection_sensibility(),
-            "battery_level": self._device["statusInfos"]
+            "battery_level": self._device["STATUS"]
             .get("optionals", {})
             .get("powerRemaining"),
-            "PIR_Status": self._device["statusInfos"].get("pirStatus"),
+            "PIR_Status": self._device["STATUS"].get("pirStatus"),
             "Motion_Trigger": self._alarmmotiontrigger.get("alarm_trigger_active"),
             "Seconds_Last_Trigger": self._alarmmotiontrigger.get("timepassed"),
             "last_alarm_time": self.alarmlist_time,
             "last_alarm_pic": self.alarmlist_pic,
-            "wifiInfos": self._device.get("wifiInfos"),
+            "WIFI": self._device.get("WIFI"),
             "switches": self._switch,
         }
 

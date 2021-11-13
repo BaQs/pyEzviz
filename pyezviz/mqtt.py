@@ -157,8 +157,11 @@ class MQTTClient(threading.Thread):
         self._start_ezviz_push()
         self._mqtt()
 
-        while not self._stop_event.is_set():
-            time.sleep(1)
+        try:
+            while not self._stop_event.is_set():
+                time.sleep(1)
+        except KeyboardInterrupt:
+            self.stop()
 
     def start(self):
         """Start mqtt.

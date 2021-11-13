@@ -27,8 +27,7 @@ class EzvizCamera:
         self._device = (
             device_obj if device_obj else self._client.get_device_infos(self._serial)
         )
-        self.alarmlist_time = None
-        self.alarmlist_pic = None
+        self._last_alarm: dict[str, Any] = {}
         self._switch: dict[int, bool] = {
             switch["type"]: switch["enable"]
             for switch in self._device.get("SWITCH", {})
@@ -57,12 +56,11 @@ class EzvizCamera:
 
     def _alarm_list(self) -> None:
         """get last alarm info for this camera's self._serial"""
-        alarmlist = self._client.get_alarminfo(self._serial)
+        _alarmlist = self._client.get_alarminfo(self._serial)
 
-        if alarmlist["page"].get("totalResults") > 0:
-            self.alarmlist_time = alarmlist["alarms"][0].get("alarmStartTimeStr")
-            self.alarmlist_pic = alarmlist["alarms"][0].get("picUrl")
-            return self._motion_trigger(self.alarmlist_time)
+        if _alarmlist["page"].get("totalResults") > 0:
+            self._last_alarm = _alarmlist["alarms"][0]
+            return self._motion_trigger()
 
     def _local_ip(self) -> Any:
         """Fix empty ip value for certain cameras"""
@@ -83,16 +81,16 @@ class EzvizCamera:
 
         return "0.0.0.0"
 
-    def _motion_trigger(self, alarmlist_time: str | None) -> None:
+    def _motion_trigger(self) -> None:
         """Create motion sensor based on last alarm time."""
-        if not alarmlist_time:
+        if not self._last_alarm.get("alarmStartTimeStr"):
             return
 
         _today_date = datetime.date.today()
         _now = datetime.datetime.now().replace(microsecond=0)
 
         _last_alarm_time = datetime.datetime.strptime(
-            alarmlist_time.replace("Today", str(_today_date)),
+            self._last_alarm["alarmStartTimeStr"].replace("Today", str(_today_date)),
             "%Y-%m-%d %H:%M:%S",
         )
 
@@ -154,8 +152,13 @@ class EzvizCamera:
             "PIR_Status": self._device["STATUS"].get("pirStatus"),
             "Motion_Trigger": self._alarmmotiontrigger.get("alarm_trigger_active"),
             "Seconds_Last_Trigger": self._alarmmotiontrigger.get("timepassed"),
-            "last_alarm_time": self.alarmlist_time,
-            "last_alarm_pic": self.alarmlist_pic,
+            "last_alarm_time": self._last_alarm.get("alarmStartTimeStr"),
+            "last_alarm_pic": self._last_alarm.get(
+                "picUrl",
+                "https://eustatics.ezvizlife.com/ovs_mall/web/img/index/EZVIZ_logo.png?ver=3007907502",
+            ),
+            "last_alarm_type_code": self._last_alarm.get("alarmType", "0000"),
+            "last_alarm_type_name": self._last_alarm.get("sampleName", "NoAlarm"),
             "wifiInfos": self._device.get("WIFI"),
             "switches": self._switch,
         }

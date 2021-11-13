@@ -450,22 +450,24 @@ class EzvizClient:
                 if devices["CLOUD"][item].get("deviceSerial") == _serial
             ][0]
             result[_serial] = {
-                "CLOUD": {_res_id: devices["CLOUD"].get(_res_id)},
-                "VTM": {_res_id: devices["VTM"].get(_res_id)},
-                "P2P": devices["P2P"].get(_serial),
-                "CONNECTION": devices["CONNECTION"].get(_serial),
-                "KMS": devices["KMS"].get(_serial),
-                "STATUS": devices["STATUS"].get(_serial),
-                "TIME_PLAN": devices["TIME_PLAN"].get(_serial),
-                "CHANNEL": {_res_id: devices["CHANNEL"].get(_res_id)},
-                "QOS": devices["QOS"].get(_serial),
-                "NODISTURB": devices["NODISTURB"].get(_serial),
-                "FEATURE": devices["FEATURE"].get(_serial),
-                "UPGRADE": devices["UPGRADE"].get(_serial),
-                "FEATURE_INFO": devices["FEATURE_INFO"].get(_serial),
-                "SWITCH": devices["SWITCH"].get(_serial),
-                "CUSTOM_TAG": devices["CUSTOM_TAG"].get(_serial),
-                "VIDEO_QUALITY": {_res_id: devices["VIDEO_QUALITY"].get(_res_id)},
+                "CLOUD": {_res_id: devices.get("CLOUD", {}).get(_res_id)},
+                "VTM": {_res_id: devices.get("VTM", {}).get(_res_id)},
+                "P2P": devices.get("P2P", {}).get(_serial),
+                "CONNECTION": devices.get("CONNECTION", {}).get(_serial),
+                "KMS": devices.get("KMS", {}).get(_serial),
+                "STATUS": devices.get("STATUS", {}).get(_serial),
+                "TIME_PLAN": devices.get("TIME_PLAN", {}).get(_serial),
+                "CHANNEL": {_res_id: devices.get("CHANNEL", {}).get(_res_id)},
+                "QOS": devices.get("QOS", {}).get(_serial),
+                "NODISTURB": devices.get("NODISTURB", {}).get(_serial),
+                "FEATURE": devices.get("FEATURE", {}).get(_serial),
+                "UPGRADE": devices.get("UPGRADE", {}).get(_serial),
+                "FEATURE_INFO": devices.get("FEATURE_INFO", {}).get(_serial),
+                "SWITCH": devices.get("SWITCH", {}).get(_serial),
+                "CUSTOM_TAG": devices.get("CUSTOM_TAG", {}).get(_serial),
+                "VIDEO_QUALITY": {
+                    _res_id: devices.get("VIDEO_QUALITY", {}).get(_res_id)
+                },
                 "resourceInfos": [
                     item
                     for item in devices["resourceInfos"]

@@ -522,15 +522,11 @@ class EzvizClient:
             self, serial: str, x: float, y: float
     ) -> Any:
         """PTZ Coordinate Move"""
-
-
-        print(f"client.ptz_control_coordinates({serial}, {x}, {y})")
-
         if 0 < x > 1:
             raise PyEzvizError(f"Invalid X coordinate: {x}: Should be between 0 and 1 inclusive")
 
-        # if 0 < y > 1:
-        #     raise PyEzvizError(f"Invalid Y coordinate: {y}: Should be between 0 and 1 inclusive")
+        if 0 < y > 1:
+            raise PyEzvizError(f"Invalid Y coordinate: {y}: Should be between 0 and 1 inclusive")
 
         try:
             req = self._session.post(

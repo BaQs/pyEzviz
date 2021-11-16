@@ -177,6 +177,13 @@ class EzvizCamera:
 
         return True
 
+    def move_coordinates(self, x: float, y: float):
+        """Move camera to specified coordinates."""
+
+        self._client.ptz_control_coordinates(self._serial, x, y)
+
+        return True
+
     def alarm_notify(self, enable: int) -> bool:
         """Enable/Disable camera notification when movement is detected."""
         return self._client.set_camera_defence(self._serial, enable)

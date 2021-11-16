@@ -141,7 +141,8 @@ class EzvizCamera:
             ).name,
             "encrypted": bool(self._device["STATUS"].get("isEncrypt")),
             "local_ip": self._local_ip(),
-            "wan_ip": self._device["CONNECTION"].get("netIp", "0.0.0.0"),
+            "wan_ip": self._device["CONNECTION"].get("netIp"),
+            "mac_address": self._device["deviceInfos"].get("mac"),
             "local_rtsp_port": self._device["CONNECTION"].get("localRtspPort", "554")
             if self._device["CONNECTION"].get("localRtspPort", "554") != 0
             else "554",

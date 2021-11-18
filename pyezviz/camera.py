@@ -34,7 +34,7 @@ class EzvizCamera:
         }
 
     def _detection_sensibility(self) -> Any:
-        """load detection sensibility"""
+        """Load detection sensitivity."""
         result = "Unknown"
 
         if self._switch.get(DeviceSwitchType.AUTO_SLEEP.value) is not True:
@@ -55,7 +55,7 @@ class EzvizCamera:
         return result
 
     def _alarm_list(self) -> None:
-        """get last alarm info for this camera's self._serial"""
+        """Get last alarm info for this camera's self._serial."""
         _alarmlist = self._client.get_alarminfo(self._serial)
 
         if _alarmlist["page"].get("totalResults") > 0:
@@ -63,7 +63,7 @@ class EzvizCamera:
             return self._motion_trigger()
 
     def _local_ip(self) -> Any:
-        """Fix empty ip value for certain cameras"""
+        """Fix empty ip value for certain cameras."""
         if (
             self._device["WIFI"].get("address")
             and self._device["WIFI"]["address"] != "0.0.0.0"
@@ -101,7 +101,7 @@ class EzvizCamera:
         }
 
     def _is_alarm_schedules_enabled(self) -> bool:
-        """Checks if alarm schedules enabled"""
+        """Check if alarm schedules enabled."""
         _alarm_schedules = [
             item for item in self._device.get("TIME_PLAN", {}) if item.get("type") == 2
         ]

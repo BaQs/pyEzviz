@@ -82,7 +82,7 @@ class MQTTClient(threading.Thread):
         }
 
     def _mqtt(self):
-        """Receive MQTT messages from ezviz server"""
+        """Receive MQTT messages from ezviz server."""
 
         ezviz_mqtt_client = mqtt.Client(
             client_id=self._mqtt_data["mqtt_clientid"], protocol=4, transport="tcp"
@@ -145,7 +145,7 @@ class MQTTClient(threading.Thread):
         self._mqtt_data["mqtt_clientid"] = json_result["data"]["clientId"]
 
     def run(self):
-        """Method representing the thread's activity which should not be used directly."""
+        """Represent the thread's activity, should not be used directly."""
 
         if self._session is None:
             self._session = requests.session()
@@ -164,9 +164,7 @@ class MQTTClient(threading.Thread):
             self.stop()
 
     def start(self):
-        """Start mqtt.
-        Start mqtt thread
-        """
+        """Start mqtt thread."""
         super().start()
 
     def stop(self):

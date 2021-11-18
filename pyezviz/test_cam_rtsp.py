@@ -1,4 +1,4 @@
-"""Test camera RTSP authentication"""
+"""Test camera RTSP authentication."""
 import base64
 import hashlib
 import socket
@@ -7,7 +7,7 @@ from pyezviz.exceptions import AuthTestResultFailed, InvalidHost
 
 
 def genmsg_describe(url, seq, user_agent, auth_seq):
-    """Generate RTSP describe message"""
+    """Generate RTSP describe message."""
     msg_ret = "DESCRIBE " + url + " RTSP/1.0\r\n"
     msg_ret += "CSeq: " + str(seq) + "\r\n"
     msg_ret += "Authorization: " + auth_seq + "\r\n"
@@ -18,7 +18,7 @@ def genmsg_describe(url, seq, user_agent, auth_seq):
 
 
 class TestRTSPAuth:
-    """Initialize RTSP credential test"""
+    """Test RTSP credentials."""
 
     def __init__(
         self,
@@ -27,6 +27,7 @@ class TestRTSPAuth:
         password=None,
         test_uri="",
     ):
+        """Initialize RTSP credential test."""
         self._rtsp_details = {
             "bufLen": 1024,
             "defaultServerIp": ip_addr,
@@ -38,7 +39,7 @@ class TestRTSPAuth:
         }
 
     def generate_auth_string(self, realm, method, uri, nonce):
-        """Generate digest auth string """
+        """Generate digest auth string."""
         map_return_info = {}
         m_1 = hashlib.md5(
             f"{self._rtsp_details['defaultUsername']}:"
@@ -60,7 +61,7 @@ class TestRTSPAuth:
         return map_return_info
 
     def main(self):
-        """Main function """
+        """Start main method."""
         session = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         try:

@@ -14,7 +14,7 @@ from .exceptions import InvalidHost
 
 
 def xor_enc_dec(msg, xor_key=XOR_KEY):
-    """Xor encodes camera serial"""
+    """Xor encodes camera serial."""
     with BytesIO(msg) as stream:
         xor_msg = bytes(a ^ b for a, b in zip(stream.read(), cycle(xor_key)))
     return xor_msg
@@ -35,7 +35,7 @@ class EzvizCAS:
         self._service_urls = token["service_urls"]
 
     def cas_get_encryption(self, devserial):
-        """Fetch encryption code from ezviz cas server"""
+        """Fetch encryption code from ezviz cas server."""
 
         # Random hex 64 characters long.
         rand_hex = random.randrange(10 ** 80)

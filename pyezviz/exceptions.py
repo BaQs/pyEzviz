@@ -18,8 +18,8 @@ class InvalidHost(PyEzvizError):
 
 
 class AuthTestResultFailed(PyEzvizError):
-    """Authentication failed"""
+    """Authentication failed."""
 
 
 class EzvizAuthTokenExpired(PyEzvizError):
-    """Authentication failed because token is invalid or expired"""
+    """Authentication failed because token is invalid or expired."""

@@ -64,20 +64,18 @@ class EzvizCamera:
 
     def _local_ip(self) -> Any:
         """Fix empty ip value for certain cameras"""
-        if self._device.get("WIFI"):
-            if (
-                self._device["WIFI"].get("address")
-                and self._device["WIFI"]["address"] != "0.0.0.0"
-            ):
-                return self._device["WIFI"]["address"]
+        if (
+            self._device["WIFI"].get("address")
+            and self._device["WIFI"]["address"] != "0.0.0.0"
+        ):
+            return self._device["WIFI"]["address"]
 
         # Seems to return none or 0.0.0.0 on some.
-        if self._device.get("CONNECTION"):
-            if (
-                self._device["CONNECTION"].get("localIp")
-                and self._device["CONNECTION"]["localIp"] != "0.0.0.0"
-            ):
-                return self._device["CONNECTION"]["localIp"]
+        if (
+            self._device["CONNECTION"].get("localIp")
+            and self._device["CONNECTION"]["localIp"] != "0.0.0.0"
+        ):
+            return self._device["CONNECTION"]["localIp"]
 
         return "0.0.0.0"
 

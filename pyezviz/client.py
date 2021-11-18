@@ -50,7 +50,9 @@ class EzvizClient:
     ) -> None:
         """Initialize the client object."""
         self.account = account
-        self.password = password
+        self.password = hashlib.md5(
+            password.encode("utf-8")
+        ).hexdigest()  # Ezviz API sends md5 of password
         self._session = requests.session()
         # Set Android generic user agent.
         self._session.headers.update({"User-Agent": "okhttp/3.12.1"})
@@ -63,20 +65,16 @@ class EzvizClient:
         self._timeout = timeout
         self._cameras: dict[str, Any] = {}
 
-    def _login(self, account: str, password: str) -> dict[Any, Any]:
+    def _login(self) -> dict[Any, Any]:
         """Login to Ezviz API."""
 
         # Region code to url.
         if len(self._token["api_url"].split(".")) == 1:
             self._token["api_url"] = "apii" + self._token["api_url"] + ".ezvizlife.com"
 
-        # Ezviz API sends md5 of password
-        temp = hashlib.md5()
-        temp.update(password.encode("utf-8"))
-        md5pass = temp.hexdigest()
         payload = {
-            "account": account,
-            "password": md5pass,
+            "account": self.account,
+            "password": self.password,
             "featureCode": FEATURE_CODE,
             "msgType": "0",
             "cuName": "SFRDIDEw",
@@ -116,6 +114,18 @@ class EzvizClient:
                 + str(req.text)
             ) from err
 
+        if json_result["meta"]["code"] == 200:
+            self._token = {
+                "session_id": str(json_result["loginSession"]["sessionId"]),
+                "rf_session_id": str(json_result["loginSession"]["rfSessionId"]),
+                "username": str(json_result["loginUser"]["username"]),
+                "api_url": str(json_result["loginArea"]["apiDomain"]),
+            }
+
+            self._token["service_urls"] = self.get_service_urls()
+
+            return self._token
+
         if json_result["meta"]["code"] == 1100:
             self._token["api_url"] = json_result["loginArea"]["apiDomain"]
             print("Region incorrect!")
@@ -132,21 +142,13 @@ class EzvizClient:
         if json_result["meta"]["code"] == 1015:
             raise PyEzvizError("The user is locked.")
 
-        self._token["session_id"] = str(json_result["loginSession"]["sessionId"])
-        self._token["rf_session_id"] = str(json_result["loginSession"]["rfSessionId"])
-        self._token["username"] = str(json_result["loginUser"]["username"])
-        self._token["api_url"] = str(json_result["loginArea"]["apiDomain"])
-        if not self._token["session_id"]:
-            raise PyEzvizError(
-                f"Login error: Please check your username/password: {req.text}"
-            )
-
-        self._token["service_urls"] = self.get_service_urls()
-
-        return self._token
+        raise PyEzvizError(f"Login error: {json_result['meta']}")
 
     def get_service_urls(self) -> Any:
         """Get Ezviz service urls."""
+
+        if not self._token["session_id"]:
+            raise PyEzvizError("No Login token present!")
 
         try:
             req = self._session.get(
@@ -164,10 +166,6 @@ class EzvizClient:
             raise InvalidURL("A Invalid URL or Proxy error occured") from err
 
         except requests.HTTPError as err:
-            if err.response.status_code == 401:
-                # session is wrong, need to relogin
-                self.login()
-
             raise HTTPError from err
 
         if not req.text:
@@ -185,7 +183,7 @@ class EzvizClient:
             ) from err
 
         if json_output.get("meta").get("code") != 200:
-            logging.info("Json request error")
+            raise PyEzvizError(f"Error getting Service URLs: {json_output['meta']}")
 
         service_urls = json_output["systemConfigInfo"]
         service_urls["sysConf"] = service_urls["sysConf"].split("|")
@@ -444,11 +442,13 @@ class EzvizClient:
 
         for device in devices["deviceInfos"]:
             _serial = device["deviceSerial"]
-            _res_id = [
+            _res_id_list = {
                 item
-                for item in devices["CLOUD"]
+                for item in devices["CLOUD"].keys()
                 if devices["CLOUD"][item].get("deviceSerial") == _serial
-            ][0]
+            }
+            _res_id = _res_id_list.pop() if len(_res_id_list) else "NONE"
+
             result[_serial] = {
                 "CLOUD": {_res_id: devices.get("CLOUD", {}).get(_res_id)},
                 "VTM": {_res_id: devices.get("VTM", {}).get(_res_id)},
@@ -470,10 +470,10 @@ class EzvizClient:
                 },
                 "resourceInfos": [
                     item
-                    for item in devices["resourceInfos"]
-                    if item["deviceSerial"] == _serial
+                    for item in devices.get("resourceInfos")
+                    if item.get("deviceSerial") == _serial
                 ],  # Could be more than one
-                "WIFI": devices["WIFI"].get(_serial),
+                "WIFI": devices.get("WIFI", {}).get(_serial),
                 "deviceInfos": device,
             }
 
@@ -548,6 +548,18 @@ class EzvizClient:
                     + str(req.text)
                 ) from err
 
+            if json_result["meta"].get("code") == 200:
+
+                self._token["session_id"] = str(json_result["sessionInfo"]["sessionId"])
+                self._token["rf_session_id"] = str(
+                    json_result["sessionInfo"]["refreshSessionId"]
+                )
+
+                if not self._token.get("service_urls"):
+                    self._token["service_urls"] = self.get_service_urls()
+
+                return self._token
+
             if json_result["meta"].get("code") == 403:
                 if self.account and self.password:
                     self._token = {
@@ -558,22 +570,14 @@ class EzvizClient:
                     }
                     return self.login()
 
-                raise EzvizAuthTokenExpired(f"Relogin required: {req.text}")
+                raise EzvizAuthTokenExpired(
+                    f"Token expired, Login with username and password required: {req.text}"
+                )
 
-            self._token["session_id"] = str(json_result["sessionInfo"]["sessionId"])
-            self._token["rf_session_id"] = str(
-                json_result["sessionInfo"]["refreshSessionId"]
-            )
-            if not self._token["session_id"]:
-                raise PyEzvizError(f"Relogin required: {req.text}")
-
-            if not self._token.get("service_urls"):
-                self._token["service_urls"] = self.get_service_urls()
-
-            return self._token
+            raise PyEzvizError(f"Error renewing login token: {json_result['meta']}")
 
         if self.account and self.password:
-            return self._login(account=self.account, password=self.password)
+            return self._login()
 
         raise PyEzvizError("Login with account and password required")
 

@@ -35,6 +35,7 @@ API_ENDPOINT_SWITCH_DEFENCE_MODE = "/v3/userdevices/v1/group/switchDefenceMode"
 API_ENDPOINT_SWITCH_SOUND_ALARM = "/sendAlarm"
 API_ENDPOINT_SERVER_INFO = "/v3/configurations/system/info"
 API_ENDPOINT_LOGOUT = "/v3/users/logout/v2"
+API_ENDPOINT_PANORAMIC_DEVICES_OPERATION = "/v3/panoramicDevices/operation"
 
 
 class EzvizClient:
@@ -505,6 +506,37 @@ class EzvizClient:
                     "speed": speed,
                     "uuid": str(uuid4()),
                     "serial": serial,
+                },
+                headers={"sessionId": self._token["session_id"], "clientType": "1"},
+                timeout=self._timeout,
+            )
+
+            req.raise_for_status()
+
+        except requests.HTTPError as err:
+            raise HTTPError from err
+
+        return req.text
+
+    def ptz_control_coordinates(
+            self, serial: str, x: float, y: float
+    ) -> Any:
+        """PTZ Coordinate Move"""
+        if 0 < x > 1:
+            raise PyEzvizError(f"Invalid X coordinate: {x}: Should be between 0 and 1 inclusive")
+
+        if 0 < y > 1:
+            raise PyEzvizError(f"Invalid Y coordinate: {y}: Should be between 0 and 1 inclusive")
+
+        try:
+            req = self._session.post(
+                "https://"
+                + self._token["api_url"]
+                + API_ENDPOINT_PANORAMIC_DEVICES_OPERATION,
+                data={
+                    "x": f"{x:.6f}",
+                    "y": f"{y:.6f}",
+                    "deviceSerial": serial,
                 },
                 headers={"sessionId": self._token["session_id"], "clientType": "1"},
                 timeout=self._timeout,

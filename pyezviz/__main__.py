@@ -74,6 +74,20 @@ def main() -> Any:
         choices=range(1, 10),
     )
 
+    parser_camera_move_coords = subparsers_camera.add_parser("move_coords", help="Move the camera to the X,Y coordinates")
+    parser_camera_move_coords.add_argument(
+        "--x",
+        required=True,
+        help="The X coordinate to move the camera to",
+        type=float,
+    )
+    parser_camera_move_coords.add_argument(
+        "--y",
+        required=True,
+        help="The Y coordinate to move the camera to",
+        type=float,
+    )
+
     parser_camera_switch = subparsers_camera.add_parser(
         "switch", help="Change the status of a switch"
     )
@@ -249,6 +263,14 @@ def main() -> Any:
         if args.camera_action == "move":
             try:
                 camera.move(args.direction, args.speed)
+            except Exception as exp:  # pylint: disable=broad-except
+                print(exp)
+            finally:
+                client.close_session()
+
+        elif args.camera_action == "move_coords":
+            try:
+                camera.move_coordinates(args.x, args.y)
             except Exception as exp:  # pylint: disable=broad-except
                 print(exp)
             finally:

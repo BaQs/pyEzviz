@@ -51,9 +51,9 @@ class EzvizClient:
     ) -> None:
         """Initialize the client object."""
         self.account = account
-        self.password = hashlib.md5(
-            password.encode("utf-8")
-        ).hexdigest()  # Ezviz API sends md5 of password
+        self.password = (
+            hashlib.md5(password.encode("utf-8")).hexdigest() if password else None
+        )  # Ezviz API sends md5 of password
         self._session = requests.session()
         # Set Android generic user agent.
         self._session.headers.update({"User-Agent": "okhttp/3.12.1"})
@@ -519,14 +519,18 @@ class EzvizClient:
         return req.text
 
     def ptz_control_coordinates(
-            self, serial: str, x: float, y: float
-    ) -> Any:
+        self, serial: str, x_axis: float, y_axis: float
+    ) -> bool:
         """PTZ Coordinate Move"""
-        if 0 < x > 1:
-            raise PyEzvizError(f"Invalid X coordinate: {x}: Should be between 0 and 1 inclusive")
+        if 0 < x_axis > 1:
+            raise PyEzvizError(
+                f"Invalid X coordinate: {x_axis}: Should be between 0 and 1 inclusive"
+            )
 
-        if 0 < y > 1:
-            raise PyEzvizError(f"Invalid Y coordinate: {y}: Should be between 0 and 1 inclusive")
+        if 0 < y_axis > 1:
+            raise PyEzvizError(
+                f"Invalid Y coordinate: {y_axis}: Should be between 0 and 1 inclusive"
+            )
 
         try:
             req = self._session.post(
@@ -534,8 +538,8 @@ class EzvizClient:
                 + self._token["api_url"]
                 + API_ENDPOINT_PANORAMIC_DEVICES_OPERATION,
                 data={
-                    "x": f"{x:.6f}",
-                    "y": f"{y:.6f}",
+                    "x": f"{x_axis:.6f}",
+                    "y": f"{y_axis:.6f}",
                     "deviceSerial": serial,
                 },
                 headers={"sessionId": self._token["session_id"], "clientType": "1"},
@@ -547,7 +551,7 @@ class EzvizClient:
         except requests.HTTPError as err:
             raise HTTPError from err
 
-        return req.text
+        return True
 
     def login(self) -> dict[Any, Any]:
         """Get or refresh ezviz login token."""

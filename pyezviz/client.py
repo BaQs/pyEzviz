@@ -36,6 +36,7 @@ API_ENDPOINT_SWITCH_SOUND_ALARM = "/sendAlarm"
 API_ENDPOINT_SERVER_INFO = "/v3/configurations/system/info"
 API_ENDPOINT_LOGOUT = "/v3/users/logout/v2"
 API_ENDPOINT_PANORAMIC_DEVICES_OPERATION = "/v3/panoramicDevices/operation"
+API_ENDPOINT_UPGRADE_DEVICE = "/v3/upgrades/v1/devices/"
 
 
 class EzvizClient:
@@ -66,7 +67,7 @@ class EzvizClient:
         self._timeout = timeout
         self._cameras: dict[str, Any] = {}
 
-    def _login(self) -> dict[Any, Any]:
+    def _login(self, smscode: int | None = None) -> dict[Any, Any]:
         """Login to Ezviz API."""
 
         # Region code to url.
@@ -79,6 +80,7 @@ class EzvizClient:
             "featureCode": FEATURE_CODE,
             "msgType": "0",
             "cuName": "SFRDIDEw",
+            "smsCode": smscode,
         }
 
         try:
@@ -142,6 +144,9 @@ class EzvizClient:
 
         if json_result["meta"]["code"] == 1015:
             raise PyEzvizError("The user is locked.")
+
+        if json_result["meta"]["code"] == 6002:
+            raise PyEzvizError("MFA enabled on account. Please retry with code.")
 
         raise PyEzvizError(f"Login error: {json_result['meta']}")
 
@@ -358,6 +363,50 @@ class EzvizClient:
 
         return True
 
+    def upgrade_device(self, serial: str, max_retries: int = 0) -> bool:
+        """Upgrade device firmware."""
+        if max_retries > MAX_RETRIES:
+            raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
+
+        try:
+            req = self._session.put(
+                "https://"
+                + self._token["api_url"]
+                + API_ENDPOINT_UPGRADE_DEVICE
+                + serial
+                + "/0/upgrade",
+                headers={"sessionId": self._token["session_id"]},
+                timeout=self._timeout,
+            )
+
+            req.raise_for_status()
+
+        except requests.HTTPError as err:
+            if err.response.status_code == 401:
+                # session is wrong, need to relogin
+                self.login()
+                return self.upgrade_device(serial, max_retries + 1)
+
+            raise HTTPError from err
+
+        try:
+            json_output = req.json()
+
+        except ValueError as err:
+            raise PyEzvizError(
+                "Impossible to decode response: "
+                + str(err)
+                + "\nResponse was: "
+                + str(req.text)
+            ) from err
+
+        if json_output.get("meta").get("code") != 200:
+            raise PyEzvizError(
+                f"Could not initiate firmare upgrade: Got {req.status_code} : {req.text})"
+            )
+
+        return True
+
     def sound_alarm(self, serial: str, enable: int = 1, max_retries: int = 0) -> bool:
         """Sound alarm on a device."""
         if max_retries > MAX_RETRIES:
@@ -553,7 +602,7 @@ class EzvizClient:
 
         return True
 
-    def login(self) -> dict[Any, Any]:
+    def login(self, sms_code: int | None = None) -> dict[Any, Any]:
         """Get or refresh ezviz login token."""
         if self._token["session_id"] and self._token["rf_session_id"]:
             try:
@@ -613,7 +662,7 @@ class EzvizClient:
             raise PyEzvizError(f"Error renewing login token: {json_result['meta']}")
 
         if self.account and self.password:
-            return self._login()
+            return self._login(sms_code)
 
         raise PyEzvizError("Login with account and password required")
 

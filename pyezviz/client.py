@@ -438,43 +438,43 @@ class EzvizClient:
         """Load all devices and build dict per device serial."""
 
         devices = self._get_page_list()
-        result: dict[Any, Any] = {}
+        result: dict[str, Any] = {}
         _res_id = "NONE"
 
         for device in devices["deviceInfos"]:
             _serial = device["deviceSerial"]
             _res_id_list = {
                 item
-                for item in devices["CLOUD"].keys()
+                for item in devices.get("CLOUD", {}).keys()
                 if devices["CLOUD"][item].get("deviceSerial") == _serial
             }
             _res_id = _res_id_list.pop() if len(_res_id_list) else "NONE"
 
             result[_serial] = {
-                "CLOUD": {_res_id: devices.get("CLOUD", {}).get(_res_id)},
-                "VTM": {_res_id: devices.get("VTM", {}).get(_res_id)},
-                "P2P": devices.get("P2P", {}).get(_serial),
-                "CONNECTION": devices.get("CONNECTION", {}).get(_serial),
-                "KMS": devices.get("KMS", {}).get(_serial),
-                "STATUS": devices.get("STATUS", {}).get(_serial),
-                "TIME_PLAN": devices.get("TIME_PLAN", {}).get(_serial),
-                "CHANNEL": {_res_id: devices.get("CHANNEL", {}).get(_res_id)},
-                "QOS": devices.get("QOS", {}).get(_serial),
-                "NODISTURB": devices.get("NODISTURB", {}).get(_serial),
-                "FEATURE": devices.get("FEATURE", {}).get(_serial),
-                "UPGRADE": devices.get("UPGRADE", {}).get(_serial),
-                "FEATURE_INFO": devices.get("FEATURE_INFO", {}).get(_serial),
-                "SWITCH": devices.get("SWITCH", {}).get(_serial),
-                "CUSTOM_TAG": devices.get("CUSTOM_TAG", {}).get(_serial),
+                "CLOUD": {_res_id: devices.get("CLOUD", {}).get(_res_id, {})},
+                "VTM": {_res_id: devices.get("VTM", {}).get(_res_id, {})},
+                "P2P": devices.get("P2P", {}).get(_serial, {}),
+                "CONNECTION": devices.get("CONNECTION", {}).get(_serial, {}),
+                "KMS": devices.get("KMS", {}).get(_serial, {}),
+                "STATUS": devices.get("STATUS", {}).get(_serial, {}),
+                "TIME_PLAN": devices.get("TIME_PLAN", {}).get(_serial, {}),
+                "CHANNEL": {_res_id: devices.get("CHANNEL", {}).get(_res_id, {})},
+                "QOS": devices.get("QOS", {}).get(_serial, {}),
+                "NODISTURB": devices.get("NODISTURB", {}).get(_serial, {}),
+                "FEATURE": devices.get("FEATURE", {}).get(_serial, {}),
+                "UPGRADE": devices.get("UPGRADE", {}).get(_serial, {}),
+                "FEATURE_INFO": devices.get("FEATURE_INFO", {}).get(_serial, {}),
+                "SWITCH": devices.get("SWITCH", {}).get(_serial, {}),
+                "CUSTOM_TAG": devices.get("CUSTOM_TAG", {}).get(_serial, {}),
                 "VIDEO_QUALITY": {
-                    _res_id: devices.get("VIDEO_QUALITY", {}).get(_res_id)
+                    _res_id: devices.get("VIDEO_QUALITY", {}).get(_res_id, {})
                 },
                 "resourceInfos": [
                     item
                     for item in devices.get("resourceInfos")
                     if item.get("deviceSerial") == _serial
                 ],  # Could be more than one
-                "WIFI": devices.get("WIFI", {}).get(_serial),
+                "WIFI": devices.get("WIFI", {}).get(_serial, {}),
                 "deviceInfos": device,
             }
 

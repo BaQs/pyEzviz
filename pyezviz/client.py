@@ -37,6 +37,7 @@ API_ENDPOINT_SERVER_INFO = "/v3/configurations/system/info"
 API_ENDPOINT_LOGOUT = "/v3/users/logout/v2"
 API_ENDPOINT_PANORAMIC_DEVICES_OPERATION = "/v3/panoramicDevices/operation"
 API_ENDPOINT_UPGRADE_DEVICE = "/v3/upgrades/v1/devices/"
+API_ENDPOINT_SEND_CODE = "/v3/sms/nologin/checkcode"
 
 
 class EzvizClient:
@@ -146,9 +147,46 @@ class EzvizClient:
             raise PyEzvizError("The user is locked.")
 
         if json_result["meta"]["code"] == 6002:
+            self.send_mfa_code()
             raise PyEzvizError("MFA enabled on account. Please retry with code.")
 
         raise PyEzvizError(f"Login error: {json_result['meta']}")
+
+    def send_mfa_code(self) -> bool:
+        """Send verification code."""
+        try:
+            req = self._session.put(
+                "https://" + self._token["api_url"] + API_ENDPOINT_SEND_CODE,
+                headers={"featureCode": FEATURE_CODE},
+                data={
+                    "from": self.account,
+                    "bizType": "TERMINAL_BIND",
+                },
+                timeout=self._timeout,
+            )
+
+            req.raise_for_status()
+
+        except requests.HTTPError as err:
+            raise HTTPError from err
+
+        try:
+            json_output = req.json()
+
+        except ValueError as err:
+            raise PyEzvizError(
+                "Impossible to decode response: "
+                + str(err)
+                + "\nResponse was: "
+                + str(req.text)
+            ) from err
+
+        if json_output.get("meta").get("code") != 200:
+            raise PyEzvizError(
+                f"Could not request MFA code: Got {req.status_code} : {req.text})"
+            )
+
+        return True
 
     def get_service_urls(self) -> Any:
         """Get Ezviz service urls."""

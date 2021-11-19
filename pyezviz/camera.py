@@ -131,6 +131,10 @@ class EzvizCamera:
             "audio": self._switch.get(DeviceSwitchType.SOUND.value),
             "ir_led": self._switch.get(DeviceSwitchType.INFRARED_LIGHT.value),
             "state_led": self._switch.get(DeviceSwitchType.LIGHT.value),
+            "upgrade_percent": self._device["STATUS"].get("upgradeProcess"),
+            "upgrade_in_progress": bool(
+                self._device["STATUS"].get("upgradeStatus") == 0
+            ),
             "follow_move": self._switch.get(DeviceSwitchType.MOBILE_TRACKING.value),
             "alarm_notify": bool(self._device["STATUS"].get("globalStatus")),
             "alarm_schedules_enabled": self._is_alarm_schedules_enabled(),

@@ -155,7 +155,7 @@ class EzvizClient:
     def send_mfa_code(self) -> bool:
         """Send verification code."""
         try:
-            req = self._session.put(
+            req = self._session.post(
                 "https://" + self._token["api_url"] + API_ENDPOINT_SEND_CODE,
                 headers={"featureCode": FEATURE_CODE},
                 data={

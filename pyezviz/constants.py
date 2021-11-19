@@ -1,7 +1,7 @@
 """Device switch types relationship."""
 from enum import Enum, unique
 
-FEATURE_CODE = "c22cb01f8cb83351422d82fad59c8e4e"
+FEATURE_CODE = "1fc28fa018178a1cd1c091b13b2f9f02"
 XOR_KEY = b"\x0c\x0eJ^X\x15@Rr"
 DEFAULT_TIMEOUT = 25
 MAX_RETRIES = 3

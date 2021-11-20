@@ -23,3 +23,7 @@ class AuthTestResultFailed(PyEzvizError):
 
 class EzvizAuthTokenExpired(PyEzvizError):
     """Authentication failed because token is invalid or expired."""
+
+
+class EzvizAuthVerificationCode(PyEzvizError):
+    """Authentication failed because MFA verification code is required."""

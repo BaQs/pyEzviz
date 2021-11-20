@@ -6,6 +6,7 @@ from .constants import DefenseModeType, DeviceCatagories, DeviceSwitchType, Soun
 from .exceptions import (
     AuthTestResultFailed,
     EzvizAuthTokenExpired,
+    EzvizAuthVerificationCode,
     HTTPError,
     InvalidHost,
     InvalidURL,
@@ -23,6 +24,7 @@ __all__ = [
     "InvalidHost",
     "AuthTestResultFailed",
     "EzvizAuthTokenExpired",
+    "EzvizAuthVerificationCode",
     "EzvizCAS",
     "MQTTClient",
     "DefenseModeType",

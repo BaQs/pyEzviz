@@ -14,11 +14,17 @@ from .constants import (
     DEFAULT_TIMEOUT,
     FEATURE_CODE,
     MAX_RETRIES,
+    REQUEST_HEADER,
     DefenseModeType,
     DeviceCatagories,
-    REQUEST_HEADER,
 )
-from .exceptions import EzvizAuthTokenExpired, HTTPError, InvalidURL, PyEzvizError
+from .exceptions import (
+    EzvizAuthTokenExpired,
+    EzvizAuthVerificationCode,
+    HTTPError,
+    InvalidURL,
+    PyEzvizError,
+)
 
 API_ENDPOINT_CLOUDDEVICES = "/api/cloud/v2/cloudDevices/getAll"
 API_ENDPOINT_PAGELIST = "/v3/userdevices/v1/resources/pagelist"
@@ -145,7 +151,9 @@ class EzvizClient:
 
         if json_result["meta"]["code"] == 6002:
             self.send_mfa_code()
-            raise PyEzvizError("MFA enabled on account. Please retry with code.")
+            raise EzvizAuthVerificationCode(
+                "MFA enabled on account. Please retry with code."
+            )
 
         raise PyEzvizError(f"Login error: {json_result['meta']}")
 

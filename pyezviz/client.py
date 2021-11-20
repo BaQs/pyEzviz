@@ -63,9 +63,9 @@ class EzvizClient:
         self.password = (
             hashlib.md5(password.encode("utf-8")).hexdigest() if password else None
         )  # Ezviz API sends md5 of password
-        self._session = requests.session()
-        # Set Android generic user agent.
-        self._session.headers.update(REQUEST_HEADER)
+        self._session = None
+        self.close_session()
+        self._session.headers["sessionId"] = token.get("session_id") if token else None
         self._token = token or {
             "session_id": None,
             "rf_session_id": None,

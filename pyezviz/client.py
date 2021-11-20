@@ -16,6 +16,7 @@ from .constants import (
     MAX_RETRIES,
     DefenseModeType,
     DeviceCatagories,
+    REQUEST_HEADER,
 )
 from .exceptions import EzvizAuthTokenExpired, HTTPError, InvalidURL, PyEzvizError
 
@@ -58,7 +59,7 @@ class EzvizClient:
         )  # Ezviz API sends md5 of password
         self._session = requests.session()
         # Set Android generic user agent.
-        self._session.headers.update({"User-Agent": "okhttp/3.12.1"})
+        self._session.headers.update(REQUEST_HEADER)
         self._token = token or {
             "session_id": None,
             "rf_session_id": None,
@@ -88,13 +89,6 @@ class EzvizClient:
             req = self._session.post(
                 "https://" + self._token["api_url"] + API_ENDPOINT_LOGIN,
                 allow_redirects=False,
-                headers={
-                    "clientType": "3",
-                    "customno": "1000001",
-                    "clientNo": "web_site",
-                    "appId": "ys7",
-                    "lang": "en",
-                },
                 data=payload,
                 timeout=self._timeout,
             )
@@ -119,6 +113,9 @@ class EzvizClient:
             ) from err
 
         if json_result["meta"]["code"] == 200:
+            self._session.headers["sessionId"] = json_result["loginSession"][
+                "sessionId"
+            ]
             self._token = {
                 "session_id": str(json_result["loginSession"]["sessionId"]),
                 "rf_session_id": str(json_result["loginSession"]["rfSessionId"]),
@@ -157,7 +154,6 @@ class EzvizClient:
         try:
             req = self._session.post(
                 "https://" + self._token["api_url"] + API_ENDPOINT_SEND_CODE,
-                headers={"featureCode": FEATURE_CODE},
                 data={
                     "from": self.account,
                     "bizType": "TERMINAL_BIND",
@@ -197,13 +193,8 @@ class EzvizClient:
         try:
             req = self._session.get(
                 f"https://{self._token['api_url']}{API_ENDPOINT_SERVER_INFO}",
-                headers={
-                    "sessionId": self._token["session_id"],
-                    "featureCode": FEATURE_CODE,
-                },
                 timeout=self._timeout,
             )
-
             req.raise_for_status()
 
         except requests.ConnectionError as err:
@@ -248,7 +239,6 @@ class EzvizClient:
         try:
             req = self._session.get(
                 "https://" + self._token["api_url"] + API_ENDPOINT_PAGELIST,
-                headers={"sessionId": self._token["session_id"]},
                 params={"filter": page_filter},
                 timeout=self._timeout,
             )
@@ -316,7 +306,6 @@ class EzvizClient:
         try:
             req = self._session.get(
                 "https://" + self._token["api_url"] + API_ENDPOINT_ALARMINFO_GET,
-                headers={"sessionId": self._token["session_id"]},
                 params=params,
                 timeout=self._timeout,
             )
@@ -363,7 +352,6 @@ class EzvizClient:
                 + "/1/1/"
                 + str(status_type)
                 + API_ENDPOINT_SWITCH_STATUS,
-                headers={"sessionId": self._token["session_id"]},
                 data={
                     "enable": enable,
                     "serial": serial,
@@ -413,7 +401,6 @@ class EzvizClient:
                 + API_ENDPOINT_UPGRADE_DEVICE
                 + serial
                 + "/0/upgrade",
-                headers={"sessionId": self._token["session_id"]},
                 timeout=self._timeout,
             )
 
@@ -458,7 +445,6 @@ class EzvizClient:
                 + serial
                 + "/0"
                 + API_ENDPOINT_SWITCH_SOUND_ALARM,
-                headers={"sessionId": self._token["session_id"]},
                 data={
                     "enable": enable,
                 },
@@ -594,7 +580,6 @@ class EzvizClient:
                     "uuid": str(uuid4()),
                     "serial": serial,
                 },
-                headers={"sessionId": self._token["session_id"], "clientType": "1"},
                 timeout=self._timeout,
             )
 
@@ -608,7 +593,7 @@ class EzvizClient:
     def ptz_control_coordinates(
         self, serial: str, x_axis: float, y_axis: float
     ) -> bool:
-        """PTZ Coordinate Move"""
+        """PTZ Coordinate Move."""
         if 0 < x_axis > 1:
             raise PyEzvizError(
                 f"Invalid X coordinate: {x_axis}: Should be between 0 and 1 inclusive"
@@ -629,7 +614,6 @@ class EzvizClient:
                     "y": f"{y_axis:.6f}",
                     "deviceSerial": serial,
                 },
-                headers={"sessionId": self._token["session_id"], "clientType": "1"},
                 timeout=self._timeout,
             )
 
@@ -652,7 +636,6 @@ class EzvizClient:
                         "refreshSessionId": self._token["rf_session_id"],
                         "featureCode": FEATURE_CODE,
                     },
-                    headers={"sessionId": self._token["session_id"]},
                     timeout=self._timeout,
                 )
                 req.raise_for_status()
@@ -709,18 +692,14 @@ class EzvizClient:
         try:
             req = self._session.delete(
                 "https://" + self._token["api_url"] + API_ENDPOINT_LOGOUT,
-                headers={
-                    "featureCode": FEATURE_CODE,
-                    "customno": "1000001",
-                    "sessionId": self._token["session_id"],
-                    "clientNo": "web_site",
-                    "appId": "ys7",
-                },
                 timeout=self._timeout,
             )
             req.raise_for_status()
 
         except requests.HTTPError as err:
+            if err.response.status_code == 401:
+                print("Token is no longer valid. Already logged out?")
+                return True
             raise HTTPError from err
 
         try:
@@ -764,7 +743,6 @@ class EzvizClient:
         try:
             req = self._session.post(
                 "https://" + self._token["api_url"] + API_ENDPOINT_SET_DEFENCE_SCHEDULE,
-                headers={"sessionId": self._token["session_id"]},
                 data={
                     "devTimingPlan": schedulestring,
                 },
@@ -809,7 +787,6 @@ class EzvizClient:
         try:
             req = self._session.post(
                 "https://" + self._token["api_url"] + API_ENDPOINT_SWITCH_DEFENCE_MODE,
-                headers={"sessionId": self._token["session_id"]},
                 data={
                     "groupId": -1,
                     "mode": mode,
@@ -866,7 +843,6 @@ class EzvizClient:
                 "https://"
                 + self._token["api_url"]
                 + API_ENDPOINT_DETECTION_SENSIBILITY,
-                headers={"sessionId": self._token["session_id"]},
                 data={
                     "subSerial": serial,
                     "type": type_value,
@@ -911,7 +887,6 @@ class EzvizClient:
                 "https://"
                 + self._token["api_url"]
                 + API_ENDPOINT_DETECTION_SENSIBILITY_GET,
-                headers={"sessionId": self._token["session_id"]},
                 data={
                     "subSerial": serial,
                 },
@@ -966,7 +941,6 @@ class EzvizClient:
                 + API_ENDPOINT_DEVICES
                 + serial
                 + API_ENDPOINT_ALARM_SOUND,
-                headers={"sessionId": self._token["session_id"]},
                 data={
                     "enable": enable,
                     "soundType": sound_type,
@@ -1051,6 +1025,4 @@ class EzvizClient:
             self._session.close()
 
         self._session = requests.session()
-        self._session.headers.update(
-            {"User-Agent": "okhttp/3.12.1"}
-        )  # Android generic user agent.
+        self._session.headers.update(REQUEST_HEADER)  # Reset session.

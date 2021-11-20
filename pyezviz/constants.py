@@ -5,6 +5,21 @@ FEATURE_CODE = "1fc28fa018178a1cd1c091b13b2f9f02"
 XOR_KEY = b"\x0c\x0eJ^X\x15@Rr"
 DEFAULT_TIMEOUT = 25
 MAX_RETRIES = 3
+REQUEST_HEADER = {
+    "featureCode": FEATURE_CODE,
+    "clientType": "3",
+    "osVersion": "",
+    "clientVersion": "",
+    "netType": "WIFI",
+    "customno": "1000001",
+    "ssid": "",
+    "clientNo": "web_site",
+    "appId": "ys7",
+    "language": "en_GB",
+    "lang": "en",
+    "sessionId": "",
+    "User-Agent": "okhttp/3.12.1",
+}  # Standard android header.
 
 
 @unique

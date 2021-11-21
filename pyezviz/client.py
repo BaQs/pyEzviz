@@ -665,7 +665,7 @@ class EzvizClient:
 
             if json_result["meta"].get("code") == 200:
 
-                self._session.headers["sessionId"] = json_result["loginSession"][
+                self._session.headers["sessionId"] = json_result["sessionInfo"][
                     "sessionId"
                 ]
                 self._token["session_id"] = str(json_result["sessionInfo"]["sessionId"])

@@ -127,6 +127,18 @@ def main() -> Any:
         choices=range(0, 100),
     )
     parser_camera_alarm.add_argument(
+        '--do_not_disturb', 
+        required=False, 
+        help='\
+If alarm notifications are enabled in the EZViz app then movement normally causes a notification to be sent. \
+Enabling this feature stops these notifications, i.e. you are not to be disturbed even if movement occurs. \
+Care must be taken because do-not-disturb can not be reset using the mobile app. \
+No new notifications will be sent until do-not-disturb is disabled. \
+Movement is still recorded even if do-not-disturb is enabled.',
+        default=None, 
+        type=int, 
+        choices=[0,1] )    
+    parser_camera_alarm.add_argument(
         "--schedule", required=False, help="Schedule in json format *test*", type=str
     )
 
@@ -313,6 +325,8 @@ def main() -> Any:
                     camera.alarm_notify(args.notify)
                 if args.sensibility is not None:
                     camera.alarm_detection_sensibility(args.sensibility)
+                if args.do_not_disturb is not None:
+                    camera.do_not_disturb(args.do_not_disturb)
                 if args.schedule is not None:
                     camera.change_defence_schedule(args.schedule)
             except Exception as exp:  # pylint: disable=broad-except

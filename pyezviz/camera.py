@@ -241,6 +241,10 @@ class EzvizCamera:
             self._serial, DeviceSwitchType.MOBILE_TRACKING.value, enable
         )
 
+    def switch_sound_alarm(self, enable: int = 0) -> bool:
+        """Sound alarm on a device."""
+        return self._client.sound_alarm(self._serial, enable)
+
     def change_defence_schedule(self, schedule: str, enable: int = 0) -> bool:
         """Change defence schedule. Requires json formatted schedules."""
         return self._client.api_set_defence_schedule(self._serial, schedule, enable)

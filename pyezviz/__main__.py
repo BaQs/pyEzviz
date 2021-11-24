@@ -95,7 +95,7 @@ def main() -> Any:
         "--switch",
         required=True,
         help="Switch to switch",
-        choices=["audio", "ir", "state", "privacy", "sleep", "follow_move"],
+        choices=["audio", "ir", "state", "privacy", "sleep", "follow_move", "sound_alarm"],
     )
     parser_camera_switch.add_argument(
         "--enable",
@@ -312,6 +312,9 @@ Movement is still recorded even if do-not-disturb is enabled.',
                     camera.switch_sleep_mode(args.enable)
                 elif args.switch == "follow_move":
                     camera.switch_follow_move(args.enable)
+                elif args.switch == "sound_alarm":
+                    # Map 0|1 enable flog to operation type: 1 for off and 2 for on.
+                    camera.switch_sound_alarm(args.enable + 1)
             except Exception as exp:  # pylint: disable=broad-except
                 print(exp)
             finally:

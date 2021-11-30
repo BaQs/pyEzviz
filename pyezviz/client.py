@@ -498,6 +498,7 @@ class EzvizClient:
             DeviceCatagories.BATTERY_CAMERA_DEVICE_CATEGORY.value,
             DeviceCatagories.DOORBELL_DEVICE_CATEGORY.value,
             DeviceCatagories.BASE_STATION_DEVICE_CATEGORY.value,
+            DeviceCatagories.CAT_EYE_CATEGORY.value,
         ]
 
         for device, data in devices.items():

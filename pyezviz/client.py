@@ -48,6 +48,8 @@ API_ENDPOINT_PANORAMIC_DEVICES_OPERATION = "/v3/panoramicDevices/operation"
 API_ENDPOINT_UPGRADE_DEVICE = "/v3/upgrades/v1/devices/"
 API_ENDPOINT_SEND_CODE = "/v3/sms/nologin/checkcode"
 
+API_ENDPOINT_V3_ALARMS = "/v3/alarms/"
+API_ENDPOINT_DO_NOT_DISTURB = "/1/nodisturb"
 
 class EzvizClient:
     """Initialize api client object."""
@@ -829,6 +831,55 @@ class EzvizClient:
             ) from err
 
         if json_output.get("meta").get("code") != 200:
+            raise PyEzvizError(
+                f"Could not set defence mode: Got {req.status_code} : {req.text})"
+            )
+
+        return True
+
+    def do_not_disturb(
+        self,
+        serial: str,
+        enable: int = 1,
+        max_retries: int = 0,
+    ) -> bool | str:
+        """Set detection sensibility."""
+        if max_retries > MAX_RETRIES:
+            raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
+
+        try:
+            req = self._session.put(
+                "https://"
+                + self._token["api_url"]
+                + API_ENDPOINT_V3_ALARMS
+                + serial
+                + API_ENDPOINT_DO_NOT_DISTURB,
+                data={
+                    'enable': enable,
+                    'channelNo': "1",
+                    'deviceSerial': serial
+                },
+                timeout=self._timeout,
+            )
+            req.raise_for_status()
+
+        except requests.HTTPError as err:
+            if err.response.status_code == 401:
+                # session is wrong, need to re-log-in
+                self.login()
+                return self.do_not_disturb(
+                    serial, enable, max_retries + 1
+                )
+
+            raise HTTPError from err
+
+        try:
+            response_json = req.json()
+
+        except ValueError as err:
+            raise PyEzvizError("Could not decode response:" + str(err)) from err
+
+        if response_json.get("meta").get("code") != 200:
             raise PyEzvizError(
                 f"Could not set defence mode: Got {req.status_code} : {req.text})"
             )

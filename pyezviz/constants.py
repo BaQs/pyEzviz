@@ -96,3 +96,4 @@ class DeviceCatagories(Enum):
     BATTERY_CAMERA_DEVICE_CATEGORY = "BatteryCamera"
     DOORBELL_DEVICE_CATEGORY = "BDoorBell"
     BASE_STATION_DEVICE_CATEGORY = "XVR"
+    CAT_EYE_CATEGORY = "CatEye"

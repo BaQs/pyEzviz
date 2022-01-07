@@ -193,11 +193,14 @@ class EzvizCamera:
         return self._client.alarm_sound(self._serial, sound_type, 1)
 
     def do_not_disturb(self, enable: int) -> bool:
-        """Enable/Disable do not disturb; if motion triggers are normally sent to your device as a 
-           notification, then enabling this feature stops these notification being sent.
-           The alarm event is still recorded in the EzViz app as normal. """
+        """Enable/Disable do not disturb.
+
+        if motion triggers are normally sent to your device as a
+        notification, then enabling this feature stops these notification being sent.
+        The alarm event is still recorded in the EzViz app as normal.
+        """
         return self._client.do_not_disturb(self._serial, enable)
-    
+
     def alarm_detection_sensibility(
         self, sensibility: int, type_value: int = 0
     ) -> bool | str:

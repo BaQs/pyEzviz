@@ -74,7 +74,9 @@ def main() -> Any:
         choices=range(1, 10),
     )
 
-    parser_camera_move_coords = subparsers_camera.add_parser("move_coords", help="Move the camera to the X,Y coordinates")
+    parser_camera_move_coords = subparsers_camera.add_parser(
+        "move_coords", help="Move the camera to the X,Y coordinates"
+    )
     parser_camera_move_coords.add_argument(
         "--x",
         required=True,
@@ -95,7 +97,15 @@ def main() -> Any:
         "--switch",
         required=True,
         help="Switch to switch",
-        choices=["audio", "ir", "state", "privacy", "sleep", "follow_move", "sound_alarm"],
+        choices=[
+            "audio",
+            "ir",
+            "state",
+            "privacy",
+            "sleep",
+            "follow_move",
+            "sound_alarm",
+        ],
     )
     parser_camera_switch.add_argument(
         "--enable",
@@ -127,17 +137,18 @@ def main() -> Any:
         choices=range(0, 100),
     )
     parser_camera_alarm.add_argument(
-        '--do_not_disturb', 
-        required=False, 
-        help='\
+        "--do_not_disturb",
+        required=False,
+        help="\
 If alarm notifications are enabled in the EZViz app then movement normally causes a notification to be sent. \
 Enabling this feature stops these notifications, i.e. you are not to be disturbed even if movement occurs. \
 Care must be taken because do-not-disturb can not be reset using the mobile app. \
 No new notifications will be sent until do-not-disturb is disabled. \
-Movement is still recorded even if do-not-disturb is enabled.',
-        default=None, 
-        type=int, 
-        choices=[0,1] )    
+Movement is still recorded even if do-not-disturb is enabled.",
+        default=None,
+        type=int,
+        choices=[0, 1],
+    )
     parser_camera_alarm.add_argument(
         "--schedule", required=False, help="Schedule in json format *test*", type=str
     )

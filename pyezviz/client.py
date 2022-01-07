@@ -51,6 +51,7 @@ API_ENDPOINT_SEND_CODE = "/v3/sms/nologin/checkcode"
 API_ENDPOINT_V3_ALARMS = "/v3/alarms/"
 API_ENDPOINT_DO_NOT_DISTURB = "/1/nodisturb"
 
+
 class EzvizClient:
     """Initialize api client object."""
 
@@ -843,7 +844,7 @@ class EzvizClient:
         enable: int = 1,
         max_retries: int = 0,
     ) -> bool | str:
-        """Set detection sensibility."""
+        """Set do not disturb on camera with spesified serial."""
         if max_retries > MAX_RETRIES:
             raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
 
@@ -854,11 +855,7 @@ class EzvizClient:
                 + API_ENDPOINT_V3_ALARMS
                 + serial
                 + API_ENDPOINT_DO_NOT_DISTURB,
-                data={
-                    'enable': enable,
-                    'channelNo': "1",
-                    'deviceSerial': serial
-                },
+                data={"enable": enable, "channelNo": "1", "deviceSerial": serial},
                 timeout=self._timeout,
             )
             req.raise_for_status()
@@ -867,9 +864,7 @@ class EzvizClient:
             if err.response.status_code == 401:
                 # session is wrong, need to re-log-in
                 self.login()
-                return self.do_not_disturb(
-                    serial, enable, max_retries + 1
-                )
+                return self.do_not_disturb(serial, enable, max_retries + 1)
 
             raise HTTPError from err
 

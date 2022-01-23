@@ -50,7 +50,8 @@ def on_message(client, userdata, msg):
             "alert": mqtt_message["alert"],
             "time": mqtt_message["ext"][1],
             "alert type": mqtt_message["ext"][4],
-            "image": mqtt_message["ext"][16],
+            "image": mqtt_message["ext"][16]
+                if len(mqtt_message["ext"]) > 16 else None,
         }
     }
     print(decoded_message)

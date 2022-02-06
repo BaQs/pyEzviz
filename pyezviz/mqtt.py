@@ -21,42 +21,6 @@ MQTT_APP_KEY = "4c6b3cc2-b5eb-4813-a592-612c1374c1fe"
 APP_SECRET = "17454517-cc1c-42b3-a845-99b4a15dd3e6"
 
 
-def on_subscribe(client, userdata, mid, granted_qos):
-    """On MQTT message subscribe."""
-    # pylint: disable=unused-argument
-    print("Subscribed: " + str(mid) + " " + str(granted_qos))
-
-
-def on_connect(client, userdata, flags, return_code):
-    """On MQTT connect."""
-    # pylint: disable=unused-argument
-    if return_code == 0:
-        print("connected OK Returned code=", return_code)
-    else:
-        print("Bad connection Returned code=", return_code)
-        client.reconnect()
-
-
-def on_message(client, userdata, msg):
-    """On MQTT message receive."""
-    # pylint: disable=unused-argument
-    mqtt_message = json.loads(msg.payload)
-    mqtt_message["ext"] = mqtt_message["ext"].split(",")
-
-    # Print payload message
-    decoded_message = {
-        mqtt_message["ext"][2]: {
-            "id": mqtt_message["id"],
-            "alert": mqtt_message["alert"],
-            "time": mqtt_message["ext"][1],
-            "alert type": mqtt_message["ext"][4],
-            "image": mqtt_message["ext"][16]
-                if len(mqtt_message["ext"]) > 16 else None,
-        }
-    }
-    print(decoded_message)
-
-
 class MQTTClient(threading.Thread):
     """Open MQTT connection to ezviz cloud."""
 
@@ -82,15 +46,48 @@ class MQTTClient(threading.Thread):
             "push_url": token["service_urls"]["pushAddr"],
         }
 
+    def on_subscribe(self, client, userdata, mid, granted_qos):
+        """On MQTT message subscribe."""
+        # pylint: disable=unused-argument
+        print("Subscribed: " + str(mid) + " " + str(granted_qos))
+
+    def on_connect(self, client, userdata, flags, return_code):
+        """On MQTT connect."""
+        # pylint: disable=unused-argument
+        if return_code == 0:
+            print("connected OK Returned code=", return_code)
+        else:
+            print("Bad connection Returned code=", return_code)
+            client.reconnect()
+
+    def on_message(self, client, userdata, msg):
+        """On MQTT message receive."""
+        # pylint: disable=unused-argument
+        mqtt_message = json.loads(msg.payload)
+        mqtt_message["ext"] = mqtt_message["ext"].split(",")
+
+        # Print payload message
+        decoded_message = {
+            mqtt_message["ext"][2]: {
+                "id": mqtt_message["id"],
+                "alert": mqtt_message["alert"],
+                "time": mqtt_message["ext"][1],
+                "alert type": mqtt_message["ext"][4],
+                "image": mqtt_message["ext"][16]
+                    if len(mqtt_message["ext"]) > 16 else None,
+            }
+        }
+        print(decoded_message)
+
     def _mqtt(self):
         """Receive MQTT messages from ezviz server."""
 
         ezviz_mqtt_client = mqtt.Client(
             client_id=self._mqtt_data["mqtt_clientid"], protocol=4, transport="tcp"
         )
-        ezviz_mqtt_client.on_connect = on_connect
-        ezviz_mqtt_client.on_subscribe = on_subscribe
-        ezviz_mqtt_client.on_message = on_message
+        ezviz_mqtt_client.on_connect = self.on_connect
+        ezviz_mqtt_client.on_subscribe = self.on_subscribe
+        ezviz_mqtt_client.on_message = self.on_message
         ezviz_mqtt_client.username_pw_set(MQTT_APP_KEY, APP_SECRET)
 
         ezviz_mqtt_client.connect(self._mqtt_data["push_url"], 1882, 60)

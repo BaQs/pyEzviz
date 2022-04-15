@@ -303,9 +303,7 @@ class EzvizClient:
 
         return json_result
 
-    def get_alarminfo(
-        self, serial: str, limit: int = 1, max_retries: int = 0
-    ) -> Any:
+    def get_alarminfo(self, serial: str, limit: int = 1, max_retries: int = 0) -> Any:
         """Get data from alarm info API."""
         if max_retries > MAX_RETRIES:
             raise PyEzvizError("Can't gather proper data. Max retries exceeded.")

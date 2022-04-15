@@ -74,7 +74,8 @@ class MQTTClient(threading.Thread):
                 "time": mqtt_message["ext"][1],
                 "alert type": mqtt_message["ext"][4],
                 "image": mqtt_message["ext"][16]
-                    if len(mqtt_message["ext"]) > 16 else None,
+                if len(mqtt_message["ext"]) > 16
+                else None,
             }
         }
         print(decoded_message)

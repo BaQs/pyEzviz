@@ -49,4 +49,3 @@ def decrypt_image(input_data, password):
         output_data += chunk
         i += chunk_size
     return output_data
-    

@@ -4,8 +4,6 @@ from __future__ import annotations
 import datetime
 from typing import TYPE_CHECKING, Any
 
-import requests
-
 from .constants import DeviceCatagories, DeviceSwitchType, SoundMode
 from .exceptions import PyEzvizError
 
@@ -59,24 +57,9 @@ class EzvizCamera:
     def _alarm_list(self) -> None:
         """Get last alarm info for this camera's self._serial."""
         _alarmlist = self._client.get_alarminfo(self._serial)
-        _get_redirect = None
 
         if _alarmlist["page"].get("totalResults") > 0:
             self._last_alarm = _alarmlist["alarms"][0]
-            # Check if url redirects, update pic_url to redirected url.
-            try:
-                _get_redirect = requests.get(
-                    self._last_alarm.get("picUrl"), allow_redirects=False
-                )
-            except (
-                requests.exceptions.MissingSchema,
-                requests.exceptions.ConnectionError,
-            ):
-                return self._motion_trigger()
-
-            if _get_redirect.status_code == 302:
-                self._last_alarm["picUrl"] = _get_redirect.headers["Location"]
-
             return self._motion_trigger()
 
     def _local_ip(self) -> Any:

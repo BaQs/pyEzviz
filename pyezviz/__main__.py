@@ -11,6 +11,9 @@ from .camera import EzvizCamera
 from .client import EzvizClient
 from .constants import DefenseModeType
 from .mqtt import MQTTClient
+from .exceptions import (
+    EzvizAuthVerificationCode,
+)
 
 
 def main() -> Any:
@@ -160,6 +163,15 @@ Movement is still recorded even if do-not-disturb is enabled.",
     # print("--------------args")
 
     client = EzvizClient(args.username, args.password, args.region)
+    try:
+        client.login()
+
+    except EzvizAuthVerificationCode:
+        mfa_code = input("MFA code required, please input MFA code.\n")
+        client.login(sms_code=mfa_code)
+
+    except Exception as exp:  # pylint: disable=broad-except
+        print(exp)
 
     if args.debug:
         # You must initialize logging, otherwise you'll not see debug output.
@@ -173,7 +185,6 @@ Movement is still recorded even if do-not-disturb is enabled.",
 
         if args.device_action == "device":
             try:
-                client.login()
                 print(json.dumps(client.get_device(), indent=2))
             except Exception as exp:  # pylint: disable=broad-except
                 print(exp)
@@ -182,7 +193,6 @@ Movement is still recorded even if do-not-disturb is enabled.",
 
         elif args.device_action == "status":
             try:
-                client.login()
                 print(
                     pandas.DataFrame.from_dict(
                         data=client.load_cameras(),
@@ -223,7 +233,6 @@ Movement is still recorded even if do-not-disturb is enabled.",
 
         elif args.device_action == "switch":
             try:
-                client.login()
                 print(json.dumps(client.get_switch(), indent=2))
             except Exception as exp:  # pylint: disable=broad-except
                 print(exp)
@@ -232,7 +241,6 @@ Movement is still recorded even if do-not-disturb is enabled.",
 
         elif args.device_action == "connection":
             try:
-                client.login()
                 print(json.dumps(client.get_connection(), indent=2))
             except Exception as exp:  # pylint: disable=broad-except
                 print(exp)
@@ -246,7 +254,6 @@ Movement is still recorded even if do-not-disturb is enabled.",
 
         if args.mode:
             try:
-                client.login()
                 print(
                     json.dumps(
                         client.api_set_defence_mode(
@@ -276,7 +283,6 @@ Movement is still recorded even if do-not-disturb is enabled.",
 
         # load camera object
         try:
-            client.login()
             camera = EzvizCamera(client, args.serial)
             logging.debug("Camera loaded")
         except Exception as exp:  # pylint: disable=broad-except

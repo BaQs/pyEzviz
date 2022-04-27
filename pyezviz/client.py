@@ -91,8 +91,9 @@ class EzvizClient:
             "account": self.account,
             "password": self.password,
             "featureCode": FEATURE_CODE,
-            "msgType": "0",
-            "cuName": "SFRDIDEw",
+            "msgType": "3" if smscode else "0",
+            "bizType": "TERMINAL_BIND" if smscode else "",
+            "cuName": "SGFzc2lv",  # hassio base64 encoded
             "smsCode": smscode,
         }
 
@@ -143,6 +144,9 @@ class EzvizClient:
             _LOGGER.warning("Region incorrect!")
             _LOGGER.warning("Your region url: %s", self._token["api_url"])
             return self.login()
+
+        if json_result["meta"]["code"] == 1012:
+            raise PyEzvizError("The MFA code is invalid, please try again.")
 
         if json_result["meta"]["code"] == 1013:
             raise PyEzvizError("Incorrect Username.")

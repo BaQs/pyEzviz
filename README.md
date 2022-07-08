@@ -109,9 +109,9 @@ tests/data folder contains samples of EzvizLife API for tests purposes.
 ## Side notes
 
 As there is no official documentation on the API, I had to reverse-engineer what is the one used in the Ezviz IOS APP.
-Some Regions might operate on an isolated platform and require a url to be entered. Russia for example:
+Some Regions might operate on an isolated platform and require a url to be entered. US for example:
 
-pyezviz -u username@domain.com -p PASS@123 -r apirus.ezvizru.com devices status
+pyezviz -u username@domain.com -p PASS@123 -r apiius.ezvizlife.com devices status
 
 ## Contributing
 

@@ -57,7 +57,11 @@ class EzvizCAS:
 
         payload_end_padding = rand_hex.encode("latin1")
 
-        context = ssl.SSLContext(cert_reqs=ssl.CERT_NONE)
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS)
+
+        context.set_ciphers(
+            "DEFAULT:!aNULL:!eNULL:!MD5:!3DES:!DES:!RC4:!IDEA:!SEED:!aDSS:!SRP:!PSK"
+        )
 
         # Create a TCP/IP socket
         my_socket = socket.create_connection(
@@ -125,7 +129,11 @@ class EzvizCAS:
             f"\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10"
         ).encode("latin1")
 
-        context = ssl.SSLContext(cert_reqs=ssl.CERT_NONE)
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS)
+
+        context.set_ciphers(
+            "DEFAULT:!aNULL:!eNULL:!MD5:!3DES:!DES:!RC4:!IDEA:!SEED:!aDSS:!SRP:!PSK"
+        )
 
         # Create a TCP/IP socket
         my_socket = socket.create_connection(

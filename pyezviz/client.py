@@ -48,6 +48,9 @@ API_ENDPOINT_PANORAMIC_DEVICES_OPERATION = "/v3/panoramicDevices/operation"
 API_ENDPOINT_UPGRADE_DEVICE = "/v3/upgrades/v1/devices/"
 API_ENDPOINT_SEND_CODE = "/v3/sms/nologin/checkcode"
 
+API_ENDPOINT_CAM_ENCRYPTKEY = "/api/device/query/encryptkey"
+API_ENDPOINT_CREATE_PANORAMIC = "/api/panoramic/devices/pics/collect"
+API_ENDPOINT_RETURN_PANORAMIC = "/api/panoramic/devices/pics"
 API_ENDPOINT_V3_ALARMS = "/v3/alarms/"
 API_ENDPOINT_DO_NOT_DISTURB = "/1/nodisturb"
 
@@ -606,6 +609,142 @@ class EzvizClient:
             raise HTTPError from err
 
         return req.text
+
+    def get_cam_key(self, serial: str, smscode: int, max_retries: int = 0) -> Any:
+        """Get Camera encryption key."""
+
+        if max_retries > MAX_RETRIES:
+            raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
+
+        try:
+            req = self._session.post(
+                "https://" + self._token["api_url"] + API_ENDPOINT_CAM_ENCRYPTKEY,
+                data={
+                    "checkcode": smscode,
+                    "serial": serial,
+                    "clientNo": "web_site",
+                    "clientType": 3,
+                    "netType": "WIFI",
+                    "featureCode": FEATURE_CODE,
+                    "sessionId": self._token["session_id"],
+                },
+                timeout=self._timeout,
+            )
+
+            req.raise_for_status()
+
+        except requests.HTTPError as err:
+            if err.response.status_code == 401:
+                # session is wrong, need to relogin
+                self.login()
+                return self.api_set_defence_mode(serial, max_retries + 1)
+
+            raise HTTPError from err
+
+        try:
+            json_output = req.json()
+
+        except ValueError as err:
+            raise PyEzvizError(
+                "Impossible to decode response: "
+                + str(err)
+                + "\nResponse was: "
+                + str(req.text)
+            ) from err
+
+        if json_output.get("resultCode") == "20002":
+            raise PyEzvizError(
+                f"MFA code required: Got {req.status_code} : {req.text})"
+            )
+
+        if json_output.get("resultCode") != "0":
+            raise PyEzvizError(
+                f"Could not get camera encryption key: Got {req.status_code} : {req.text})"
+            )
+
+        return json_output
+
+    def create_panoramic(self, serial: str, max_retries: int = 0) -> Any:
+        """Create panoramic image."""
+
+        if max_retries > MAX_RETRIES:
+            raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
+
+        try:
+            req = self._session.post(
+                "https://" + self._token["api_url"] + API_ENDPOINT_CREATE_PANORAMIC,
+                data={"deviceSerial": serial},
+                timeout=self._timeout,
+            )
+
+            req.raise_for_status()
+
+        except requests.HTTPError as err:
+            if err.response.status_code == 401:
+                # session is wrong, need to relogin
+                self.login()
+                return self.api_set_defence_mode(serial, max_retries + 1)
+
+            raise HTTPError from err
+
+        try:
+            json_output = req.json()
+
+        except ValueError as err:
+            raise PyEzvizError(
+                "Impossible to decode response: "
+                + str(err)
+                + "\nResponse was: "
+                + str(req.text)
+            ) from err
+
+        if json_output.get("resultCode") != "0":
+            raise PyEzvizError(
+                f"Could not send command to create panoramic photo: Got {req.status_code} : {req.text})"
+            )
+
+        return json_output
+
+    def return_panoramic(self, serial: str, max_retries: int = 0) -> Any:
+        """Returns panoramic image urls."""
+
+        if max_retries > MAX_RETRIES:
+            raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
+
+        try:
+            req = self._session.post(
+                "https://" + self._token["api_url"] + API_ENDPOINT_RETURN_PANORAMIC,
+                data={"deviceSerial": serial},
+                timeout=self._timeout,
+            )
+
+            req.raise_for_status()
+
+        except requests.HTTPError as err:
+            if err.response.status_code == 401:
+                # session is wrong, need to relogin
+                self.login()
+                return self.api_set_defence_mode(serial, max_retries + 1)
+
+            raise HTTPError from err
+
+        try:
+            json_output = req.json()
+
+        except ValueError as err:
+            raise PyEzvizError(
+                "Impossible to decode response: "
+                + str(err)
+                + "\nResponse was: "
+                + str(req.text)
+            ) from err
+
+        if json_output.get("resultCode") != "0":
+            raise PyEzvizError(
+                f"Could retrieve panoramic photo: Got {req.status_code} : {req.text})"
+            )
+
+        return json_output
 
     def ptz_control_coordinates(
         self, serial: str, x_axis: float, y_axis: float

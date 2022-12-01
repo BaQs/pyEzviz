@@ -610,7 +610,9 @@ class EzvizClient:
 
         return req.text
 
-    def get_cam_key(self, serial: str, smscode: int, max_retries: int = 0) -> Any:
+    def get_cam_key(
+        self, serial: str, smscode: int = None, max_retries: int = 0
+    ) -> Any:
         """Get Camera encryption key."""
 
         if max_retries > MAX_RETRIES:

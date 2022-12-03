@@ -12,6 +12,7 @@ from .api_endpoints import (
     API_ENDPOINT_ALARM_SOUND,
     API_ENDPOINT_ALARMINFO_GET,
     API_ENDPOINT_CAM_ENCRYPTKEY,
+    API_ENDPOINT_CANCEL_ALARM,
     API_ENDPOINT_CREATE_PANORAMIC,
     API_ENDPOINT_DETECTION_SENSIBILITY,
     API_ENDPOINT_DETECTION_SENSIBILITY_GET,
@@ -493,6 +494,47 @@ class EzvizClient:
         if json_output["meta"].get("code") != 200:
             raise PyEzvizError(
                 f"Could not set the alarm sound: Got {req.status_code} : {req.text})"
+            )
+
+        return True
+
+    # Not tested
+    def cancel_alarm_device(self, serial: str, max_retries: int = 0) -> bool:
+        """Cacnel alarm on an Alarm device."""
+        if max_retries > MAX_RETRIES:
+            raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
+
+        try:
+            req = self._session.post(
+                "https://" + self._token["api_url"] + API_ENDPOINT_CANCEL_ALARM,
+                data={"subSerial": serial},
+                timeout=self._timeout,
+            )
+
+            req.raise_for_status()
+
+        except requests.HTTPError as err:
+            if err.response.status_code == 401:
+                # session is wrong, need to relogin
+                self.login()
+                return self.sound_alarm(serial, max_retries + 1)
+
+            raise HTTPError from err
+
+        try:
+            json_output = req.json()
+
+        except ValueError as err:
+            raise PyEzvizError(
+                "Impossible to decode response: "
+                + str(err)
+                + "\nResponse was: "
+                + str(req.text)
+            ) from err
+
+        if json_output["meta"].get("code") != 200:
+            raise PyEzvizError(
+                f"Could not cancel alarm siren: Got {req.status_code} : {req.text})"
             )
 
         return True
@@ -986,6 +1028,7 @@ class EzvizClient:
         self,
         serial: str,
         enable: int = 1,
+        channelno: int = 1,
         max_retries: int = 0,
     ) -> bool | str:
         """Set do not disturb on camera with spesified serial."""
@@ -998,8 +1041,10 @@ class EzvizClient:
                 + self._token["api_url"]
                 + API_ENDPOINT_V3_ALARMS
                 + serial
+                + "/"
+                + channelno
                 + API_ENDPOINT_DO_NOT_DISTURB,
-                data={"enable": enable, "channelNo": "1", "deviceSerial": serial},
+                data={"enable": enable, "channelNo": channelno, "deviceSerial": serial},
                 timeout=self._timeout,
             )
             req.raise_for_status()

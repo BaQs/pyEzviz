@@ -8,6 +8,31 @@ from uuid import uuid4
 
 import requests
 
+from .api_endpoints import (
+    API_ENDPOINT_ALARM_SOUND,
+    API_ENDPOINT_ALARMINFO_GET,
+    API_ENDPOINT_CAM_ENCRYPTKEY,
+    API_ENDPOINT_CREATE_PANORAMIC,
+    API_ENDPOINT_DETECTION_SENSIBILITY,
+    API_ENDPOINT_DETECTION_SENSIBILITY_GET,
+    API_ENDPOINT_DEVICES,
+    API_ENDPOINT_DO_NOT_DISTURB,
+    API_ENDPOINT_LOGIN,
+    API_ENDPOINT_LOGOUT,
+    API_ENDPOINT_PAGELIST,
+    API_ENDPOINT_PANORAMIC_DEVICES_OPERATION,
+    API_ENDPOINT_PTZCONTROL,
+    API_ENDPOINT_REFRESH_SESSION_ID,
+    API_ENDPOINT_RETURN_PANORAMIC,
+    API_ENDPOINT_SEND_CODE,
+    API_ENDPOINT_SERVER_INFO,
+    API_ENDPOINT_SET_DEFENCE_SCHEDULE,
+    API_ENDPOINT_SWITCH_DEFENCE_MODE,
+    API_ENDPOINT_SWITCH_SOUND_ALARM,
+    API_ENDPOINT_SWITCH_STATUS,
+    API_ENDPOINT_UPGRADE_DEVICE,
+    API_ENDPOINT_V3_ALARMS,
+)
 from .camera import EzvizCamera
 from .cas import EzvizCAS
 from .constants import (
@@ -28,32 +53,6 @@ from .exceptions import (
 
 _LOGGER = logging.getLogger(__name__)
 
-API_ENDPOINT_CLOUDDEVICES = "/api/cloud/v2/cloudDevices/getAll"
-API_ENDPOINT_PAGELIST = "/v3/userdevices/v1/resources/pagelist"
-API_ENDPOINT_DEVICES = "/v3/devices/"
-API_ENDPOINT_LOGIN = "/v3/users/login/v5"
-API_ENDPOINT_REFRESH_SESSION_ID = "/v3/apigateway/login"
-API_ENDPOINT_SWITCH_STATUS = "/switchStatus"
-API_ENDPOINT_PTZCONTROL = "/ptzControl"
-API_ENDPOINT_ALARM_SOUND = "/alarm/sound"
-API_ENDPOINT_DETECTION_SENSIBILITY = "/api/device/configAlgorithm"
-API_ENDPOINT_DETECTION_SENSIBILITY_GET = "/api/device/queryAlgorithmConfig"
-API_ENDPOINT_ALARMINFO_GET = "/v3/alarms/v2/advanced"
-API_ENDPOINT_SET_DEFENCE_SCHEDULE = "/api/device/defence/plan2"
-API_ENDPOINT_SWITCH_DEFENCE_MODE = "/v3/userdevices/v1/group/switchDefenceMode"
-API_ENDPOINT_SWITCH_SOUND_ALARM = "/sendAlarm"
-API_ENDPOINT_SERVER_INFO = "/v3/configurations/system/info"
-API_ENDPOINT_LOGOUT = "/v3/users/logout/v2"
-API_ENDPOINT_PANORAMIC_DEVICES_OPERATION = "/v3/panoramicDevices/operation"
-API_ENDPOINT_UPGRADE_DEVICE = "/v3/upgrades/v1/devices/"
-API_ENDPOINT_SEND_CODE = "/v3/sms/nologin/checkcode"
-
-API_ENDPOINT_CAM_ENCRYPTKEY = "/api/device/query/encryptkey"
-API_ENDPOINT_CREATE_PANORAMIC = "/api/panoramic/devices/pics/collect"
-API_ENDPOINT_RETURN_PANORAMIC = "/api/panoramic/devices/pics"
-API_ENDPOINT_V3_ALARMS = "/v3/alarms/"
-API_ENDPOINT_DO_NOT_DISTURB = "/1/nodisturb"
-
 
 class EzvizClient:
     """Initialize api client object."""
@@ -71,9 +70,9 @@ class EzvizClient:
         self.password = (
             hashlib.md5(password.encode("utf-8")).hexdigest() if password else None
         )  # Ezviz API sends md5 of password
-        self._session = None
-        self.close_session()
-        self._session.headers["sessionId"] = token.get("session_id") if token else None
+        self._session = requests.session()
+        self._session.headers.update(REQUEST_HEADER)
+        self._session.headers["sessionId"] = token["session_id"] if token else None
         self._token = token or {
             "session_id": None,
             "rf_session_id": None,
@@ -196,7 +195,7 @@ class EzvizClient:
                 + str(req.text)
             ) from err
 
-        if json_output.get("meta").get("code") != 200:
+        if json_output["meta"].get("code") != 200:
             raise PyEzvizError(
                 f"Could not request MFA code: Got {req.status_code} : {req.text})"
             )
@@ -236,7 +235,7 @@ class EzvizClient:
                 + str(req.text)
             ) from err
 
-        if json_output.get("meta").get("code") != 200:
+        if json_output["meta"].get("code") != 200:
             raise PyEzvizError(f"Error getting Service URLs: {json_output['meta']}")
 
         service_urls = json_output["systemConfigInfo"]
@@ -286,7 +285,7 @@ class EzvizClient:
                 + str(req.text)
             ) from err
 
-        if json_output.get("meta").get("code") != 200:
+        if json_output["meta"].get("code") != 200:
             # session is wrong, need to relogin
             self.login()
             logging.info(
@@ -401,7 +400,7 @@ class EzvizClient:
                 + str(req.text)
             ) from err
 
-        if json_output.get("meta").get("code") != 200:
+        if json_output["meta"].get("code") != 200:
             raise PyEzvizError(
                 f"Could not set the switch: Got {req.status_code} : {req.text})"
             )
@@ -444,7 +443,7 @@ class EzvizClient:
                 + str(req.text)
             ) from err
 
-        if json_output.get("meta").get("code") != 200:
+        if json_output["meta"].get("code") != 200:
             raise PyEzvizError(
                 f"Could not initiate firmare upgrade: Got {req.status_code} : {req.text})"
             )
@@ -491,7 +490,7 @@ class EzvizClient:
                 + str(req.text)
             ) from err
 
-        if json_output.get("meta").get("code") != 200:
+        if json_output["meta"].get("code") != 200:
             raise PyEzvizError(
                 f"Could not set the alarm sound: Got {req.status_code} : {req.text})"
             )
@@ -611,7 +610,7 @@ class EzvizClient:
         return req.text
 
     def get_cam_key(
-        self, serial: str, smscode: int = None, max_retries: int = 0
+        self, serial: str, smscode: int | None = None, max_retries: int = 0
     ) -> Any:
         """Get Camera encryption key."""
 
@@ -639,7 +638,7 @@ class EzvizClient:
             if err.response.status_code == 401:
                 # session is wrong, need to relogin
                 self.login()
-                return self.api_set_defence_mode(serial, max_retries + 1)
+                return self.get_cam_key(serial, smscode, max_retries + 1)
 
             raise HTTPError from err
 
@@ -685,7 +684,7 @@ class EzvizClient:
             if err.response.status_code == 401:
                 # session is wrong, need to relogin
                 self.login()
-                return self.api_set_defence_mode(serial, max_retries + 1)
+                return self.create_panoramic(serial, max_retries + 1)
 
             raise HTTPError from err
 
@@ -708,7 +707,7 @@ class EzvizClient:
         return json_output
 
     def return_panoramic(self, serial: str, max_retries: int = 0) -> Any:
-        """Returns panoramic image urls."""
+        """Return panoramic image url list."""
 
         if max_retries > MAX_RETRIES:
             raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
@@ -726,7 +725,7 @@ class EzvizClient:
             if err.response.status_code == 401:
                 # session is wrong, need to relogin
                 self.login()
-                return self.api_set_defence_mode(serial, max_retries + 1)
+                return self.return_panoramic(serial, max_retries + 1)
 
             raise HTTPError from err
 
@@ -976,7 +975,7 @@ class EzvizClient:
                 + str(req.text)
             ) from err
 
-        if json_output.get("meta").get("code") != 200:
+        if json_output["meta"].get("code") != 200:
             raise PyEzvizError(
                 f"Could not set defence mode: Got {req.status_code} : {req.text})"
             )
@@ -1014,12 +1013,12 @@ class EzvizClient:
             raise HTTPError from err
 
         try:
-            response_json = req.json()
+            json_output = req.json()
 
         except ValueError as err:
             raise PyEzvizError("Could not decode response:" + str(err)) from err
 
-        if response_json.get("meta").get("code") != 200:
+        if json_output["meta"].get("code") != 200:
             raise PyEzvizError(
                 f"Could not set defence mode: Got {req.status_code} : {req.text})"
             )

@@ -47,7 +47,6 @@ class MQTTClient(threading.Thread):
             "api_url": "apiieu.ezvizlife.com",
         }
         self._timeout = timeout
-        self._rcv_message: dict[Any, Any] = {}
         self._stop_event = threading.Event()
         self._mqtt_data = {
             "mqtt_clientid": None,
@@ -55,6 +54,7 @@ class MQTTClient(threading.Thread):
             "push_url": token["service_urls"]["pushAddr"],
         }
         self.mqtt_client = None
+        self.rcv_message: dict[Any, Any] = {}
 
     def on_subscribe(
         self, client: Any, userdata: Any, mid: Any, granted_qos: Any
@@ -88,19 +88,16 @@ class MQTTClient(threading.Thread):
 
         mqtt_message["ext"] = mqtt_message["ext"].split(",")
 
-        # Format payload message
-        self._rcv_message = {
-            mqtt_message["ext"][2]: {
-                "id": mqtt_message["id"],
-                "alert": mqtt_message["alert"],
-                "time": mqtt_message["ext"][1],
-                "alert type": mqtt_message["ext"][4],
-                "image": mqtt_message["ext"][16]
-                if len(mqtt_message["ext"]) > 16
-                else None,
-            }
+        # Format payload message and keep latest device message.
+        self.rcv_message[mqtt_message["ext"][2]] = {
+            "id": mqtt_message["id"],
+            "alert": mqtt_message["alert"],
+            "time": mqtt_message["ext"][1],
+            "alert type": mqtt_message["ext"][4],
+            "image": mqtt_message["ext"][16] if len(mqtt_message["ext"]) > 16 else None,
         }
-        _LOGGER.debug(self._rcv_message, exc_info=True)
+
+        _LOGGER.debug(self.rcv_message, exc_info=True)
 
     def _mqtt(self) -> mqtt.Client:
         """Receive MQTT messages from ezviz server."""

@@ -1,24 +1,31 @@
 """Ezviz cloud MQTT client for push messages."""
+from __future__ import annotations
 
 import base64
 import json
+import logging
 import threading
 import time
+from typing import Any
 
 import paho.mqtt.client as mqtt
 import requests
 
-from .constants import DEFAULT_TIMEOUT, FEATURE_CODE
+from .api_endpoints import (
+    API_ENDPOINT_REGISTER_MQTT,
+    API_ENDPOINT_START_MQTT,
+    API_ENDPOINT_STOP_MQTT,
+)
+from .constants import (
+    APP_SECRET,
+    DEFAULT_TIMEOUT,
+    FEATURE_CODE,
+    MQTT_APP_KEY,
+    REQUEST_HEADER,
+)
 from .exceptions import HTTPError, InvalidURL, PyEzvizError
 
-API_ENDPOINT_SERVER_INFO = "/v3/configurations/system/info"
-API_ENDPOINT_REGISTER_MQTT = "/v1/getClientId"
-API_ENDPOINT_START_MQTT = "/api/push/start"
-API_ENDPOINT_STOP_MQTT = "/api/push/stop"
-
-
-MQTT_APP_KEY = "4c6b3cc2-b5eb-4813-a592-612c1374c1fe"
-APP_SECRET = "17454517-cc1c-42b3-a845-99b4a15dd3e6"
+_LOGGER = logging.getLogger(__name__)
 
 
 class MQTTClient(threading.Thread):
@@ -26,12 +33,13 @@ class MQTTClient(threading.Thread):
 
     def __init__(
         self,
-        token,
-        timeout=DEFAULT_TIMEOUT,
-    ):
+        token: dict,
+        timeout: int = DEFAULT_TIMEOUT,
+    ) -> None:
         """Initialize the client object."""
         threading.Thread.__init__(self)
-        self._session = None
+        self._session = requests.session()
+        self._session.headers.update(REQUEST_HEADER)
         self._token = token or {
             "session_id": None,
             "rf_session_id": None,
@@ -39,35 +47,49 @@ class MQTTClient(threading.Thread):
             "api_url": "apiieu.ezvizlife.com",
         }
         self._timeout = timeout
+        self._rcv_message: dict[Any, Any] = {}
         self._stop_event = threading.Event()
         self._mqtt_data = {
             "mqtt_clientid": None,
             "ticket": None,
             "push_url": token["service_urls"]["pushAddr"],
         }
+        self.mqtt_client = None
 
-    def on_subscribe(self, client, userdata, mid, granted_qos):
+    def on_subscribe(
+        self, client: Any, userdata: Any, mid: Any, granted_qos: Any
+    ) -> None:
         """On MQTT message subscribe."""
         # pylint: disable=unused-argument
-        print("Subscribed: " + str(mid) + " " + str(granted_qos))
+        _LOGGER.info("Subscribed: %s %s", mid, granted_qos)
 
-    def on_connect(self, client, userdata, flags, return_code):
+    def on_connect(
+        self, client: Any, userdata: Any, flags: Any, return_code: Any
+    ) -> None:
         """On MQTT connect."""
         # pylint: disable=unused-argument
         if return_code == 0:
-            print("connected OK Returned code=", return_code)
+            _LOGGER.info("Connected OK with return code %s", return_code)
         else:
-            print("Bad connection Returned code=", return_code)
+            _LOGGER.info("Connection Error with Return code %s", return_code)
             client.reconnect()
 
-    def on_message(self, client, userdata, msg):
+    def on_message(self, client: Any, userdata: Any, msg: Any) -> None:
         """On MQTT message receive."""
         # pylint: disable=unused-argument
-        mqtt_message = json.loads(msg.payload)
+        try:
+            mqtt_message = json.loads(msg.payload)
+
+        except ValueError as err:
+            self.stop()
+            raise PyEzvizError(
+                "Impossible to decode mqtt message: " + str(err)
+            ) from err
+
         mqtt_message["ext"] = mqtt_message["ext"].split(",")
 
-        # Print payload message
-        decoded_message = {
+        # Format payload message
+        self._rcv_message = {
             mqtt_message["ext"][2]: {
                 "id": mqtt_message["id"],
                 "alert": mqtt_message["alert"],
@@ -78,9 +100,9 @@ class MQTTClient(threading.Thread):
                 else None,
             }
         }
-        print(decoded_message)
+        _LOGGER.debug(self._rcv_message, exc_info=True)
 
-    def _mqtt(self):
+    def _mqtt(self) -> mqtt.Client:
         """Receive MQTT messages from ezviz server."""
 
         ezviz_mqtt_client = mqtt.Client(
@@ -99,11 +121,13 @@ class MQTTClient(threading.Thread):
         ezviz_mqtt_client.loop_start()
         return ezviz_mqtt_client
 
-    def _register_ezviz_push(self):
+    def _register_ezviz_push(self) -> None:
         """Register for push messages."""
 
-        auth_seq = base64.b64encode(f"{MQTT_APP_KEY}:{APP_SECRET}".encode("ascii"))
-        auth_seq = "Basic " + auth_seq.decode()
+        auth_seq = (
+            "Basic "
+            + base64.b64encode(f"{MQTT_APP_KEY}:{APP_SECRET}".encode("ascii")).decode()
+        )
 
         payload = {
             "appKey": MQTT_APP_KEY,
@@ -143,18 +167,22 @@ class MQTTClient(threading.Thread):
 
         self._mqtt_data["mqtt_clientid"] = json_result["data"]["clientId"]
 
-    def run(self):
-        """Represent the thread's activity, should not be used directly."""
+    def run(self) -> None:
+        """Start mqtt thread."""
 
-        if self._session is None:
-            self._session = requests.session()
-            self._session.headers.update(
-                {"User-Agent": "okhttp/3.12.1"}
-            )  # Android generic user agent.
+        if self._token.get("username") is None:
+            self._stop_event.set()
+            raise PyEzvizError(
+                "Ezviz internal username is required. Call EzvizClient login without token."
+            )
 
         self._register_ezviz_push()
         self._start_ezviz_push()
-        self._mqtt()
+        self.mqtt_client = self._mqtt()
+
+    def start(self) -> None:
+        """Start mqtt thread as application. Set logging first to see messages."""
+        self.run()
 
         try:
             while not self._stop_event.is_set():
@@ -162,11 +190,7 @@ class MQTTClient(threading.Thread):
         except KeyboardInterrupt:
             self.stop()
 
-    def start(self):
-        """Start mqtt thread."""
-        super().start()
-
-    def stop(self):
+    def stop(self) -> None:
         """Stop push notifications."""
 
         payload = {
@@ -192,9 +216,11 @@ class MQTTClient(threading.Thread):
         except requests.HTTPError as err:
             raise HTTPError from err
 
-        self._stop_event.set()
+        finally:
+            self._stop_event.set()
+            self.mqtt_client.loop_stop()
 
-    def _start_ezviz_push(self):
+    def _start_ezviz_push(self) -> None:
         """Send start for push messages to ezviz api."""
 
         payload = {

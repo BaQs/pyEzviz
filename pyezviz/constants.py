@@ -20,6 +20,8 @@ REQUEST_HEADER = {
     "sessionId": "",
     "User-Agent": "okhttp/3.12.1",
 }  # Standard android header.
+MQTT_APP_KEY = "4c6b3cc2-b5eb-4813-a592-612c1374c1fe"
+APP_SECRET = "17454517-cc1c-42b3-a845-99b4a15dd3e6"
 
 
 @unique

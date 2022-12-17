@@ -269,6 +269,9 @@ Movement is still recorded even if do-not-disturb is enabled.",
 
     elif args.action == "mqtt":
 
+        logging.basicConfig()
+        logging.getLogger().setLevel(logging.DEBUG)
+
         try:
             token = client.login()
             mqtt = MQTTClient(token)

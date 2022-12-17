@@ -34,3 +34,8 @@ API_ENDPOINT_DO_NOT_DISTURB = "/nodisturb"
 
 API_ENDPOINT_CREATE_PANORAMIC = "/api/panoramic/devices/pics/collect"
 API_ENDPOINT_RETURN_PANORAMIC = "/api/panoramic/devices/pics"
+
+# MQTT
+API_ENDPOINT_REGISTER_MQTT = "/v1/getClientId"
+API_ENDPOINT_START_MQTT = "/api/push/start"
+API_ENDPOINT_STOP_MQTT = "/api/push/stop"

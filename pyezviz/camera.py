@@ -135,13 +135,15 @@ class EzvizCamera:
             "upgrade_in_progress": bool(
                 self._device["STATUS"].get("upgradeStatus") == 0
             ),
+            "latest_firmware_info": self._device["UPGRADE"].get("upgradePackageInfo"),
             "follow_move": self._switch.get(DeviceSwitchType.MOBILE_TRACKING.value),
             "alarm_notify": bool(self._device["STATUS"].get("globalStatus")),
             "alarm_schedules_enabled": self._is_alarm_schedules_enabled(),
             "alarm_sound_mod": SoundMode(
-                self._device["STATUS"].get("alarmSoundMode")
+                self._device["STATUS"].get("alarmSoundMode", -1)
             ).name,
             "encrypted": bool(self._device["STATUS"].get("isEncrypt")),
+            "encrypted_pwd_hash": self._device["STATUS"].get("encryptPwd"),
             "local_ip": self._local_ip(),
             "wan_ip": self._device["CONNECTION"].get("netIp"),
             "mac_address": self._device["deviceInfos"].get("mac"),

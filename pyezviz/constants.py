@@ -71,6 +71,7 @@ class DeviceSwitchType(Enum):
     FEATURE_TRACKING = 701
 
 
+@unique
 class SoundMode(Enum):
     """Alarm sound level description."""
 
@@ -79,8 +80,10 @@ class SoundMode(Enum):
     INTENSE = 1
     CUSTOM = 3
     PLAN = 4
+    UNKNOWN = -1
 
 
+@unique
 class DefenseModeType(Enum):
     """Defense mode name and number."""
 

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import logging
 from typing import Any
 from uuid import uuid4
@@ -579,7 +580,7 @@ class EzvizClient:
             _serial = device["deviceSerial"]
             _res_id_list = {
                 item
-                for item in devices.get("CLOUD", {}).keys()
+                for item in devices.get("CLOUD", {})
                 if devices["CLOUD"][item].get("deviceSerial") == _serial
             }
             _res_id = _res_id_list.pop() if len(_res_id_list) else "NONE"
@@ -611,6 +612,10 @@ class EzvizClient:
                 "WIFI": devices.get("WIFI", {}).get(_serial, {}),
                 "deviceInfos": device,
             }
+            # Nested keys are still encoded as JSON strings
+            result[_serial]["deviceInfos"]["supportExt"] = json.loads(
+                result[_serial]["deviceInfos"]["supportExt"]
+            )
 
         if not serial:
             return result
@@ -854,7 +859,6 @@ class EzvizClient:
                 ) from err
 
             if json_result["meta"].get("code") == 200:
-
                 self._session.headers["sessionId"] = json_result["sessionInfo"][
                     "sessionId"
                 ]

@@ -2,7 +2,13 @@
 from .camera import EzvizCamera
 from .cas import EzvizCAS
 from .client import EzvizClient
-from .constants import DefenseModeType, DeviceCatagories, DeviceSwitchType, SoundMode
+from .constants import (
+    DefenseModeType,
+    DeviceCatagories,
+    DeviceSwitchType,
+    SoundMode,
+    SupportExt,
+)
 from .exceptions import (
     AuthTestResultFailed,
     EzvizAuthTokenExpired,
@@ -30,6 +36,7 @@ __all__ = [
     "DefenseModeType",
     "DeviceCatagories",
     "DeviceSwitchType",
+    "SupportExt",
     "SoundMode",
     "TestRTSPAuth",
 ]

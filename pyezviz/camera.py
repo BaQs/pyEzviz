@@ -167,7 +167,7 @@ class EzvizCamera:
             "last_alarm_type_name": self._last_alarm.get("sampleName", "NoAlarm"),
             "wifiInfos": self._device.get("WIFI"),
             "switches": self._switch,
-            "supportExt": self._device["supportExt"],
+            "supportExt": self._device["deviceInfos"]["supportExt"],
         }
 
     def move(self, direction: str, speed: int = 5) -> bool:

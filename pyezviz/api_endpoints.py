@@ -14,6 +14,7 @@ API_ENDPOINT_SEND_CODE = "/v3/sms/nologin/checkcode"
 
 API_ENDPOINT_ALARMINFO_GET = "/v3/alarms/v2/advanced"
 API_ENDPOINT_V3_ALARMS = "/v3/alarms/"
+API_ENDPOINT_SET_LUMINANCE = "/v3/alarms/device/alarmLight"
 
 API_ENDPOINT_PAGELIST = "/v3/userdevices/v1/resources/pagelist"
 API_ENDPOINT_SWITCH_DEFENCE_MODE = "/v3/userdevices/v1/group/switchDefenceMode"

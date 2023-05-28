@@ -29,6 +29,7 @@ from .api_endpoints import (
     API_ENDPOINT_SEND_CODE,
     API_ENDPOINT_SERVER_INFO,
     API_ENDPOINT_SET_DEFENCE_SCHEDULE,
+    API_ENDPOINT_SET_LUMINANCE,
     API_ENDPOINT_SWITCH_DEFENCE_MODE,
     API_ENDPOINT_SWITCH_SOUND_ALARM,
     API_ENDPOINT_SWITCH_STATUS,
@@ -1071,6 +1072,61 @@ class EzvizClient:
             raise PyEzvizError(
                 f"Could not set defence mode: Got {req.status_code} : {req.text})"
             )
+
+        return True
+
+    def set_floodlight_brightness(
+        self,
+        serial: str,
+        luminance: int = 50,
+        channelno: str = "1",
+        max_retries: int = 0,
+    ) -> bool | str:
+        """Set brightness on camera with adjustable light."""
+        if max_retries > MAX_RETRIES:
+            raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
+
+        if luminance not in range(1, 100):
+            raise PyEzvizError(
+                "Range of luminance is 1-100, got " + str(luminance) + "."
+            )
+
+        try:
+            req = self._session.post(
+                "https://"
+                + self._token["api_url"]
+                + API_ENDPOINT_SET_LUMINANCE
+                + "/"
+                + serial
+                + "/"
+                + channelno,
+                data={
+                    "luminance": luminance,
+                },
+                timeout=self._timeout,
+            )
+
+            req.raise_for_status()
+
+        except requests.HTTPError as err:
+            if err.response.status_code == 401:
+                # session is wrong, need to re-log-in
+                self.login()
+                return self.set_floodlight_brightness(
+                    serial, luminance, channelno, max_retries + 1
+                )
+
+            raise HTTPError from err
+
+        try:
+            response_json = req.json()
+
+        except ValueError as err:
+            raise PyEzvizError("Could not decode response:" + str(err)) from err
+
+        if response_json["meta"]["code"] != 200:
+            _LOGGER.error(response_json)
+            return False
 
         return True
 

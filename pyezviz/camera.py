@@ -165,6 +165,16 @@ class EzvizCamera:
             ),
             "last_alarm_type_code": self._last_alarm.get("alarmType", "0000"),
             "last_alarm_type_name": self._last_alarm.get("sampleName", "NoAlarm"),
+            "alarm_light_luminance": int(
+                "".join(
+                    filter(
+                        str.isdigit,
+                        self._device["STATUS"]
+                        .get("optionals", {})
+                        .get("Alarm_Light", "0"),
+                    )
+                )
+            ),  # extract the value from the string and cater for the case where the value is not set.
             "wifiInfos": self._device.get("WIFI"),
             "switches": self._switch,
             "supportExt": self._device["deviceInfos"]["supportExt"],

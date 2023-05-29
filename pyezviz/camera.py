@@ -4,7 +4,7 @@ from __future__ import annotations
 import datetime
 from typing import TYPE_CHECKING, Any
 
-from .constants import DeviceCatagories, DeviceSwitchType, SoundMode
+from .constants import DeviceSwitchType, SoundMode
 from .exceptions import PyEzvizError
 
 if TYPE_CHECKING:
@@ -32,27 +32,6 @@ class EzvizCamera:
             switch["type"]: switch["enable"]
             for switch in self._device.get("SWITCH", {})
         }
-
-    def _detection_sensibility(self) -> Any:
-        """Load detection sensitivity."""
-        result = "Unknown"
-
-        if self._switch.get(DeviceSwitchType.AUTO_SLEEP.value) is not True:
-            if (
-                self._device["deviceInfos"]["deviceCategory"]
-                == DeviceCatagories.BATTERY_CAMERA_DEVICE_CATEGORY.value
-            ):
-                result = self._client.get_detection_sensibility(
-                    self._serial,
-                    "3",
-                )
-            else:
-                result = self._client.get_detection_sensibility(self._serial)
-
-        if self._switch.get(DeviceSwitchType.AUTO_SLEEP.value) is True:
-            result = "Hibernate"
-
-        return result
 
     def _alarm_list(self) -> None:
         """Get last alarm info for this camera's self._serial."""
@@ -151,7 +130,6 @@ class EzvizCamera:
             if self._device["CONNECTION"].get("localRtspPort", "554") != 0
             else "554",
             "supported_channels": self._device["deviceInfos"].get("channelNumber"),
-            "detection_sensibility": self._detection_sensibility(),
             "battery_level": self._device["STATUS"]
             .get("optionals", {})
             .get("powerRemaining"),

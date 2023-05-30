@@ -1220,14 +1220,14 @@ class EzvizClient:
             raise PyEzvizError("Could not decode response:" + str(err)) from err
 
         if response_json["resultCode"] != "0":
-            return "Unknown"
+            return None
 
         if response_json["algorithmConfig"]["algorithmList"]:
             for idx in response_json["algorithmConfig"]["algorithmList"]:
                 if idx["type"] == type_value:
                     return idx["value"]
 
-        return "Unknown"
+        return None
 
     # soundtype: 0 = normal, 1 = intensive, 2 = disabled ... don't ask me why...
     def alarm_sound(

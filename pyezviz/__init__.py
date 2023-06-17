@@ -6,6 +6,7 @@ from .constants import (
     DefenseModeType,
     DeviceCatagories,
     DeviceSwitchType,
+    MessageFilterType,
     SoundMode,
     SupportExt,
 )
@@ -34,6 +35,7 @@ __all__ = [
     "EzvizCAS",
     "MQTTClient",
     "DefenseModeType",
+    "MessageFilterType",
     "DeviceCatagories",
     "DeviceSwitchType",
     "SupportExt",

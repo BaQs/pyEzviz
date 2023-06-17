@@ -10,10 +10,8 @@ import pandas
 from .camera import EzvizCamera
 from .client import EzvizClient
 from .constants import DefenseModeType
+from .exceptions import EzvizAuthVerificationCode
 from .mqtt import MQTTClient
-from .exceptions import (
-    EzvizAuthVerificationCode,
-)
 
 
 def main() -> Any:

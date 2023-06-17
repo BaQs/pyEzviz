@@ -1,6 +1,7 @@
 """Ezviz API."""
 from __future__ import annotations
 
+from datetime import datetime
 import hashlib
 import json
 import logging
@@ -33,6 +34,7 @@ from .api_endpoints import (
     API_ENDPOINT_SWITCH_DEFENCE_MODE,
     API_ENDPOINT_SWITCH_SOUND_ALARM,
     API_ENDPOINT_SWITCH_STATUS,
+    API_ENDPOINT_UNIFIEDMSG_LIST_GET,
     API_ENDPOINT_UPGRADE_DEVICE,
     API_ENDPOINT_V3_ALARMS,
 )
@@ -45,6 +47,7 @@ from .constants import (
     REQUEST_HEADER,
     DefenseModeType,
     DeviceCatagories,
+    MessageFilterType,
 )
 from .exceptions import (
     EzvizAuthTokenExpired,
@@ -312,8 +315,8 @@ class EzvizClient:
 
         return json_result
 
-    def get_alarminfo(self, serial: str, limit: int = 1, max_retries: int = 0) -> Any:
-        """Get data from alarm info API."""
+    def get_alarminfo(self, serial: str, limit: int = 1, max_retries: int = 0) -> dict:
+        """Get data from alarm info API for camera serial."""
         if max_retries > MAX_RETRIES:
             raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
 
@@ -345,7 +348,7 @@ class EzvizClient:
             raise PyEzvizError("No data")
 
         try:
-            json_output = req.json()
+            json_output: dict = req.json()
 
         except ValueError as err:
             raise PyEzvizError(
@@ -354,6 +357,74 @@ class EzvizClient:
                 + "\nResponse was: "
                 + str(req.text)
             ) from err
+
+        if json_output["meta"].get("code") != 200:
+            raise PyEzvizError(
+                f"Could not get data from alarm api: Got {json_output['meta']})"
+            )
+
+        return json_output
+
+    def get_device_messages_list(
+        self,
+        serials: str | None = None,
+        s_type: int = MessageFilterType.FILTER_TYPE_ALL_ALARM.value,
+        limit: int | None = 20,  # 50 is the max even if you set it higher
+        date: str = datetime.today().strftime("%Y%m%d"),
+        end_time: str | None = None,
+        tags: str = "ALL",
+        max_retries: int = 0,
+    ) -> dict:
+        """Get data from Unified message list API."""
+        if max_retries > MAX_RETRIES:
+            raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
+
+        params: dict[str, int | str | None] = {
+            "serials:": serials,
+            "stype": s_type,
+            "limit": limit,
+            "date": date,
+            "endTime": end_time,
+            "tags": tags,
+        }
+
+        try:
+            req = self._session.get(
+                "https://" + self._token["api_url"] + API_ENDPOINT_UNIFIEDMSG_LIST_GET,
+                params=params,
+                timeout=self._timeout,
+            )
+
+            req.raise_for_status()
+
+        except requests.HTTPError as err:
+            if err.response.status_code == 401:
+                # session is wrong, need to relogin
+                self.login()
+                return self.get_device_messages_list(
+                    serials, s_type, limit, date, end_time, tags, max_retries + 1
+                )
+
+            raise HTTPError from err
+
+        if req.text == "":
+            raise PyEzvizError("No data")
+
+        try:
+            json_output: dict = req.json()
+
+        except ValueError as err:
+            raise PyEzvizError(
+                "Impossible to decode response: "
+                + str(err)
+                + "\nResponse was: "
+                + str(req.text)
+            ) from err
+
+        if json_output["meta"].get("code") != 200:
+            raise PyEzvizError(
+                f"Could not get unified message list: Got {json_output['meta']})"
+            )
 
         return json_output
 
@@ -404,9 +475,7 @@ class EzvizClient:
             ) from err
 
         if json_output["meta"].get("code") != 200:
-            raise PyEzvizError(
-                f"Could not set the switch: Got {req.status_code} : {req.text})"
-            )
+            raise PyEzvizError(f"Could not set the switch: Got {json_output})")
 
         return True
 
@@ -1279,9 +1348,10 @@ class EzvizClient:
         return self._api_get_pagelist(
             page_filter="CLOUD, TIME_PLAN, CONNECTION, SWITCH,"
             "STATUS, WIFI, NODISTURB, KMS,"
-            "P2P, TIME_PLAN, CHANNEL, VTM,"
-            "DETECTOR, FEATURE, CUSTOM_TAG, UPGRADE,"
-            "VIDEO_QUALITY, QOS, PRODUCTS_INFO, FEATURE_INFO",
+            "P2P, TIME_PLAN, CHANNEL, VTM, DETECTOR,"
+            "FEATURE, CUSTOM_TAG, UPGRADE, VIDEO_QUALITY,"
+            "QOS, PRODUCTS_INFO, SIM_CARD, MULTI_UPGRADE_EXT,"
+            "FEATURE_INFO",
             json_key=None,
         )
 

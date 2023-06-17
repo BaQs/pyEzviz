@@ -25,6 +25,18 @@ APP_SECRET = "17454517-cc1c-42b3-a845-99b4a15dd3e6"
 
 
 @unique
+class MessageFilterType(Enum):
+    """Message filter types for unified list."""
+
+    FILTER_TYPE_MOTION = 2402
+    FILTER_TYPE_PERSON = 2403
+    FILTER_TYPE_VEHICLE = 2404
+    FILTER_TYPE_SOUND = 2405
+    FILTER_TYPE_ALL_ALARM = 2401
+    FILTER_TYPE_SYSTEM_MESSAGE = 2101
+
+
+@unique
 class DeviceSwitchType(Enum):
     """Device switch name and number."""
 

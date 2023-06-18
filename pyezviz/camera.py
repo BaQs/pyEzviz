@@ -133,6 +133,12 @@ class EzvizCamera:
             "battery_level": self._device["STATUS"]
             .get("optionals", {})
             .get("powerRemaining"),
+            "battery_camera_work_mode": self._device["STATUS"]
+            .get("optionals", {})
+            .get("batteryCameraWorkMode"),
+            "Alarm_DetectHumanCar": self._device["STATUS"]
+            .get("optionals", {})
+            .get("Alarm_DetectHumanCar"),
             "PIR_Status": self._device["STATUS"].get("pirStatus"),
             "Motion_Trigger": self._alarmmotiontrigger.get("alarm_trigger_active"),
             "Seconds_Last_Trigger": self._alarmmotiontrigger.get("timepassed"),

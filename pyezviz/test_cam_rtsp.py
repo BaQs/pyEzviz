@@ -3,7 +3,7 @@ import base64
 import hashlib
 import socket
 
-from pyezviz.exceptions import AuthTestResultFailed, InvalidHost
+from .exceptions import AuthTestResultFailed, InvalidHost
 
 
 def genmsg_describe(url, seq, user_agent, auth_seq):

@@ -26,6 +26,8 @@ API_ENDPOINT_SET_DEFENCE_SCHEDULE = "/api/device/defence/plan2"
 API_ENDPOINT_CAM_ENCRYPTKEY = "/api/device/query/encryptkey"
 API_ENDPOINT_CANCEL_ALARM = "/api/device/cancelAlarm"
 
+API_ENDPOINT_DEVCONFIG_BY_KEY = "/v3/devconfig/v1/keyValue/"
+
 # Videogo DeviceApi
 API_ENDPOINT_DEVICES = "/v3/devices/"
 API_ENDPOINT_SWITCH_STATUS = "/switchStatus"

@@ -329,6 +329,26 @@ class DefenseModeType(Enum):
     UNSET_MODE = 0
 
 
+@unique
+class IntelligentDetectionMode(Enum):
+    """Intelligent detection modes."""
+
+    INTELLI_MODE_HUMAN_SHAPE = 1
+    INTELLI_MODE_PIR = 5
+    INTELLI_MODE_IMAGE_CHANGE = 3
+
+
+@unique
+class BatteryCameraWorkMode(Enum):
+    """Battery camera work modes."""
+
+    BATTERY_WORK_MODE_PLUGGED_IN = 2
+    BATTERY_WORK_MODE_HIGH_PERFORM = 1
+    BATTERY_WORK_MODE_POWER_SAVING = 0
+    BATTERY_WORK_MODE_SUPER_POWER_SAVE = 3
+    BATTERY_WORK_MODE_CUSTOM = 4
+
+
 class DeviceCatagories(Enum):
     """Supported device categories."""
 

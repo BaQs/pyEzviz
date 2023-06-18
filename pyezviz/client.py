@@ -364,6 +364,13 @@ class EzvizClient:
             ) from err
 
         if json_output["meta"].get("code") != 200:
+            if json_output["meta"].get("code") == 500:
+                _LOGGER.debug(
+                    "Retry getting alarm info, server returned busy: %s",
+                    json_output["meta"],
+                )
+                return self.get_alarminfo(serial, limit, max_retries + 1)
+
             raise PyEzvizError(
                 f"Could not get data from alarm api: Got {json_output['meta']})"
             )

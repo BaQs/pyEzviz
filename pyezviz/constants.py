@@ -339,6 +339,15 @@ class IntelligentDetectionMode(Enum):
 
 
 @unique
+class NightVisionMode(Enum):
+    """Intelligent detection modes."""
+
+    NIGHT_VISION_COLOUR = 1
+    NIGHT_VISION_B_W = 0
+    NIGHT_VISION_SMART = 2
+
+
+@unique
 class BatteryCameraWorkMode(Enum):
     """Battery camera work modes."""
 

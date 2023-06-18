@@ -139,6 +139,9 @@ class EzvizCamera:
             "Alarm_DetectHumanCar": self._device["STATUS"]
             .get("optionals", {})
             .get("Alarm_DetectHumanCar"),
+            "NightVision_Model": self._device["STATUS"]
+            .get("optionals", {})
+            .get("NightVision_Model"),
             "PIR_Status": self._device["STATUS"].get("pirStatus"),
             "Motion_Trigger": self._alarmmotiontrigger.get("alarm_trigger_active"),
             "Seconds_Last_Trigger": self._alarmmotiontrigger.get("timepassed"),

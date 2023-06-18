@@ -9,6 +9,7 @@ from .constants import (
     DeviceSwitchType,
     IntelligentDetectionMode,
     MessageFilterType,
+    NightVisionMode,
     SoundMode,
     SupportExt,
 )
@@ -39,6 +40,7 @@ __all__ = [
     "DefenseModeType",
     "IntelligentDetectionMode",
     "BatteryCameraWorkMode",
+    "NightVisionMode",
     "MessageFilterType",
     "DeviceCatagories",
     "DeviceSwitchType",

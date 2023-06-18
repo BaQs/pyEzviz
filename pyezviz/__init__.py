@@ -3,9 +3,11 @@ from .camera import EzvizCamera
 from .cas import EzvizCAS
 from .client import EzvizClient
 from .constants import (
+    BatteryCameraWorkMode,
     DefenseModeType,
     DeviceCatagories,
     DeviceSwitchType,
+    IntelligentDetectionMode,
     MessageFilterType,
     SoundMode,
     SupportExt,
@@ -35,6 +37,8 @@ __all__ = [
     "EzvizCAS",
     "MQTTClient",
     "DefenseModeType",
+    "IntelligentDetectionMode",
+    "BatteryCameraWorkMode",
     "MessageFilterType",
     "DeviceCatagories",
     "DeviceSwitchType",

@@ -6,6 +6,7 @@ import hashlib
 import json
 import logging
 from typing import Any
+import urllib.parse
 from uuid import uuid4
 
 import requests
@@ -18,6 +19,7 @@ from .api_endpoints import (
     API_ENDPOINT_CREATE_PANORAMIC,
     API_ENDPOINT_DETECTION_SENSIBILITY,
     API_ENDPOINT_DETECTION_SENSIBILITY_GET,
+    API_ENDPOINT_DEVCONFIG_BY_KEY,
     API_ENDPOINT_DEVICES,
     API_ENDPOINT_DO_NOT_DISTURB,
     API_ENDPOINT_LOGIN,
@@ -476,6 +478,77 @@ class EzvizClient:
 
         if json_output["meta"].get("code") != 200:
             raise PyEzvizError(f"Could not set the switch: Got {json_output})")
+
+        return True
+
+    def set_battery_camera_work_mode(self, serial: str, value: int) -> bool:
+        """Set battery camera work mode."""
+        return self.set_device_config_by_key(serial, value, key="batteryCameraWorkMode")
+
+    def set_detection_mode(self, serial: str, value: int) -> bool:
+        """Set detection mode."""
+        return self.set_device_config_by_key(
+            serial, value=f'{{"type":{value}}}', key="Alarm_DetectHumanCar"
+        )
+
+    def set_device_config_by_key(
+        self,
+        serial: str,
+        value: Any,
+        key: str = "batteryCameraWorkMode",
+        max_retries: int = 0,
+    ) -> bool:
+        """Change value on device by setting key."""
+        if max_retries > MAX_RETRIES:
+            raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
+
+        params = {"key": key, "value": value}
+        params_str = urllib.parse.urlencode(
+            params, safe="}{:"
+        )  # not encode curly braces and colon
+
+        full_url = f'https://{self._token["api_url"]}{API_ENDPOINT_DEVCONFIG_BY_KEY}{serial}/1/op'
+
+        # EZVIZ api request needs {}: in the url, but requests lib doesn't allow it
+        # so we need to manually prepare it
+        req_prep = requests.Request(
+            method="PUT", url=full_url, headers=self._session.headers
+        ).prepare()
+        req_prep.url = full_url + "?" + params_str
+
+        try:
+            req = self._session.send(
+                request=req_prep,
+                timeout=self._timeout,
+            )
+
+            req.raise_for_status()
+
+        except requests.HTTPError as err:
+            if err.response.status_code == 401:
+                # session is wrong, need to relogin
+                self.login()
+                return self.set_device_config_by_key(
+                    serial, value, key, max_retries + 1
+                )
+
+            raise HTTPError from err
+
+        try:
+            json_output = req.json()
+
+        except ValueError as err:
+            raise PyEzvizError(
+                "Impossible to decode response: "
+                + str(err)
+                + "\nResponse was: "
+                + str(req.text)
+            ) from err
+
+        if json_output["meta"].get("code") != 200:
+            raise PyEzvizError(
+                f"Could not set camera work mode: Got {json_output['meta']})"
+            )
 
         return True
 

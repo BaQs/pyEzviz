@@ -22,6 +22,7 @@ from .api_endpoints import (
     API_ENDPOINT_DEVCONFIG_BY_KEY,
     API_ENDPOINT_DEVICES,
     API_ENDPOINT_DO_NOT_DISTURB,
+    API_ENDPOINT_GROUP_DEFENCE_MODE,
     API_ENDPOINT_LOGIN,
     API_ENDPOINT_LOGOUT,
     API_ENDPOINT_PAGELIST,
@@ -38,7 +39,9 @@ from .api_endpoints import (
     API_ENDPOINT_SWITCH_STATUS,
     API_ENDPOINT_UNIFIEDMSG_LIST_GET,
     API_ENDPOINT_UPGRADE_DEVICE,
+    API_ENDPOINT_USER_ID,
     API_ENDPOINT_V3_ALARMS,
+    API_ENDPOINT_VIDEO_ENCRYPT,
 )
 from .camera import EzvizCamera
 from .cas import EzvizCAS
@@ -491,6 +494,16 @@ class EzvizClient:
             serial, value=f'{{"type":{value}}}', key="Alarm_DetectHumanCar"
         )
 
+    def set_night_vision_mode(
+        self, serial: str, mode: int, luminance: int = 100
+    ) -> bool:
+        """Set night vision mode."""
+        return self.set_device_config_by_key(
+            serial,
+            value=f'{{"graphicType":{mode},"luminance":{luminance}}}',
+            key="NightVision_Model",
+        )
+
     def set_device_config_by_key(
         self,
         serial: str,
@@ -641,6 +654,165 @@ class EzvizClient:
             )
 
         return True
+
+    def get_user_id(self, max_retries: int = 0) -> Any:
+        """Get Ezviz userid, used by restricted api endpoints."""
+
+        if max_retries > MAX_RETRIES:
+            raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
+
+        try:
+            req = self._session.get(
+                f"https://{self._token['api_url']}{API_ENDPOINT_USER_ID}",
+                timeout=self._timeout,
+            )
+            req.raise_for_status()
+
+        except requests.HTTPError as err:
+            if err.response.status_code == 401:
+                # session is wrong, need to relogin
+                self.login()
+                return self.get_user_id(max_retries + 1)
+
+            raise HTTPError from err
+
+        try:
+            json_output = req.json()
+
+        except ValueError as err:
+            raise PyEzvizError(
+                "Impossible to decode response: "
+                + str(err)
+                + "\nResponse was: "
+                + str(req.text)
+            ) from err
+
+        if json_output["meta"].get("code") != 200:
+            raise PyEzvizError(
+                f"Could not set video encryption: Got {json_output['meta']})"
+            )
+
+        return json_output["deviceTokenInfo"]
+
+    def set_video_enc(
+        self,
+        serial: str,
+        enable: int = 1,
+        camera_verification_code: str | None = None,
+        new_password: str | None = None,
+        old_password: str | None = None,
+        max_retries: int = 0,
+    ) -> bool:
+        """Enable or Disable video encryption."""
+        if max_retries > MAX_RETRIES:
+            raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
+
+        device_token_info = self.get_user_id()
+        cookies = {
+            "clientType": "3",
+            "clientVersion": "5.12.1.0517",
+            "userId": device_token_info["userId"],
+            "ASG_DisplayName": "home",
+            "C_SS": self._session.headers["sessionId"],
+            "lang": "en_US",
+        }
+
+        try:
+            req = self._session.put(
+                "https://"
+                + self._token["api_url"]
+                + API_ENDPOINT_DEVICES
+                + API_ENDPOINT_VIDEO_ENCRYPT,
+                data={
+                    "deviceSerial": serial,
+                    "isEncrypt": enable,
+                    "oldPassword": old_password,
+                    "password": new_password,
+                    "featureCode": FEATURE_CODE,
+                    "validateCode": camera_verification_code,
+                    "msgType": -1,
+                },
+                cookies=cookies,
+                timeout=self._timeout,
+            )
+
+            req.raise_for_status()
+
+        except requests.HTTPError as err:
+            if err.response.status_code == 401:
+                # session is wrong, need to relogin
+                self.login()
+                return self.set_video_enc(
+                    serial,
+                    enable,
+                    camera_verification_code,
+                    new_password,
+                    old_password,
+                    max_retries + 1,
+                )
+
+            raise HTTPError from err
+
+        try:
+            json_output = req.json()
+
+        except ValueError as err:
+            raise PyEzvizError(
+                "Impossible to decode response: "
+                + str(err)
+                + "\nResponse was: "
+                + str(req.text)
+            ) from err
+
+        if json_output["meta"].get("code") != 200:
+            raise PyEzvizError(
+                f"Could not set video encryption: Got {json_output['meta']})"
+            )
+
+        return True
+
+    def get_group_defence_mode(self, max_retries: int = 0) -> Any:
+        """Get group arm status. The alarm arm/disarm concept on 1st page of app."""
+
+        if max_retries > MAX_RETRIES:
+            raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
+
+        try:
+            req = self._session.get(
+                "https://" + self._token["api_url"] + API_ENDPOINT_GROUP_DEFENCE_MODE,
+                params={
+                    "groupId": -1,
+                },
+                timeout=self._timeout,
+            )
+
+            req.raise_for_status()
+
+        except requests.HTTPError as err:
+            if err.response.status_code == 401:
+                # session is wrong, need to relogin
+                self.login()
+                return self.get_group_defence_mode(max_retries + 1)
+
+            raise HTTPError from err
+
+        try:
+            json_output = req.json()
+
+        except ValueError as err:
+            raise PyEzvizError(
+                "Impossible to decode response: "
+                + str(err)
+                + "\nResponse was: "
+                + str(req.text)
+            ) from err
+
+        if json_output["meta"].get("code") != 200:
+            raise PyEzvizError(
+                f"Could not get group defence status: Got {json_output['meta']})"
+            )
+
+        return json_output["mode"]
 
     # Not tested
     def cancel_alarm_device(self, serial: str, max_retries: int = 0) -> bool:

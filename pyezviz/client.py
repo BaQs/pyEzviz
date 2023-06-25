@@ -611,6 +611,12 @@ class EzvizClient:
             key="NightVision_Model",
         )
 
+    def set_display_mode(self, serial: str, mode: int) -> bool:
+        """Change video color and saturation mode."""
+        return self.set_device_config_by_key(
+            serial, value=f'{{"mode":{mode}}}', key="display_mode"
+        )
+
     def set_device_config_by_key(
         self,
         serial: str,

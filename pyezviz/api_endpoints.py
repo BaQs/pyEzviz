@@ -33,6 +33,7 @@ API_ENDPOINT_DEVCONFIG_BY_KEY = "/v3/devconfig/v1/keyValue/"
 # Videogo DeviceApi
 API_ENDPOINT_DEVICES = "/v3/devices/"
 API_ENDPOINT_SWITCH_STATUS = "/switchStatus"
+API_ENDPOINT_SWITCH_OTHER = "/switch"
 API_ENDPOINT_PTZCONTROL = "/ptzControl"
 API_ENDPOINT_ALARM_SOUND = "/alarm/sound"
 API_ENDPOINT_SWITCH_SOUND_ALARM = "/sendAlarm"

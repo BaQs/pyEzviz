@@ -36,6 +36,7 @@ from .api_endpoints import (
     API_ENDPOINT_SET_DEFENCE_SCHEDULE,
     API_ENDPOINT_SET_LUMINANCE,
     API_ENDPOINT_SWITCH_DEFENCE_MODE,
+    API_ENDPOINT_SWITCH_OTHER,
     API_ENDPOINT_SWITCH_SOUND_ALARM,
     API_ENDPOINT_SWITCH_STATUS,
     API_ENDPOINT_UNIFIEDMSG_LIST_GET,
@@ -441,28 +442,18 @@ class EzvizClient:
 
         return json_output
 
-    def _switch_status(
+    def switch_status(
         self, serial: str, status_type: int, enable: int, max_retries: int = 0
     ) -> bool:
-        """Switch status on a device."""
+        """Camera features are represented as switches. Switch them on or off."""
         if max_retries > MAX_RETRIES:
             raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
 
+        channel_no = 0
+
         try:
             req = self._session.put(
-                "https://"
-                + self._token["api_url"]
-                + API_ENDPOINT_DEVICES
-                + serial
-                + "/1/1/"
-                + str(status_type)
-                + API_ENDPOINT_SWITCH_STATUS,
-                data={
-                    "enable": enable,
-                    "serial": serial,
-                    "channelNo": "1",
-                    "type": status_type,
-                },
+                url=f"https://{self._token['api_url']}{API_ENDPOINT_DEVICES}{serial}/{channel_no}/{enable}/{status_type}{API_ENDPOINT_SWITCH_STATUS}",
                 timeout=self._timeout,
             )
 
@@ -472,7 +463,7 @@ class EzvizClient:
             if err.response.status_code == 401:
                 # session is wrong, need to relogin
                 self.login()
-                return self._switch_status(serial, status_type, enable, max_retries + 1)
+                return self.switch_status(serial, status_type, enable, max_retries + 1)
 
             raise HTTPError from err
 
@@ -488,7 +479,61 @@ class EzvizClient:
             ) from err
 
         if json_output["meta"].get("code") != 200:
-            raise PyEzvizError(f"Could not set the switch: Got {json_output})")
+            raise PyEzvizError(f'Could not set the switch: Got {json_output["meta"]})')
+
+        return True
+
+    def switch_status_other(
+        self,
+        serial: str,
+        status_type: int,
+        enable: int,
+        channel_number: int = 1,
+        max_retries: int = 0,
+    ) -> bool:
+        """Features are represented as switches. This api is for alternative switch types to turn them on or off.
+
+        All day recording is a good example.
+        """
+        if max_retries > MAX_RETRIES:
+            raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
+
+        try:
+            req = self._session.put(
+                url=f"https://{self._token['api_url']}{API_ENDPOINT_DEVICES}{serial}{API_ENDPOINT_SWITCH_OTHER}",
+                timeout=self._timeout,
+                params={
+                    "channelNo": channel_number,
+                    "enable": enable,
+                    "switchType": status_type,
+                },
+            )
+
+            req.raise_for_status()
+
+        except requests.HTTPError as err:
+            if err.response.status_code == 401:
+                # session is wrong, need to relogin
+                self.login()
+                return self.switch_status_other(
+                    serial, status_type, enable, channel_number, max_retries + 1
+                )
+
+            raise HTTPError from err
+
+        try:
+            json_output = req.json()
+
+        except ValueError as err:
+            raise PyEzvizError(
+                "Impossible to decode response: "
+                + str(err)
+                + "\nResponse was: "
+                + str(req.text)
+            ) from err
+
+        if json_output["meta"].get("code") != 200:
+            raise PyEzvizError(f'Could not set the switch: Got {json_output["meta"]})')
 
         return True
 
@@ -791,7 +836,8 @@ class EzvizClient:
             raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
 
         try:
-            req = self._session.post(url=f'https://{self._token["api_url"]}{API_ENDPOINT_DEVICE_SYS_OPERATION}{serial}',
+            req = self._session.post(
+                url=f'https://{self._token["api_url"]}{API_ENDPOINT_DEVICE_SYS_OPERATION}{serial}',
                 data={
                     "oper": operation,
                     "deviceSerial": serial,
@@ -827,9 +873,7 @@ class EzvizClient:
             ) from err
 
         if json_output["resultCode"] != "0":
-            raise PyEzvizError(
-                f"Could not reboot device {json_output})"
-            )
+            raise PyEzvizError(f"Could not reboot device {json_output})")
 
         return True
 
@@ -1645,10 +1689,6 @@ class EzvizClient:
             raise HTTPError from err
 
         return True
-
-    def switch_status(self, serial: str, status_type: int, enable: int = 0) -> bool:
-        """Switch status of a device."""
-        return self._switch_status(serial, status_type, enable)
 
     def _get_page_list(self) -> Any:
         """Get ezviz device info broken down in sections."""

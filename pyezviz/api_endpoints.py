@@ -39,6 +39,7 @@ API_ENDPOINT_ALARM_SOUND = "/alarm/sound"
 API_ENDPOINT_SWITCH_SOUND_ALARM = "/sendAlarm"
 API_ENDPOINT_DO_NOT_DISTURB = "/nodisturb"
 API_ENDPOINT_VIDEO_ENCRYPT = "encryptedInfo/risk"
+API_ENDPOINT_CHANGE_DEFENCE_STATUS = "changeDefenceStatusReq"
 
 API_ENDPOINT_CREATE_PANORAMIC = "/api/panoramic/devices/pics/collect"
 API_ENDPOINT_RETURN_PANORAMIC = "/api/panoramic/devices/pics"

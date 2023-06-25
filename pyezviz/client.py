@@ -16,6 +16,7 @@ from .api_endpoints import (
     API_ENDPOINT_ALARMINFO_GET,
     API_ENDPOINT_CAM_ENCRYPTKEY,
     API_ENDPOINT_CANCEL_ALARM,
+    API_ENDPOINT_CHANGE_DEFENCE_STATUS,
     API_ENDPOINT_CREATE_PANORAMIC,
     API_ENDPOINT_DETECTION_SENSIBILITY,
     API_ENDPOINT_DETECTION_SENSIBILITY_GET,
@@ -534,6 +535,59 @@ class EzvizClient:
 
         if json_output["meta"].get("code") != 200:
             raise PyEzvizError(f'Could not set the switch: Got {json_output["meta"]})')
+
+        return True
+
+    def set_camera_defence(
+        self,
+        serial: str,
+        enable: int,
+        channel_no: int = 1,
+        arm_type: str = "Global",
+        actor: str = "V",
+        max_retries: int = 0,
+    ) -> bool:
+        """Enable/Disable motion detection on camera."""
+
+        if max_retries > MAX_RETRIES:
+            raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
+
+        try:
+            req = self._session.put(
+                url=f"https://{self._token['api_url']}{API_ENDPOINT_DEVICES}{serial}/{channel_no}/{API_ENDPOINT_CHANGE_DEFENCE_STATUS}",
+                timeout=self._timeout,
+                data={
+                    "type": arm_type,
+                    "status": enable,
+                    "actor": actor,
+                },
+            )
+
+            req.raise_for_status()
+
+        except requests.HTTPError as err:
+            if err.response.status_code == 401:
+                # session is wrong, need to relogin
+                self.login()
+                return self.set_camera_defence(serial, enable, max_retries + 1)
+
+            raise HTTPError from err
+
+        try:
+            json_output = req.json()
+
+        except ValueError as err:
+            raise PyEzvizError(
+                "Impossible to decode response: "
+                + str(err)
+                + "\nResponse was: "
+                + str(req.text)
+            ) from err
+
+        if json_output["meta"].get("code") != 200:
+            raise PyEzvizError(
+                f'Could not arm or disarm Camera: Got {json_output["meta"]})'
+            )
 
         return True
 
@@ -1344,7 +1398,7 @@ class EzvizClient:
 
         return bool(json_result["meta"].get("code") == 200)
 
-    def set_camera_defence(self, serial: str, enable: int) -> bool:
+    def set_camera_defence_old(self, serial: str, enable: int) -> bool:
         """Enable/Disable motion detection on camera."""
         cas_client = EzvizCAS(self._token)
         cas_client.set_camera_defence_state(serial, enable)

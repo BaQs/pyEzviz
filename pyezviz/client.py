@@ -285,9 +285,6 @@ class EzvizClient:
 
             raise HTTPError from err
 
-        if not req.text:
-            raise PyEzvizError("No data")
-
         try:
             json_output = req.json()
 
@@ -309,19 +306,7 @@ class EzvizClient:
             )
             return self._api_get_pagelist(page_filter, json_key, max_retries + 1)
 
-        if json_key is None:
-            json_result = json_output
-        else:
-            json_result = json_output[json_key]
-
-        if not json_result:
-            # session is wrong, need to relogin
-            self.login()
-            _LOGGER.warning(
-                "Impossible to load the devices, here is the returned response: %s",
-                str(req.text),
-            )
-            return self._api_get_pagelist(page_filter, json_key, max_retries + 1)
+        json_result = json_output if not json_key else json_output[json_key]
 
         return json_result
 

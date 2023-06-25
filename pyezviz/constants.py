@@ -348,6 +348,15 @@ class NightVisionMode(Enum):
 
 
 @unique
+class DisplayMode(Enum):
+    """Display modes or image styles."""
+
+    DISPLAY_MODE_ORIGINAL = 1
+    DISPLAY_MODE_SOFT = 2
+    DISPLAY_MODE_VIVID = 3
+
+
+@unique
 class BatteryCameraWorkMode(Enum):
     """Battery camera work modes."""
 

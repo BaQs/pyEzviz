@@ -209,9 +209,9 @@ class EzvizClient:
                 + str(req.text)
             ) from err
 
-        if json_output["meta"].get("code") != 200:
+        if json_output["meta"]["code"] != 200:
             raise PyEzvizError(
-                f"Could not request MFA code: Got {req.status_code} : {req.text})"
+                f'Could not request MFA code: Got {json_output["meta"]})'
             )
 
         return True
@@ -249,7 +249,7 @@ class EzvizClient:
                 + str(req.text)
             ) from err
 
-        if json_output["meta"].get("code") != 200:
+        if json_output["meta"]["code"] != 200:
             raise PyEzvizError(f"Error getting Service URLs: {json_output['meta']}")
 
         service_urls = json_output["systemConfigInfo"]
@@ -299,11 +299,13 @@ class EzvizClient:
                 + str(req.text)
             ) from err
 
-        if json_output["meta"].get("code") != 200:
+        if json_output["meta"]["code"] != 200:
             # session is wrong, need to relogin
             self.login()
-            logging.info(
-                "Json request error, relogging (max retries: %s)", str(max_retries)
+            _LOGGER.warning(
+                "Could not get pagelist, relogging (max retries: %s), got: %s",
+                str(max_retries),
+                json_output["meta"],
             )
             return self._api_get_pagelist(page_filter, json_key, max_retries + 1)
 
@@ -315,7 +317,7 @@ class EzvizClient:
         if not json_result:
             # session is wrong, need to relogin
             self.login()
-            logging.info(
+            _LOGGER.warning(
                 "Impossible to load the devices, here is the returned response: %s",
                 str(req.text),
             )
@@ -366,8 +368,8 @@ class EzvizClient:
                 + str(req.text)
             ) from err
 
-        if json_output["meta"].get("code") != 200:
-            if json_output["meta"].get("code") == 500:
+        if json_output["meta"]["code"] != 200:
+            if json_output["meta"]["code"] == 500:
                 _LOGGER.debug(
                     "Retry getting alarm info, server returned busy: %s",
                     json_output["meta"],
@@ -436,7 +438,7 @@ class EzvizClient:
                 + str(req.text)
             ) from err
 
-        if json_output["meta"].get("code") != 200:
+        if json_output["meta"]["code"] != 200:
             raise PyEzvizError(
                 f"Could not get unified message list: Got {json_output['meta']})"
             )
@@ -479,7 +481,7 @@ class EzvizClient:
                 + str(req.text)
             ) from err
 
-        if json_output["meta"].get("code") != 200:
+        if json_output["meta"]["code"] != 200:
             raise PyEzvizError(f'Could not set the switch: Got {json_output["meta"]})')
 
         return True
@@ -533,7 +535,7 @@ class EzvizClient:
                 + str(req.text)
             ) from err
 
-        if json_output["meta"].get("code") != 200:
+        if json_output["meta"]["code"] != 200:
             raise PyEzvizError(f'Could not set the switch: Got {json_output["meta"]})')
 
         return True
@@ -584,7 +586,7 @@ class EzvizClient:
                 + str(req.text)
             ) from err
 
-        if json_output["meta"].get("code") != 200:
+        if json_output["meta"]["code"] != 200:
             raise PyEzvizError(
                 f'Could not arm or disarm Camera: Got {json_output["meta"]})'
             )
@@ -671,7 +673,7 @@ class EzvizClient:
                 + str(req.text)
             ) from err
 
-        if json_output["meta"].get("code") != 200:
+        if json_output["meta"]["code"] != 200:
             raise PyEzvizError(
                 f"Could not set camera work mode: Got {json_output['meta']})"
             )
@@ -714,9 +716,9 @@ class EzvizClient:
                 + str(req.text)
             ) from err
 
-        if json_output["meta"].get("code") != 200:
+        if json_output["meta"]["code"] != 200:
             raise PyEzvizError(
-                f"Could not initiate firmare upgrade: Got {req.status_code} : {req.text})"
+                f'Could not initiate firmare upgrade: Got {json_output["meta"]})'
             )
 
         return True
@@ -761,9 +763,9 @@ class EzvizClient:
                 + str(req.text)
             ) from err
 
-        if json_output["meta"].get("code") != 200:
+        if json_output["meta"]["code"] != 200:
             raise PyEzvizError(
-                f"Could not set the alarm sound: Got {req.status_code} : {req.text})"
+                f'Could not set the alarm sound: Got {json_output["meta"]})'
             )
 
         return True
@@ -800,7 +802,7 @@ class EzvizClient:
                 + str(req.text)
             ) from err
 
-        if json_output["meta"].get("code") != 200:
+        if json_output["meta"]["code"] != 200:
             raise PyEzvizError(
                 f"Could not set video encryption: Got {json_output['meta']})"
             )
@@ -877,7 +879,7 @@ class EzvizClient:
                 + str(req.text)
             ) from err
 
-        if json_output["meta"].get("code") != 200:
+        if json_output["meta"]["code"] != 200:
             raise PyEzvizError(
                 f"Could not set video encryption: Got {json_output['meta']})"
             )
@@ -973,7 +975,7 @@ class EzvizClient:
                 + str(req.text)
             ) from err
 
-        if json_output["meta"].get("code") != 200:
+        if json_output["meta"]["code"] != 200:
             raise PyEzvizError(
                 f"Could not get group defence status: Got {json_output['meta']})"
             )
@@ -1014,9 +1016,9 @@ class EzvizClient:
                 + str(req.text)
             ) from err
 
-        if json_output["meta"].get("code") != 200:
+        if json_output["meta"]["code"] != 200:
             raise PyEzvizError(
-                f"Could not cancel alarm siren: Got {req.status_code} : {req.text})"
+                f'Could not cancel alarm siren: Got {json_output["meta"]})'
             )
 
         return True
@@ -1339,7 +1341,7 @@ class EzvizClient:
                     + str(req.text)
                 ) from err
 
-            if json_result["meta"].get("code") == 200:
+            if json_result["meta"]["code"] == 200:
                 self._session.headers["sessionId"] = json_result["sessionInfo"][
                     "sessionId"
                 ]
@@ -1353,7 +1355,7 @@ class EzvizClient:
 
                 return self._token
 
-            if json_result["meta"].get("code") == 403:
+            if json_result["meta"]["code"] == 403:
                 if self.account and self.password:
                     self._token = {
                         "session_id": None,
@@ -1402,7 +1404,7 @@ class EzvizClient:
 
         self.close_session()
 
-        return bool(json_result["meta"].get("code") == 200)
+        return bool(json_result["meta"]["code"] == 200)
 
     def set_camera_defence_old(self, serial: str, enable: int) -> bool:
         """Enable/Disable motion detection on camera."""
@@ -1467,7 +1469,7 @@ class EzvizClient:
         return True
 
     def api_set_defence_mode(self, mode: DefenseModeType, max_retries: int = 0) -> bool:
-        """Set defence mode."""
+        """Set defence mode for all devices. The alarm panel from main page is used."""
         if max_retries > MAX_RETRIES:
             raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
 
@@ -1502,9 +1504,9 @@ class EzvizClient:
                 + str(req.text)
             ) from err
 
-        if json_output["meta"].get("code") != 200:
+        if json_output["meta"]["code"] != 200:
             raise PyEzvizError(
-                f"Could not set defence mode: Got {req.status_code} : {req.text})"
+                f'Could not set defence mode: Got {json_output["meta"]})'
             )
 
         return True
@@ -1548,9 +1550,9 @@ class EzvizClient:
         except ValueError as err:
             raise PyEzvizError("Could not decode response:" + str(err)) from err
 
-        if json_output["meta"].get("code") != 200:
+        if json_output["meta"]["code"] != 200:
             raise PyEzvizError(
-                f"Could not set defence mode: Got {req.status_code} : {req.text})"
+                f'Could not set defence mode: Got {json_output["meta"]})'
             )
 
         return True
@@ -1605,7 +1607,7 @@ class EzvizClient:
             raise PyEzvizError("Could not decode response:" + str(err)) from err
 
         if response_json["meta"]["code"] != 200:
-            _LOGGER.error(response_json)
+            _LOGGER.error("Unable to set brightness, got: %s", response_json["meta"])
             return False
 
         return True

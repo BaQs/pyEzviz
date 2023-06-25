@@ -317,7 +317,7 @@ class EzvizClient:
         if not json_result:
             # session is wrong, need to relogin
             self.login()
-            _LOGGER.info(
+            _LOGGER.warning(
                 "Impossible to load the devices, here is the returned response: %s",
                 str(req.text),
             )

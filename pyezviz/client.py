@@ -20,6 +20,7 @@ from .api_endpoints import (
     API_ENDPOINT_DETECTION_SENSIBILITY,
     API_ENDPOINT_DETECTION_SENSIBILITY_GET,
     API_ENDPOINT_DEVCONFIG_BY_KEY,
+    API_ENDPOINT_DEVICE_SYS_OPERATION,
     API_ENDPOINT_DEVICES,
     API_ENDPOINT_DO_NOT_DISTURB,
     API_ENDPOINT_GROUP_DEFENCE_MODE,
@@ -774,6 +775,60 @@ class EzvizClient:
         if json_output["meta"].get("code") != 200:
             raise PyEzvizError(
                 f"Could not set video encryption: Got {json_output['meta']})"
+            )
+
+        return True
+
+    def reboot_camera(
+        self,
+        serial: str,
+        delay: int = 1,
+        operation: int = 1,
+        max_retries: int = 0,
+    ) -> bool:
+        """Reboot camera."""
+        if max_retries > MAX_RETRIES:
+            raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
+
+        try:
+            req = self._session.post(url=f'https://{self._token["api_url"]}{API_ENDPOINT_DEVICE_SYS_OPERATION}{serial}',
+                data={
+                    "oper": operation,
+                    "deviceSerial": serial,
+                    "delay": delay,
+                },
+                timeout=self._timeout,
+            )
+
+            req.raise_for_status()
+
+        except requests.HTTPError as err:
+            if err.response.status_code == 401:
+                # session is wrong, need to relogin
+                self.login()
+                return self.reboot_camera(
+                    serial,
+                    delay,
+                    operation,
+                    max_retries + 1,
+                )
+
+            raise HTTPError from err
+
+        try:
+            json_output = req.json()
+
+        except ValueError as err:
+            raise PyEzvizError(
+                "Impossible to decode response: "
+                + str(err)
+                + "\nResponse was: "
+                + str(req.text)
+            ) from err
+
+        if json_output["resultCode"] != "0":
+            raise PyEzvizError(
+                f"Could not reboot device {json_output})"
             )
 
         return True

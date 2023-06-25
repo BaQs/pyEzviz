@@ -27,7 +27,7 @@ API_ENDPOINT_DETECTION_SENSIBILITY_GET = "/api/device/queryAlgorithmConfig"
 API_ENDPOINT_SET_DEFENCE_SCHEDULE = "/api/device/defence/plan2"
 API_ENDPOINT_CAM_ENCRYPTKEY = "/api/device/query/encryptkey"
 API_ENDPOINT_CANCEL_ALARM = "/api/device/cancelAlarm"
-
+API_ENDPOINT_DEVICE_SYS_OPERATION = "/api/device/v2/sysOper/"
 API_ENDPOINT_DEVCONFIG_BY_KEY = "/v3/devconfig/v1/keyValue/"
 
 # Videogo DeviceApi

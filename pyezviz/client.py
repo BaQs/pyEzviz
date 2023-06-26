@@ -457,6 +457,9 @@ class EzvizClient:
         if json_output["meta"]["code"] != 200:
             raise PyEzvizError(f"Could not set the switch: Got {json_output})")
 
+        if self._cameras.get(serial):
+            self._cameras[serial]["switches"][status_type] = bool(enable)
+
         return True
 
     def switch_status_other(

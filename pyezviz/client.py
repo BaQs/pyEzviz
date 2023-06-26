@@ -419,13 +419,16 @@ class EzvizClient:
         return json_output
 
     def switch_status(
-        self, serial: str, status_type: int, enable: int, max_retries: int = 0
+        self,
+        serial: str,
+        status_type: int,
+        enable: int,
+        channel_no: int = 0,
+        max_retries: int = 0,
     ) -> bool:
         """Camera features are represented as switches. Switch them on or off."""
         if max_retries > MAX_RETRIES:
             raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
-
-        channel_no = 0
 
         try:
             req = self._session.put(

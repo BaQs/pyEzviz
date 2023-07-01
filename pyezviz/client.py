@@ -732,6 +732,9 @@ class EzvizClient:
             ) from err
 
         if json_output["resultCode"] != "0":
+            if json_output["resultCode"] == "-1":
+                _LOGGER.warning("Server busy, retrying %s", max_retries)
+                return self.get_storage_status(serial, max_retries + 1)
             raise PyEzvizError(
                 f"Could not get device storage status: Got {json_output})"
             )
@@ -944,6 +947,9 @@ class EzvizClient:
             ) from err
 
         if json_output["resultCode"] != "0":
+            if json_output["resultCode"] == "-1":
+                _LOGGER.warning("Server busy, retrying %s", max_retries)
+                return self.reboot_camera(serial, delay, operation, max_retries + 1)
             raise PyEzvizError(f"Could not reboot device {json_output})")
 
         return True
@@ -1207,6 +1213,9 @@ class EzvizClient:
             raise EzvizAuthVerificationCode(f"MFA code required: Got {json_output})")
 
         if json_output["resultCode"] != "0":
+            if json_output["resultCode"] == "-1":
+                _LOGGER.warning("Server busy, retrying %s", max_retries)
+                return self.get_cam_key(serial, smscode, max_retries + 1)
             raise PyEzvizError(
                 f"Could not get camera encryption key: Got {json_output})"
             )
@@ -1248,6 +1257,9 @@ class EzvizClient:
             ) from err
 
         if json_output["resultCode"] != "0":
+            if json_output["resultCode"] == "-1":
+                _LOGGER.warning("Server busy, retrying %s", max_retries)
+                return self.create_panoramic(serial, max_retries + 1)
             raise PyEzvizError(
                 f"Could not send command to create panoramic photo: Got {json_output})"
             )
@@ -1289,6 +1301,9 @@ class EzvizClient:
             ) from err
 
         if json_output["resultCode"] != "0":
+            if json_output["resultCode"] == "-1":
+                _LOGGER.warning("Server busy, retrying %s", max_retries)
+                return self.return_panoramic(serial, max_retries + 1)
             raise PyEzvizError(f"Could retrieve panoramic photo: Got {json_output})")
 
         return json_output
@@ -1491,6 +1506,11 @@ class EzvizClient:
             ) from err
 
         if json_output["resultCode"] != "0":
+            if json_output["resultCode"] == "-1":
+                _LOGGER.warning("Server busy, retrying %s", max_retries)
+                return self.api_set_defence_schedule(
+                    serial, schedule, enable, max_retries + 1
+                )
             raise PyEzvizError(f"Could not set the schedule: Got {json_output})")
 
         return True
@@ -1683,6 +1703,11 @@ class EzvizClient:
             raise PyEzvizError("Could not decode response:" + str(err)) from err
 
         if response_json["resultCode"] != "0":
+            if response_json["resultCode"] == "-1":
+                _LOGGER.warning("Server busy, retrying %s", max_retries)
+                return self.detection_sensibility(
+                    serial, sensibility, type_value, max_retries + 1
+                )
             raise PyEzvizError(
                 f"Unable to set detection sensibility. Got: {response_json}"
             )
@@ -1726,6 +1751,11 @@ class EzvizClient:
             raise PyEzvizError("Could not decode response:" + str(err)) from err
 
         if response_json["resultCode"] != "0":
+            if response_json["resultCode"] == "-1":
+                _LOGGER.warning("Server busy, retrying %s", max_retries)
+                return self.get_detection_sensibility(
+                    serial, type_value, max_retries + 1
+                )
             raise PyEzvizError(
                 f"Unable to get detection sensibility. Got: {response_json}"
             )

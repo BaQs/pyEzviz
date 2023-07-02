@@ -106,7 +106,7 @@ class EzvizCamera:
     def _is_alarm_schedules_enabled(self) -> bool:
         """Check if alarm schedules enabled."""
         _alarm_schedules = [
-            item for item in self._device.get("TIME_PLAN", {}) if item.get("type") == 2
+            item for item in self._device["TIME_PLAN"] if item.get("type") == 2
         ]
 
         if _alarm_schedules:
@@ -149,8 +149,8 @@ class EzvizCamera:
             "supported_channels": self.fetch_key(["deviceInfos", "channelNumber"]),
             "battery_level": self.fetch_key(["STATUS", "optionals", "powerRemaining"]),
             "PIR_Status": self.fetch_key(["STATUS", "pirStatus"]),
-            "Motion_Trigger": self._alarmmotiontrigger.get("alarm_trigger_active"),
-            "Seconds_Last_Trigger": self._alarmmotiontrigger.get("timepassed"),
+            "Motion_Trigger": self._alarmmotiontrigger["alarm_trigger_active"],
+            "Seconds_Last_Trigger": self._alarmmotiontrigger["timepassed"],
             "last_alarm_time": self._last_alarm.get("alarmStartTimeStr"),
             "last_alarm_pic": self._last_alarm.get(
                 "picUrl",

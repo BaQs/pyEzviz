@@ -61,7 +61,7 @@ class EzvizCamera:
         """Get last alarm info for this camera's self._serial."""
         _alarmlist = self._client.get_alarminfo(self._serial)
 
-        if _alarmlist["page"].get("totalResults") > 0:
+        if fetch_nested_value(_alarmlist, ["page", "totalResults"], 0) > 0:
             self._last_alarm = _alarmlist["alarms"][0]
             return self._motion_trigger()
 

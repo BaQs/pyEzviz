@@ -11,6 +11,27 @@ if TYPE_CHECKING:
     from .client import EzvizClient
 
 
+def fetch_nested_value(data: Any, keys: list, default_value: Any = None) -> Any:
+    """Fetch the value corresponding to the given nested keys in a dictionary.
+
+    If any of the keys in the path doesn't exist, the default value is returned.
+
+    Args:
+        data (dict): The nested dictionary to search for keys.
+        keys (list): A list of keys representing the path to the desired value.
+        default_value (optional): The value to return if any of the keys doesn't exist.
+
+    Returns:
+        The value corresponding to the nested keys or the default value.
+    """
+    try:
+        for key in keys:
+            data = data[key]
+        return data
+    except (KeyError, TypeError):
+        return default_value
+
+
 class EzvizCamera:
     """Initialize Ezviz camera object."""
 
@@ -29,9 +50,12 @@ class EzvizCamera:
         )
         self._last_alarm: dict[str, Any] = {}
         self._switch: dict[int, bool] = {
-            switch["type"]: switch["enable"]
-            for switch in self._device.get("SWITCH", {})
+            switch["type"]: switch["enable"] for switch in self._device["SWITCH"]
         }
+
+    def fetch_key(self, keys: list, default_value: Any = None) -> Any:
+        """Fetch dictionary key."""
+        return fetch_nested_value(self._device, keys, default_value)
 
     def _alarm_list(self) -> None:
         """Get last alarm info for this camera's self._serial."""
@@ -44,14 +68,14 @@ class EzvizCamera:
     def _local_ip(self) -> Any:
         """Fix empty ip value for certain cameras."""
         if (
-            self._device["WIFI"].get("address")
+            self.fetch_key(["WIFI", "address"])
             and self._device["WIFI"]["address"] != "0.0.0.0"
         ):
             return self._device["WIFI"]["address"]
 
         # Seems to return none or 0.0.0.0 on some.
         if (
-            self._device["CONNECTION"].get("localIp")
+            self.fetch_key(["CONNECTION", "localIp"])
             and self._device["CONNECTION"]["localIp"] != "0.0.0.0"
         ):
             return self._device["CONNECTION"]["localIp"]
@@ -96,53 +120,35 @@ class EzvizCamera:
 
         return {
             "serial": self._serial,
-            "name": self._device["deviceInfos"].get("name"),
-            "version": self._device["deviceInfos"].get("version"),
+            "name": self.fetch_key(["deviceInfos", "name"]),
+            "version": self.fetch_key(["deviceInfos", "version"]),
             "upgrade_available": bool(
-                self._device["UPGRADE"].get("isNeedUpgrade") == 3
+                self.fetch_key(["UPGRADE", "isNeedUpgrade"]) == 3
             ),
-            "status": self._device["deviceInfos"].get("status"),
-            "device_category": self._device["deviceInfos"].get("deviceCategory"),
-            "device_sub_category": self._device["deviceInfos"].get("deviceSubCategory"),
-            "sleep": self._switch.get(DeviceSwitchType.SLEEP.value)
-            or self._switch.get(DeviceSwitchType.AUTO_SLEEP.value),
-            "privacy": self._switch.get(DeviceSwitchType.PRIVACY.value),
-            "audio": self._switch.get(DeviceSwitchType.SOUND.value),
-            "ir_led": self._switch.get(DeviceSwitchType.INFRARED_LIGHT.value),
-            "state_led": self._switch.get(DeviceSwitchType.LIGHT.value),
-            "upgrade_percent": self._device["STATUS"].get("upgradeProcess"),
+            "status": self.fetch_key(["deviceInfos", "status"]),
+            "device_category": self.fetch_key(["deviceInfos", "deviceCategory"]),
+            "device_sub_category": self.fetch_key(["deviceInfos", "deviceSubCategory"]),
+            "upgrade_percent": self.fetch_key(["STATUS", "upgradeProcess"]),
             "upgrade_in_progress": bool(
-                self._device["STATUS"].get("upgradeStatus") == 0
+                self.fetch_key(["STATUS", "upgradeStatus"]) == 0
             ),
-            "latest_firmware_info": self._device["UPGRADE"].get("upgradePackageInfo"),
-            "follow_move": self._switch.get(DeviceSwitchType.MOBILE_TRACKING.value),
-            "alarm_notify": bool(self._device["STATUS"].get("globalStatus")),
+            "latest_firmware_info": self.fetch_key(["UPGRADE", "upgradePackageInfo"]),
+            "alarm_notify": bool(self.fetch_key(["STATUS", "globalStatus"])),
             "alarm_schedules_enabled": self._is_alarm_schedules_enabled(),
             "alarm_sound_mod": SoundMode(
-                self._device["STATUS"].get("alarmSoundMode", -1)
+                self.fetch_key(["STATUS", "alarmSoundMode"], -1)
             ).name,
-            "encrypted": bool(self._device["STATUS"].get("isEncrypt")),
-            "encrypted_pwd_hash": self._device["STATUS"].get("encryptPwd"),
+            "encrypted": bool(self.fetch_key(["STATUS", "isEncrypt"])),
+            "encrypted_pwd_hash": self.fetch_key(["STATUS", "encryptPwd"]),
             "local_ip": self._local_ip(),
-            "wan_ip": self._device["CONNECTION"].get("netIp"),
-            "mac_address": self._device["deviceInfos"].get("mac"),
-            "local_rtsp_port": self._device["CONNECTION"].get("localRtspPort", "554")
-            if self._device["CONNECTION"].get("localRtspPort", "554") != 0
+            "wan_ip": self.fetch_key(["CONNECTION", "netIp"]),
+            "mac_address": self.fetch_key(["deviceInfos", "mac"]),
+            "local_rtsp_port": self.fetch_key(["CONNECTION", "localRtspPort"], "554")
+            if self.fetch_key(["CONNECTION", "localRtspPort"], "554") != 0
             else "554",
-            "supported_channels": self._device["deviceInfos"].get("channelNumber"),
-            "battery_level": self._device["STATUS"]
-            .get("optionals", {})
-            .get("powerRemaining"),
-            "battery_camera_work_mode": self._device["STATUS"]
-            .get("optionals", {})
-            .get("batteryCameraWorkMode"),
-            "Alarm_DetectHumanCar": self._device["STATUS"]
-            .get("optionals", {})
-            .get("Alarm_DetectHumanCar"),
-            "NightVision_Model": self._device["STATUS"]
-            .get("optionals", {})
-            .get("NightVision_Model"),
-            "PIR_Status": self._device["STATUS"].get("pirStatus"),
+            "supported_channels": self.fetch_key(["deviceInfos", "channelNumber"]),
+            "battery_level": self.fetch_key(["STATUS", "optionals", "powerRemaining"]),
+            "PIR_Status": self.fetch_key(["STATUS", "pirStatus"]),
             "Motion_Trigger": self._alarmmotiontrigger.get("alarm_trigger_active"),
             "Seconds_Last_Trigger": self._alarmmotiontrigger.get("timepassed"),
             "last_alarm_time": self._last_alarm.get("alarmStartTimeStr"),
@@ -152,18 +158,12 @@ class EzvizCamera:
             ),
             "last_alarm_type_code": self._last_alarm.get("alarmType", "0000"),
             "last_alarm_type_name": self._last_alarm.get("sampleName", "NoAlarm"),
-            "alarm_light_luminance": int(
-                "".join(
-                    filter(
-                        str.isdigit,
-                        self._device["STATUS"]
-                        .get("optionals", {})
-                        .get("Alarm_Light", "0"),
-                    )
-                )
-            ),  # extract the value from the string and cater for the case where the value is not set.
-            "wifiInfos": self._device.get("WIFI"),
+            "alarm_light_luminance": self.fetch_key(
+                ["STATUS", "optionals", "Alarm_Light", "luminance"], 0
+            ),
+            "wifiInfos": self._device["WIFI"],
             "switches": self._switch,
+            "optionals": self.fetch_key(["STATUS", "optionals"]),
             "supportExt": self._device["deviceInfos"]["supportExt"],
         }
 

@@ -65,26 +65,9 @@ from .exceptions import (
     InvalidURL,
     PyEzvizError,
 )
+from .utils import convert_to_dict
 
 _LOGGER = logging.getLogger(__name__)
-
-
-def convert_to_dict(data: Any) -> Any:
-    """Recursively convert a string representation of a dictionary to a dictionary."""
-    if isinstance(data, dict):
-        for key, value in data.items():
-            if isinstance(value, str):
-                try:
-                    # Attempt to convert the string back into a dictionary
-                    data[key] = json.loads(value)
-                    if isinstance(data[key], list) and len(data[key]) == 1:
-                        data[key] = data[key][0]
-
-                except ValueError:
-                    continue
-            continue
-
-    return data
 
 
 class EzvizClient:

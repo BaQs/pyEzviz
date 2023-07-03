@@ -3,33 +3,12 @@ from __future__ import annotations
 
 import datetime
 from typing import TYPE_CHECKING, Any
-
+from .utils import fetch_nested_value
 from .constants import DeviceSwitchType, SoundMode
 from .exceptions import PyEzvizError
 
 if TYPE_CHECKING:
     from .client import EzvizClient
-
-
-def fetch_nested_value(data: Any, keys: list, default_value: Any = None) -> Any:
-    """Fetch the value corresponding to the given nested keys in a dictionary.
-
-    If any of the keys in the path doesn't exist, the default value is returned.
-
-    Args:
-        data (dict): The nested dictionary to search for keys.
-        keys (list): A list of keys representing the path to the desired value.
-        default_value (optional): The value to return if any of the keys doesn't exist.
-
-    Returns:
-        The value corresponding to the nested keys or the default value.
-    """
-    try:
-        for key in keys:
-            data = data[key]
-        return data
-    except (KeyError, TypeError):
-        return default_value
 
 
 class EzvizCamera:
@@ -158,6 +137,10 @@ class EzvizCamera:
             ),
             "last_alarm_type_code": self._last_alarm.get("alarmType", "0000"),
             "last_alarm_type_name": self._last_alarm.get("sampleName", "NoAlarm"),
+            "push_notify_alarm": not bool(self.fetch_key(["NODISTURB", "alarmEnable"])),
+            "push_notify_call": not bool(
+                self.fetch_key(["NODISTURB", "callingEnable"])
+            ),
             "alarm_light_luminance": self.fetch_key(
                 ["STATUS", "optionals", "Alarm_Light", "luminance"], 0
             ),
@@ -165,6 +148,7 @@ class EzvizCamera:
             "switches": self._switch,
             "optionals": self.fetch_key(["STATUS", "optionals"]),
             "supportExt": self._device["deviceInfos"]["supportExt"],
+            "ezDeviceCapability": self.fetch_key(["deviceInfos", "ezDeviceCapability"]),
         }
 
     def move(self, direction: str, speed: int = 5) -> bool:

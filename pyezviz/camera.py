@@ -3,9 +3,10 @@ from __future__ import annotations
 
 import datetime
 from typing import TYPE_CHECKING, Any
-from .utils import fetch_nested_value
+
 from .constants import DeviceSwitchType, SoundMode
 from .exceptions import PyEzvizError
+from .utils import fetch_nested_value, string_to_list
 
 if TYPE_CHECKING:
     from .client import EzvizClient
@@ -130,19 +131,34 @@ class EzvizCamera:
             "PIR_Status": self.fetch_key(["STATUS", "pirStatus"]),
             "Motion_Trigger": self._alarmmotiontrigger["alarm_trigger_active"],
             "Seconds_Last_Trigger": self._alarmmotiontrigger["timepassed"],
-            "last_alarm_time": self._last_alarm.get("alarmStartTimeStr"),
+            "last_alarm_time": self._last_alarm.get(
+                "alarmStartTimeStr", "2000-01-01 00:00:00"
+            ),
             "last_alarm_pic": self._last_alarm.get(
                 "picUrl",
                 "https://eustatics.ezvizlife.com/ovs_mall/web/img/index/EZVIZ_logo.png?ver=3007907502",
             ),
             "last_alarm_type_code": self._last_alarm.get("alarmType", "0000"),
             "last_alarm_type_name": self._last_alarm.get("sampleName", "NoAlarm"),
+            "cam_timezone": self.fetch_key(["STATUS", "optionals", "timeZone"]),
             "push_notify_alarm": not bool(self.fetch_key(["NODISTURB", "alarmEnable"])),
             "push_notify_call": not bool(
                 self.fetch_key(["NODISTURB", "callingEnable"])
             ),
             "alarm_light_luminance": self.fetch_key(
-                ["STATUS", "optionals", "Alarm_Light", "luminance"], 0
+                ["STATUS", "optionals", "Alarm_Light", "luminance"]
+            ),
+            "Alarm_DetectHumanCar": self.fetch_key(
+                ["STATUS", "optionals", "Alarm_DetectHumanCar", "type"]
+            ),
+            "diskCapacity": string_to_list(
+                self.fetch_key(["STATUS", "optionals", "diskCapacity"])
+            ),
+            "NightVision_Model": self.fetch_key(
+                ["STATUS", "optionals", "NightVision_Model"]
+            ),
+            "batteryCameraWorkMode": self.fetch_key(
+                ["STATUS", "optionals", "workMode"]
             ),
             "wifiInfos": self._device["WIFI"],
             "switches": self._switch,

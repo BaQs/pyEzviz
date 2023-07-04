@@ -26,7 +26,7 @@ class TestRTSPAuth:
         username=None,
         password=None,
         test_uri="",
-    ):
+    ) -> None:
         """Initialize RTSP credential test."""
         self._rtsp_details = {
             "bufLen": 1024,

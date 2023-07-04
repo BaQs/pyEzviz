@@ -29,13 +29,14 @@ def convert_to_dict(data: Any) -> Any:
     return data
 
 
-def string_to_list(data: str, seperator: str) -> Any:
+def string_to_list(data: Any, separator: str = ",") -> Any:
     """Convert a string representation of a list to a list."""
     if isinstance(data, str):
-        if seperator in data:
+        if separator in data:
             try:
-                # Attempt to convert the string back into a dictionary
-                data = data.split(seperator)
+                # Attempt to convert the string into a list
+                new_list = data.split(separator)
+                return new_list
 
             except AttributeError:
                 return data

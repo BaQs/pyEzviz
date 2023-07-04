@@ -65,6 +65,7 @@ from .exceptions import (
     InvalidURL,
     PyEzvizError,
 )
+from .utils import convert_to_dict
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -733,7 +734,11 @@ class EzvizClient:
 
         if json_output["resultCode"] != "0":
             if json_output["resultCode"] == "-1":
-                _LOGGER.warning("Server busy, retrying %s", max_retries)
+                _LOGGER.warning(
+                    "Can't get storage status from device %s, retrying %s",
+                    serial,
+                    max_retries,
+                )
                 return self.get_storage_status(serial, max_retries + 1)
             raise PyEzvizError(
                 f"Could not get device storage status: Got {json_output})"
@@ -948,7 +953,11 @@ class EzvizClient:
 
         if json_output["resultCode"] != "0":
             if json_output["resultCode"] == "-1":
-                _LOGGER.warning("Server busy, retrying %s", max_retries)
+                _LOGGER.warning(
+                    "Unable to reboot camera, camera %s is unreachable, retrying %s",
+                    serial,
+                    max_retries,
+                )
                 return self.reboot_camera(serial, delay, operation, max_retries + 1)
             raise PyEzvizError(f"Could not reboot device {json_output})")
 
@@ -1112,6 +1121,7 @@ class EzvizClient:
             result[_serial]["deviceInfos"]["supportExt"] = json.loads(
                 result[_serial]["deviceInfos"]["supportExt"]
             )
+            convert_to_dict(result[_serial]["STATUS"].get("optionals"))
 
         if not serial:
             return result
@@ -1214,7 +1224,11 @@ class EzvizClient:
 
         if json_output["resultCode"] != "0":
             if json_output["resultCode"] == "-1":
-                _LOGGER.warning("Server busy, retrying %s", max_retries)
+                _LOGGER.warning(
+                    "Camera %s encryption key not found, retrying %s",
+                    serial,
+                    max_retries,
+                )
                 return self.get_cam_key(serial, smscode, max_retries + 1)
             raise PyEzvizError(
                 f"Could not get camera encryption key: Got {json_output})"
@@ -1258,7 +1272,11 @@ class EzvizClient:
 
         if json_output["resultCode"] != "0":
             if json_output["resultCode"] == "-1":
-                _LOGGER.warning("Server busy, retrying %s", max_retries)
+                _LOGGER.warning(
+                    "Create panoramic failed on device %s retrying %s",
+                    serial,
+                    max_retries,
+                )
                 return self.create_panoramic(serial, max_retries + 1)
             raise PyEzvizError(
                 f"Could not send command to create panoramic photo: Got {json_output})"
@@ -1302,7 +1320,9 @@ class EzvizClient:
 
         if json_output["resultCode"] != "0":
             if json_output["resultCode"] == "-1":
-                _LOGGER.warning("Server busy, retrying %s", max_retries)
+                _LOGGER.warning(
+                    "Camera %s busy or unreachable, retrying %s", serial, max_retries
+                )
                 return self.return_panoramic(serial, max_retries + 1)
             raise PyEzvizError(f"Could retrieve panoramic photo: Got {json_output})")
 
@@ -1507,7 +1527,9 @@ class EzvizClient:
 
         if json_output["resultCode"] != "0":
             if json_output["resultCode"] == "-1":
-                _LOGGER.warning("Server busy, retrying %s", max_retries)
+                _LOGGER.warning(
+                    "Camara %s offline or unreachable, retrying %s", serial, max_retries
+                )
                 return self.api_set_defence_schedule(
                     serial, schedule, enable, max_retries + 1
                 )
@@ -1562,7 +1584,7 @@ class EzvizClient:
         enable: int = 1,
         channelno: int = 1,
         max_retries: int = 0,
-    ) -> bool | str:
+    ) -> bool:
         """Set do not disturb on camera with specified serial."""
         if max_retries > MAX_RETRIES:
             raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
@@ -1585,7 +1607,7 @@ class EzvizClient:
             if err.response.status_code == 401:
                 # session is wrong, need to re-log-in
                 self.login()
-                return self.do_not_disturb(serial, enable, max_retries + 1)
+                return self.do_not_disturb(serial, enable, channelno, max_retries + 1)
 
             raise HTTPError from err
 
@@ -1596,7 +1618,7 @@ class EzvizClient:
             raise PyEzvizError("Could not decode response:" + str(err)) from err
 
         if json_output["meta"]["code"] != 200:
-            raise PyEzvizError(f"Could not set defence mode: Got {json_output})")
+            raise PyEzvizError(f"Could not set do not disturb: Got {json_output})")
 
         return True
 
@@ -1704,7 +1726,11 @@ class EzvizClient:
 
         if response_json["resultCode"] != "0":
             if response_json["resultCode"] == "-1":
-                _LOGGER.warning("Server busy, retrying %s", max_retries)
+                _LOGGER.warning(
+                    "Camera %s is offline, can't set sensitivity, retrying %s",
+                    serial,
+                    max_retries,
+                )
                 return self.detection_sensibility(
                     serial, sensibility, type_value, max_retries + 1
                 )
@@ -1752,7 +1778,9 @@ class EzvizClient:
 
         if response_json["resultCode"] != "0":
             if response_json["resultCode"] == "-1":
-                _LOGGER.warning("Server busy, retrying %s", max_retries)
+                _LOGGER.warning(
+                    "Camera %s is offline, retrying %s", serial, max_retries
+                )
                 return self.get_detection_sensibility(
                     serial, type_value, max_retries + 1
                 )

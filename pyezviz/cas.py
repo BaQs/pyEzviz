@@ -23,7 +23,7 @@ def xor_enc_dec(msg, xor_key=XOR_KEY):
 class EzvizCAS:
     """Ezviz CAS server client."""
 
-    def __init__(self, token):
+    def __init__(self, token) -> None:
         """Initialize the client object."""
         self._session = None
         self._token = token or {
@@ -38,7 +38,7 @@ class EzvizCAS:
         """Fetch encryption code from ezviz cas server."""
 
         # Random hex 64 characters long.
-        rand_hex = random.randrange(10 ** 80)
+        rand_hex = random.randrange(10**80)
         rand_hex = "%064x" % rand_hex
         rand_hex = rand_hex[:64]
 
@@ -94,7 +94,7 @@ class EzvizCAS:
         """Enable alarm notifications."""
 
         # Random hex 64 characters long.
-        rand_hex = random.randrange(10 ** 80)
+        rand_hex = random.randrange(10**80)
         rand_hex = "%064x" % rand_hex
         rand_hex = rand_hex[:64]
 

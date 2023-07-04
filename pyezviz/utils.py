@@ -2,13 +2,67 @@
 from __future__ import annotations
 
 from hashlib import md5
+import json
 import logging
+from typing import Any
 
 from Crypto.Cipher import AES
 
 from .exceptions import PyEzvizError
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def convert_to_dict(data: Any) -> Any:
+    """Recursively convert a string representation of a dictionary to a dictionary."""
+    if isinstance(data, dict):
+        for key, value in data.items():
+            if isinstance(value, str):
+                try:
+                    # Attempt to convert the string back into a dictionary
+                    data[key] = json.loads(value)
+
+                except ValueError:
+                    continue
+            continue
+
+    return data
+
+
+def string_to_list(data: Any, separator: str = ",") -> Any:
+    """Convert a string representation of a list to a list."""
+    if isinstance(data, str):
+        if separator in data:
+            try:
+                # Attempt to convert the string into a list
+                new_list = data.split(separator)
+                return new_list
+
+            except AttributeError:
+                return data
+
+    return data
+
+
+def fetch_nested_value(data: Any, keys: list, default_value: Any = None) -> Any:
+    """Fetch the value corresponding to the given nested keys in a dictionary.
+
+    If any of the keys in the path doesn't exist, the default value is returned.
+
+    Args:
+        data (dict): The nested dictionary to search for keys.
+        keys (list): A list of keys representing the path to the desired value.
+        default_value (optional): The value to return if any of the keys doesn't exist.
+
+    Returns:
+        The value corresponding to the nested keys or the default value.
+    """
+    try:
+        for key in keys:
+            data = data[key]
+        return data
+    except (KeyError, TypeError):
+        return default_value
 
 
 def decrypt_image(input_data: bytes, password: str) -> bytes:

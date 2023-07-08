@@ -1178,7 +1178,7 @@ class EzvizClient:
     def get_cam_key(
         self, serial: str, smscode: int | None = None, max_retries: int = 0
     ) -> Any:
-        """Get Camera encryption key."""
+        """Get Camera encryption key. The key that is set after the camera is added to the account."""
 
         if max_retries > MAX_RETRIES:
             raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
@@ -1234,7 +1234,7 @@ class EzvizClient:
                 f"Could not get camera encryption key: Got {json_output})"
             )
 
-        return json_output
+        return json_output["encryptkey"]
 
     def create_panoramic(self, serial: str, max_retries: int = 0) -> Any:
         """Create panoramic image."""

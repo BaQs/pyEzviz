@@ -160,6 +160,9 @@ class EzvizCamera:
             "batteryCameraWorkMode": self.fetch_key(
                 ["STATUS", "optionals", "workMode"]
             ),
+            "Alarm_AdvancedDetect": self.fetch_key(
+                ["STATUS", "optionals", "Alarm_AdvancedDetect", "type"]
+            ),
             "wifiInfos": self._device["WIFI"],
             "switches": self._switch,
             "optionals": self.fetch_key(["STATUS", "optionals"]),

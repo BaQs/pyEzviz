@@ -131,9 +131,7 @@ class EzvizCamera:
             "PIR_Status": self.fetch_key(["STATUS", "pirStatus"]),
             "Motion_Trigger": self._alarmmotiontrigger["alarm_trigger_active"],
             "Seconds_Last_Trigger": self._alarmmotiontrigger["timepassed"],
-            "last_alarm_time": self._last_alarm.get(
-                "alarmStartTimeStr", "2000-01-01 00:00:00"
-            ),
+            "last_alarm_time": self._last_alarm.get("alarmStartTimeStr"),
             "last_alarm_pic": self._last_alarm.get(
                 "picUrl",
                 "https://eustatics.ezvizlife.com/ovs_mall/web/img/index/EZVIZ_logo.png?ver=3007907502",

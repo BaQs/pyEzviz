@@ -1,6 +1,5 @@
 # Ezviz PyPi
 
-[![Build Status](https://travis-ci.org/BaQs/pyEzviz.svg?branch=master)](https://travis-ci.org/BaQs/pyEzviz)
 ![Upload Python Package](https://github.com/BaQs/pyEzviz/workflows/Upload%20Python%20Package/badge.svg)
 
 Pilot your Ezviz cameras with this module.
@@ -127,11 +126,18 @@ We use [SemVer](http://semver.org/) for versioning. For the versions available, 
 
 This project is licensed under the ASL 2.0 License - see the [LICENSE.md](LICENSE.md) file for details
 
-## Acknowledgments
+## For those wou would like to contribute to this library, this should help fast track you:
 
+All credit towards @ollu69 and @zimmra for the instructions below. While it's catered for LG, the EZVIZ app works the same way (so just use EZVIZ when any references to LG/Thinq android app pops up.)
 
-## Changelog
+Obtaining API Information
+For troubleshooting issues, or investigating potential new devices, information can be intercepted from the API via a man-in-the-middle (MITM) http proxy interception method. Charles, mitmproxy, and Fiddler are examples of software that can be used to perform this mitm 'attack'/observation.
 
+This can be done using a physical or virtual device that can run the EZVIZ API app. While it is possible with iOS, this instructions are for running Android on a modern Windows 11 PC.
+
+Windows 11 enables the ability to run Android apps on most modern machines, making this process more accessible by eliminating the need for a physical device or separate emulation/virtualization software.
+
+For information on how to do this with Windows Subsystem for Android (WSA) on Windows 11 using mitmproxy, please see the repo zimmra/frida-rootbypass-and-sslunpinning-lg-thinq.
 
 ### 0.0.x
 Draft versions

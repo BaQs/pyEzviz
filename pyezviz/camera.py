@@ -4,7 +4,7 @@ from __future__ import annotations
 import datetime
 from typing import TYPE_CHECKING, Any
 
-from .constants import DeviceSwitchType, SoundMode
+from .constants import DeviceSwitchType, SoundMode, BatteryCameraWorkMode
 from .exceptions import PyEzvizError
 from .utils import fetch_nested_value, string_to_list
 
@@ -155,9 +155,9 @@ class EzvizCamera:
             "NightVision_Model": self.fetch_key(
                 ["STATUS", "optionals", "NightVision_Model"]
             ),
-            "batteryCameraWorkMode": self.fetch_key(
-                ["STATUS", "optionals", "workMode"]
-            ),
+            "battery_camera_work_mode": BatteryCameraWorkMode(
+                self.fetch_key(["STATUS", "optionals", "batteryCameraWorkMode"], -1)
+            ).name,
             "Alarm_AdvancedDetect": self.fetch_key(
                 ["STATUS", "optionals", "Alarm_AdvancedDetect", "type"]
             ),

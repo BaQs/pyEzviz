@@ -365,6 +365,7 @@ class BatteryCameraWorkMode(Enum):
     BATTERY_WORK_MODE_POWER_SAVING = 0
     BATTERY_WORK_MODE_SUPER_POWER_SAVE = 3
     BATTERY_WORK_MODE_CUSTOM = 4
+    UNKNOWN = -1
 
 
 class DeviceCatagories(Enum):

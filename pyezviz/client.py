@@ -612,7 +612,7 @@ class EzvizClient:
         self,
         serial: str,
         value: Any,
-        key: str = "batteryCameraWorkMode",
+        key: str,
         max_retries: int = 0,
     ) -> bool:
         """Change value on device by setting key."""
@@ -663,7 +663,7 @@ class EzvizClient:
             ) from err
 
         if json_output["meta"]["code"] != 200:
-            raise PyEzvizError(f"Could not set camera work mode: Got {json_output})")
+            raise PyEzvizError(f"Could not set config key '${key}': Got {json_output})")
 
         return True
 

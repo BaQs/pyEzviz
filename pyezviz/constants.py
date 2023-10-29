@@ -360,11 +360,12 @@ class DisplayMode(Enum):
 class BatteryCameraWorkMode(Enum):
     """Battery camera work modes."""
 
-    BATTERY_WORK_MODE_PLUGGED_IN = 2
-    BATTERY_WORK_MODE_HIGH_PERFORM = 1
-    BATTERY_WORK_MODE_POWER_SAVING = 0
-    BATTERY_WORK_MODE_SUPER_POWER_SAVE = 3
-    BATTERY_WORK_MODE_CUSTOM = 4
+    PLUGGED_IN = 2
+    HIGH_PERFORMANCE = 1
+    POWER_SAVE = 0
+    SUPER_POWER_SAVE = 3
+    CUSTOM = 4
+    UNKNOWN = -1
 
 
 class DeviceCatagories(Enum):

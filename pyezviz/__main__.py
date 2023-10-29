@@ -9,7 +9,7 @@ import pandas
 
 from .camera import EzvizCamera
 from .client import EzvizClient
-from .constants import DefenseModeType
+from .constants import DefenseModeType, BatteryCameraWorkMode
 from .exceptions import EzvizAuthVerificationCode
 from .mqtt import MQTTClient
 
@@ -152,6 +152,17 @@ Movement is still recorded even if do-not-disturb is enabled.",
     )
     parser_camera_alarm.add_argument(
         "--schedule", required=False, help="Schedule in json format *test*", type=str
+    )
+
+    parser_camera_select = subparsers_camera.add_parser(
+        "select", help="Change the value of a multi-value option (for on/off value, see 'switch' command)"
+    )
+
+    parser_camera_select.add_argument(
+        "--battery_work_mode",
+        required=False,
+        help="Change the work mode for battery powered camera",
+        choices=[mode.name for mode in BatteryCameraWorkMode if mode is not BatteryCameraWorkMode.UNKNOWN],
     )
 
     args = parser.parse_args()
@@ -350,6 +361,16 @@ Movement is still recorded even if do-not-disturb is enabled.",
                     camera.do_not_disturb(args.do_not_disturb)
                 if args.schedule is not None:
                     camera.change_defence_schedule(args.schedule)
+            except Exception as exp:  # pylint: disable=broad-except
+                print(exp)
+            finally:
+                client.close_session()
+            
+        elif args.camera_action == "select":
+            try:
+                if args.battery_work_mode is not None:
+                    camera.set_battery_camera_work_mode(getattr(BatteryCameraWorkMode, args.battery_work_mode))
+                
             except Exception as exp:  # pylint: disable=broad-except
                 print(exp)
             finally:

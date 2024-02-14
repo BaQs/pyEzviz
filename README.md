@@ -2,7 +2,7 @@
 
 ![Upload Python Package](https://github.com/BaQs/pyEzviz/workflows/Upload%20Python%20Package/badge.svg)
 
-Pilot your Ezviz cameras with this module.
+Pilot your Ezviz cameras (and light bulbs) with this module.
 
 ### Installing
 
@@ -93,6 +93,155 @@ pyezviz -u em@il -p PASS camera --serial D44444 status
 
 Switch numbers to name mappings are stored in constants.py file.
 
+### Light bulbs
+
+```
+pyezviz -u em@il -p PASS devices_light status
+```
+
+```
+                  name  status device_category device_sub_category      local_ip               productId  is_on  brightness  color_temperature
+D55555     Office lamp       1        lighting                 LB1  192.168.1.168 9C22222222A22A2AAEEEE2   True          55               5540
+D55555    Kitchen lamp       1        lighting                 LB1  192.168.1.169 9C33333333A22A2AAEEEE2   True         100               6000
+
+```
+
+```
+# toggles on/off the light bulb with serial D55555
+
+pyezviz -u em@il -p PASS light --serial D55555 toggle
+```
+
+```
+# retrieves details of a specific light bulb
+
+pyezviz -u em@il -p PASS light --serial D55555 status
+```
+
+<details>
+    <summary>Expand to see the response with the light bulb's details</summary>
+
+```
+{
+  "serial": "D55555",
+  "name": "Office lamp",
+  "version": "V1.1.0 build 200814",
+  "upgrade_available": false,
+  "status": 1,
+  "device_category": "lighting",
+  "device_sub_category": "LB1",
+  "upgrade_percent": 0,
+  "upgrade_in_progress": false,
+  "latest_firmware_info": null,
+  "local_ip": "192.168.1.168",
+  "wan_ip": null,
+  "mac_address": "",
+  "supported_channels": 0,
+  "wifiInfos": {
+    "netName": null,
+    "netType": "wireless",
+    "address": "192.168.1.168",
+    "mask": "255.255.255.0",
+    "gateway": "192.168.1.1",
+    "signal": -56,
+    "ssid": "HomeADSL"
+  },
+  "featureItems": [
+    {
+      "dataDesc": "[\"white\", \"color\", \"scene\",\"music\"]",
+      "dataType": "enum",
+      "dataValue": "white",
+      "itemKey": "light_mode",
+      "itemName": "亮灯模式",
+      "transportType": "rw",
+      "visible": 1
+    },
+    {
+      "dataDesc": "{\"range_from\": 2700, \"range_to\": 6500, \"interval\": 10, \"multiple\": 0, \"unit\": \"k\"}",
+      "dataType": "num",
+      "dataValue": 5540,
+      "itemKey": "color_temperature",
+      "itemName": "色温",
+      "transportType": "rw",
+      "visible": 1
+    },
+    {
+      "dataDesc": "{\"max_length\": 255}",
+      "dataType": "char",
+      "dataValue": "#52FF79",
+      "itemKey": "color_rgb",
+      "itemName": "彩光",
+      "transportType": "rw",
+      "visible": 1
+    },
+    {
+      "dataDesc": "[{\"k\":\"sleep\",\"t\":\"color\",\"stat\":[{\"id\":1,\"b\":100,\"c\":\"#FFFFFF\",\"t\":4000}],\"trans\":{\"low\":1,\"dura\":1000},\"speed\":1000}]",
+      "dataType": "json",
+      "dataValue": [],
+      "itemKey": "scene_conf",
+      "itemName": "场景配置",
+      "transportType": "rw",
+      "visible": 1
+    },
+    {
+      "dataDesc": "",
+      "dataType": "bool",
+      "dataValue": true,
+      "itemKey": "light_switch",
+      "itemName": "开关",
+      "transportType": "rw",
+      "visible": 1
+    },
+    {
+      "dataDesc": "[\"e1\", \"e2\", \"e3\"]",
+      "dataType": "fault",
+      "itemKey": "common_fault",
+      "itemName": "默认错误类型",
+      "transportType": "rw",
+      "visible": 0
+    },
+    {
+      "dataDesc": "{\"range_from\": 1, \"range_to\": 100, \"interval\": 1, \"multiple\": 0, \"unit\": \"\"}",
+      "dataType": "num",
+      "dataValue": 55,
+      "itemKey": "brightness",
+      "itemName": "亮度",
+      "transportType": "rw",
+      "visible": 1
+    },
+    ...
+  ],
+  "productId": "9C22222222A22A2AAEEEE2",
+  "switches": {},
+  "optionals": {
+    "latestUnbandTime": 1674813112997,
+    "wanIp": "78.87.201.33",
+    "updateCode": 0,
+    "OnlineStatus": 1,
+    "superState": 0,
+    "latestUnbindTime": 1674813112997,
+    "lastUpgradeTime": 1674815832305,
+    "updateProcessExtend": ""
+  },
+  "supportExt": {
+    "232": "0",
+    "233": "0",
+    "234": 0,
+    "236": "1",
+    "237": "1",
+    "30": "0",
+    "31": "0",
+    "10": "1"
+  },
+  "ezDeviceCapability": "{\"232\":\"0\",\"233\":\"0\",\"234\":1,\"30\":\"0\",\"31\":\"0\",\"262\":\"0\",\"175\":\"1\",\"263\":\"0\"}",
+  "is_on": true,
+  "brightness": 55,
+  "color_temperature": 5540
+}
+
+```
+</details>
+
 ## Running the tests
 The tox configuration is already included.
 Simply launch:
@@ -118,7 +267,7 @@ Any contribution is welcome, considering the number of features the API provides
 
 ## Versioning
 
-We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/baqs/pyEzviz/tags). 
+We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/baqs/pyEzviz/tags).
 
 ## Authors
 

@@ -377,3 +377,4 @@ class DeviceCatagories(Enum):
     DOORBELL_DEVICE_CATEGORY = "BDoorBell"
     BASE_STATION_DEVICE_CATEGORY = "XVR"
     CAT_EYE_CATEGORY = "CatEye"
+    LIGHTING = "lighting"

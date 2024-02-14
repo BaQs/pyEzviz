@@ -30,6 +30,7 @@ API_ENDPOINT_CANCEL_ALARM = "/api/device/cancelAlarm"
 API_ENDPOINT_DEVICE_SYS_OPERATION = "/api/device/v2/sysOper/"
 API_ENDPOINT_DEVICE_STORAGE_STATUS = "/api/device/queryStorageStatus"
 API_ENDPOINT_DEVCONFIG_BY_KEY = "/v3/devconfig/v1/keyValue/"
+API_ENDPOINT_IOT_FEATURE = "/v3/iot-feature/feature/"
 
 # Videogo DeviceApi
 API_ENDPOINT_DEVICES = "/v3/devices/"

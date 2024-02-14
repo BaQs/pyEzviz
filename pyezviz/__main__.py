@@ -11,6 +11,7 @@ from .camera import EzvizCamera
 from .client import EzvizClient
 from .constants import DefenseModeType, BatteryCameraWorkMode
 from .exceptions import EzvizAuthVerificationCode
+from .light_bulb import EzvizLightBulb
 from .mqtt import MQTTClient
 
 
@@ -42,6 +43,24 @@ def main() -> Any:
         help="Device action to perform",
         choices=["device", "status", "switch", "connection"],
     )
+
+    parser_device_lights = subparsers.add_parser(
+        "devices_light", help="Get all the light bulbs"
+    )
+    parser_device_lights.add_argument(
+        "devices_light_action",
+        type=str,
+        default="status",
+        help="Light bulbs action to perform",
+        choices=["status"]
+    )
+
+    parser_light = subparsers.add_parser("light", help="Light actions")
+    parser_light.add_argument("--serial", required=True, help="light bulb SERIAL")
+
+    subparsers_light = parser_light.add_subparsers(dest="light_action")
+    subparsers_light.add_parser("toggle", help="Toggle the light bulb")
+    subparsers_light.add_parser("status", help="Get information about the light bulb")
 
     parser_home_defence_mode = subparsers.add_parser(
         "home_defence_mode", help="Set home defence mode"
@@ -259,6 +278,59 @@ Movement is still recorded even if do-not-disturb is enabled.",
         else:
             print("Action not implemented: %s", args.device_action)
 
+    elif args.action == "devices_light":
+        if args.devices_light_action == "status":
+            try:
+                print(
+                    pandas.DataFrame.from_dict(
+                        data=client.load_light_bulbs(),
+                        orient="index",
+                        columns=[
+                            "name",
+                            # "version",
+                            # "upgrade_available",
+                            "status",
+                            "device_category",
+                            "device_sub_category",
+                            "local_ip",
+                            "productId",
+                            "is_on",
+                            "brightness",
+                            "color_temperature",
+                        ],
+                    )
+                )
+            except Exception as exp:  # pylint: disable=broad-except
+                print(exp)
+            finally:
+                client.close_session()
+
+    elif args.action == "light":
+        # load light bulb object
+        try:
+            light_bulb = EzvizLightBulb(client, args.serial)
+            logging.debug("Light bulb loaded")
+        except Exception as exp:  # pylint: disable=broad-except
+            print(exp)
+            client.close_session()
+
+        if args.light_action == "toggle":
+            try:
+                light_bulb.toggle_switch()
+            except Exception as exp:  # pylint: disable=broad-except
+                print(exp)
+            finally:
+                client.close_session()
+
+        elif args.light_action == "status":
+            try:
+                print(json.dumps(light_bulb.status(), indent=2))
+
+            except Exception as exp:  # pylint: disable=broad-except
+                print(exp)
+            finally:
+                client.close_session()
+
     elif args.action == "home_defence_mode":
 
         if args.mode:
@@ -365,12 +437,12 @@ Movement is still recorded even if do-not-disturb is enabled.",
                 print(exp)
             finally:
                 client.close_session()
-            
+
         elif args.camera_action == "select":
             try:
                 if args.battery_work_mode is not None:
                     camera.set_battery_camera_work_mode(getattr(BatteryCameraWorkMode, args.battery_work_mode))
-                
+
             except Exception as exp:  # pylint: disable=broad-except
                 print(exp)
             finally:

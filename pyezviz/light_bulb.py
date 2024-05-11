@@ -1,13 +1,12 @@
 """pyezviz camera api."""
 from __future__ import annotations
 
-import datetime
 import json
 from typing import TYPE_CHECKING, Any
 
 from .constants import DeviceSwitchType
 from .exceptions import PyEzvizError
-from .utils import fetch_nested_value, string_to_list
+from .utils import fetch_nested_value
 
 if TYPE_CHECKING:
     from .client import EzvizClient
@@ -29,7 +28,7 @@ class EzvizLightBulb:
         self._switch: dict[int, bool] = {
             switch["type"]: switch["enable"] for switch in self._device["SWITCH"]
         }
-        if not DeviceSwitchType.ALARM_LIGHT.value in self._switch:
+        if DeviceSwitchType.ALARM_LIGHT.value not in self._switch:
             # trying to have same interface as the camera's light
             self._switch[DeviceSwitchType.ALARM_LIGHT.value] = self.get_feature_item("light_switch")["dataValue"]
 
@@ -55,10 +54,7 @@ class EzvizLightBulb:
         return "0.0.0.0"
 
     def get_feature_json(self) -> Any:
-        """
-        Parses the FEATURE's JSON. This JSON includes the features that can be changed (like light_switch,
-        brightness etc.)
-        """
+        """Parse the FEATURE json."""
         try:
             json_output = json.loads(self._device["FEATURE"]["featureJson"])
 
@@ -71,6 +67,7 @@ class EzvizLightBulb:
         return json_output
 
     def get_feature_item(self, key: str, default_value: Any = None) -> Any:
+        """Get items fron FEATURE."""
         items = self._feature_json["featureItemDtos"]
         for item in items:
             if item["itemKey"] == key:
@@ -78,11 +75,11 @@ class EzvizLightBulb:
         return default_value
 
     def get_product_id(self) -> Any:
+        """Get product id."""
         return self._feature_json["productId"]
 
     def status(self) -> dict[Any, Any]:
         """Return the status of the light bulb."""
-        print(self._switch)
         return {
             "serial": self._serial,
             "name": self.fetch_key(["deviceInfos", "name"]),

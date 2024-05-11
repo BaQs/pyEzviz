@@ -35,8 +35,7 @@ def string_to_list(data: Any, separator: str = ",") -> Any:
         if separator in data:
             try:
                 # Attempt to convert the string into a list
-                new_list = data.split(separator)
-                return new_list
+                return data.split(separator)
 
             except AttributeError:
                 return data
@@ -56,6 +55,7 @@ def fetch_nested_value(data: Any, keys: list, default_value: Any = None) -> Any:
 
     Returns:
         The value corresponding to the nested keys or the default value.
+
     """
     try:
         for key in keys:
@@ -77,6 +77,7 @@ def decrypt_image(input_data: bytes, password: str) -> bytes:
 
     Returns:
         bytes: Decrypted image data
+
     """
 
     if len(input_data) < 48:
@@ -112,3 +113,34 @@ def decrypt_image(input_data: bytes, password: str) -> bytes:
         output_data += chunk
         i += chunk_size
     return output_data
+
+def deep_merge(dict1, dict2):
+    """Recursively merges two dictionaries, handling lists as well.
+
+    Args:
+    dict1 (dict): The first dictionary.
+    dict2 (dict): The second dictionary.
+
+    Returns:
+    dict: The merged dictionary.
+
+    """
+    if not isinstance(dict1, dict) or not isinstance(dict2, dict):
+        if isinstance(dict1, list) and isinstance(dict2, list):
+            return dict1.extend(dict2)
+        return dict2
+
+    merged = dict1.copy()
+
+    for key, value in dict2.items():
+        if key in merged:
+            if isinstance(merged[key], dict) and isinstance(value, dict):
+                merged[key] = deep_merge(merged[key], value)
+            elif isinstance(merged[key], list) and isinstance(value, list):
+                merged[key] += value
+            else:
+                merged[key] = value
+        else:
+            merged[key] = value
+
+    return merged

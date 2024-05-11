@@ -23,6 +23,7 @@ from .exceptions import (
     InvalidURL,
     PyEzvizError,
 )
+from .light_bulb import EzvizLightBulb
 from .mqtt import MQTTClient
 from .test_cam_rtsp import TestRTSPAuth
 
@@ -37,6 +38,7 @@ __all__ = [
     "EzvizAuthTokenExpired",
     "EzvizAuthVerificationCode",
     "EzvizCAS",
+    "EzvizLightBulb",
     "MQTTClient",
     "DefenseModeType",
     "IntelligentDetectionMode",

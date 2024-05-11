@@ -5,11 +5,11 @@ import logging
 import sys
 from typing import Any
 
-import pandas
+import pandas as pd
 
 from .camera import EzvizCamera
 from .client import EzvizClient
-from .constants import DefenseModeType, BatteryCameraWorkMode
+from .constants import BatteryCameraWorkMode, DefenseModeType
 from .exceptions import EzvizAuthVerificationCode
 from .light_bulb import EzvizLightBulb
 from .mqtt import MQTTClient
@@ -154,7 +154,7 @@ def main() -> Any:
         required=False,
         help="Sensibility level (Non-Cameras = from 1 to 6) or (Cameras = 1 to 100)",
         type=int,
-        choices=range(0, 100),
+        choices=range(100),
     )
     parser_camera_alarm.add_argument(
         "--do_not_disturb",
@@ -222,7 +222,7 @@ Movement is still recorded even if do-not-disturb is enabled.",
         elif args.device_action == "status":
             try:
                 print(
-                    pandas.DataFrame.from_dict(
+                    pd.DataFrame.from_dict(
                         data=client.load_cameras(),
                         orient="index",
                         columns=[
@@ -282,7 +282,7 @@ Movement is still recorded even if do-not-disturb is enabled.",
         if args.devices_light_action == "status":
             try:
                 print(
-                    pandas.DataFrame.from_dict(
+                    pd.DataFrame.from_dict(
                         data=client.load_light_bulbs(),
                         orient="index",
                         columns=[

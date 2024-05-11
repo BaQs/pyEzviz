@@ -1,4 +1,5 @@
 """Ezviz API."""
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -68,7 +69,7 @@ from .exceptions import (
     PyEzvizError,
 )
 from .light_bulb import EzvizLightBulb
-from .utils import convert_to_dict
+from .utils import convert_to_dict, deep_merge
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -259,7 +260,13 @@ class EzvizClient:
         return service_urls
 
     def _api_get_pagelist(
-        self, page_filter: str, json_key: str | None = None, max_retries: int = 0
+        self,
+        page_filter: str,
+        json_key: str | None = None,
+        group_id: int = -1,
+        limit: int = 30,
+        offset: int = 0,
+        max_retries: int = 0,
     ) -> Any:
         """Get data from pagelist API."""
 
@@ -269,10 +276,17 @@ class EzvizClient:
         if page_filter is None:
             raise PyEzvizError("Trying to call get_pagelist without filter")
 
+        params: dict[str, int | str] = {
+            "groupId": group_id,
+            "limit": limit,
+            "offset": offset,
+            "filter": page_filter,
+        }
+
         try:
             req = self._session.get(
                 "https://" + self._token["api_url"] + API_ENDPOINT_PAGELIST,
-                params={"filter": page_filter},
+                params=params,
                 timeout=self._timeout,
             )
 
@@ -282,7 +296,9 @@ class EzvizClient:
             if err.response.status_code == 401:
                 # session is wrong, need to relogin
                 self.login()
-                return self._api_get_pagelist(page_filter, json_key, max_retries + 1)
+                return self._api_get_pagelist(
+                    page_filter, json_key, group_id, limit, offset, max_retries + 1
+                )
 
             raise HTTPError from err
 
@@ -305,11 +321,25 @@ class EzvizClient:
                 str(max_retries),
                 json_output,
             )
-            return self._api_get_pagelist(page_filter, json_key, max_retries + 1)
+            return self._api_get_pagelist(
+                page_filter, json_key, group_id, limit, offset, max_retries + 1
+            )
 
-        json_result = json_output if not json_key else json_output[json_key]
+        next_page = json_output["page"].get("hasNext", False)
 
-        return json_result
+        data = json_output[json_key] if json_key else json_output
+
+        if next_page:
+            next_offset = offset + limit
+            # Recursive call to fetch next page
+            next_data = self._api_get_pagelist(
+                page_filter, json_key, group_id, limit, next_offset, max_retries
+            )
+            # Merge data from next page into current data
+            data = deep_merge(data, next_data)
+
+        return data
+
 
     def get_alarminfo(self, serial: str, limit: int = 1, max_retries: int = 0) -> dict:
         """Get data from alarm info API for camera serial."""
@@ -679,8 +709,7 @@ class EzvizClient:
         key: str,
         max_retries: int = 0,
     ) -> bool:
-        """
-        Change value on device by setting the iot-feature's key.
+        """Change value on device by setting the iot-feature's key.
 
         The FEATURE key that is part of 'device info' holds
         information about the device's functions (for example light_switch, brightness etc.).
@@ -688,16 +717,12 @@ class EzvizClient:
         if max_retries > MAX_RETRIES:
             raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
 
-        payload = json.dumps({
-            "itemKey": key,
-            "productId": product_id,
-            "value": value
-        })
+        payload = json.dumps({"itemKey": key, "productId": product_id, "value": value})
 
         full_url = f'https://{self._token["api_url"]}{API_ENDPOINT_IOT_FEATURE}{serial.upper()}/0'
 
         headers = self._session.headers
-        headers.update({'Content-Type': 'application/json'})
+        headers.update({"Content-Type": "application/json"})
 
         req_prep = requests.Request(
             method="PUT", url=full_url, headers=headers, data=payload
@@ -733,10 +758,11 @@ class EzvizClient:
             ) from err
 
         if json_output["meta"]["code"] != 200:
-            raise PyEzvizError(f"Could not set iot-feature key '${key}': Got {json_output})")
+            raise PyEzvizError(
+                f"Could not set iot-feature key '${key}': Got {json_output})"
+            )
 
         return True
-
 
     def upgrade_device(self, serial: str, max_retries: int = 0) -> bool:
         """Upgrade device firmware."""
@@ -1140,7 +1166,7 @@ class EzvizClient:
             DeviceCatagories.DOORBELL_DEVICE_CATEGORY.value,
             DeviceCatagories.BASE_STATION_DEVICE_CATEGORY.value,
             DeviceCatagories.CAT_EYE_CATEGORY.value,
-            DeviceCatagories.LIGHTING.value
+            DeviceCatagories.LIGHTING.value,
         ]
 
         for device, data in devices.items():
@@ -1158,7 +1184,9 @@ class EzvizClient:
                     == DeviceCatagories.LIGHTING.value
                 ):
                     # Create a light bulb object
-                    self._light_bulbs[device] = EzvizLightBulb(self, device, data).status()
+                    self._light_bulbs[device] = EzvizLightBulb(
+                        self, device, data
+                    ).status()
                 else:
                     # Create camera object
                     self._cameras[device] = EzvizCamera(self, device, data).status()
@@ -1172,7 +1200,7 @@ class EzvizClient:
         return self._cameras
 
     def load_light_bulbs(self) -> dict[Any, Any]:
-        """Load light bulbs"""
+        """Load light bulbs."""
 
         self.load_devices()
         return self._light_bulbs
@@ -1793,12 +1821,14 @@ class EzvizClient:
         channelno: str = "1",
         max_retries: int = 0,
     ) -> bool | str:
-        """Facade that changes the brightness to light bulbs or cameras' light """
+        """Facade that changes the brightness to light bulbs or cameras' light."""
 
         device = self._light_bulbs.get(serial)
         if device:
             # the device is a light bulb
-            return self.set_device_feature_by_key(serial, device["productId"], luminance, "brightness", max_retries)
+            return self.set_device_feature_by_key(
+                serial, device["productId"], luminance, "brightness", max_retries
+            )
 
         # assume the device is a camera
         return self.set_floodlight_brightness(serial, luminance, channelno, max_retries)
@@ -1810,15 +1840,19 @@ class EzvizClient:
         channel_no: int = 0,
         max_retries: int = 0,
     ) -> bool:
-        """Facade that turns on/off light bulbs or cameras' light """
+        """Facade that turns on/off light bulbs or cameras' light."""
 
         device = self._light_bulbs.get(serial)
         if device:
             # the device is a light bulb
-            return self.set_device_feature_by_key(serial, device["productId"], bool(enable), "light_switch", max_retries)
+            return self.set_device_feature_by_key(
+                serial, device["productId"], bool(enable), "light_switch", max_retries
+            )
 
         # assume the device is a camera
-        return self.switch_status(serial, DeviceSwitchType.ALARM_LIGHT.value, enable, channel_no, max_retries)
+        return self.switch_status(
+            serial, DeviceSwitchType.ALARM_LIGHT.value, enable, channel_no, max_retries
+        )
 
     def detection_sensibility(
         self,
@@ -2011,40 +2045,40 @@ class EzvizClient:
     def get_connection(self) -> Any:
         """Get ezviz connection infos filter."""
         return self._api_get_pagelist(
-            page_filter="CONNECTION", json_key="connectionInfos"
+            page_filter="CONNECTION", json_key="CONNECTION"
         )
 
     def _get_status(self) -> Any:
         """Get ezviz status infos filter."""
-        return self._api_get_pagelist(page_filter="STATUS", json_key="statusInfos")
+        return self._api_get_pagelist(page_filter="STATUS", json_key="STATUS")
 
     def get_switch(self) -> Any:
         """Get ezviz switch infos filter."""
         return self._api_get_pagelist(
-            page_filter="SWITCH", json_key="switchStatusInfos"
+            page_filter="SWITCH", json_key="SWITCH"
         )
 
     def _get_wifi(self) -> Any:
         """Get ezviz wifi infos filter."""
-        return self._api_get_pagelist(page_filter="WIFI", json_key="wifiInfos")
+        return self._api_get_pagelist(page_filter="WIFI", json_key="WIFI")
 
     def _get_nodisturb(self) -> Any:
         """Get ezviz nodisturb infos filter."""
         return self._api_get_pagelist(
-            page_filter="NODISTURB", json_key="alarmNodisturbInfos"
+            page_filter="NODISTURB", json_key="NODISTURB"
         )
 
     def _get_p2p(self) -> Any:
         """Get ezviz P2P infos filter."""
-        return self._api_get_pagelist(page_filter="P2P", json_key="p2pInfos")
+        return self._api_get_pagelist(page_filter="P2P", json_key="P2P")
 
     def _get_kms(self) -> Any:
         """Get ezviz KMS infos filter."""
-        return self._api_get_pagelist(page_filter="KMS", json_key="kmsInfos")
+        return self._api_get_pagelist(page_filter="KMS", json_key="KMS")
 
     def _get_time_plan(self) -> Any:
         """Get ezviz TIME_PLAN infos filter."""
-        return self._api_get_pagelist(page_filter="TIME_PLAN", json_key="timePlanInfos")
+        return self._api_get_pagelist(page_filter="TIME_PLAN", json_key="TIME_PLAN")
 
     def close_session(self) -> None:
         """Clear current session."""

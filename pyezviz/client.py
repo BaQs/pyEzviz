@@ -26,6 +26,7 @@ from .api_endpoints import (
     API_ENDPOINT_DEVICES,
     API_ENDPOINT_DO_NOT_DISTURB,
     API_ENDPOINT_GROUP_DEFENCE_MODE,
+    API_ENDPOINT_IOT_FEATURE,
     API_ENDPOINT_LOGIN,
     API_ENDPOINT_LOGOUT,
     API_ENDPOINT_PAGELIST,
@@ -56,6 +57,7 @@ from .constants import (
     REQUEST_HEADER,
     DefenseModeType,
     DeviceCatagories,
+    DeviceSwitchType,
     MessageFilterType,
 )
 from .exceptions import (
@@ -65,6 +67,7 @@ from .exceptions import (
     InvalidURL,
     PyEzvizError,
 )
+from .light_bulb import EzvizLightBulb
 from .utils import convert_to_dict
 
 _LOGGER = logging.getLogger(__name__)
@@ -97,6 +100,7 @@ class EzvizClient:
         }
         self._timeout = timeout
         self._cameras: dict[str, Any] = {}
+        self._light_bulbs: dict[str, Any] = {}
 
     def _login(self, smscode: int | None = None) -> dict[Any, Any]:
         """Login to Ezviz API."""
@@ -667,6 +671,73 @@ class EzvizClient:
 
         return True
 
+    def set_device_feature_by_key(
+        self,
+        serial: str,
+        product_id: str,
+        value: Any,
+        key: str,
+        max_retries: int = 0,
+    ) -> bool:
+        """
+        Change value on device by setting the iot-feature's key.
+
+        The FEATURE key that is part of 'device info' holds
+        information about the device's functions (for example light_switch, brightness etc.).
+        """
+        if max_retries > MAX_RETRIES:
+            raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
+
+        payload = json.dumps({
+            "itemKey": key,
+            "productId": product_id,
+            "value": value
+        })
+
+        full_url = f'https://{self._token["api_url"]}{API_ENDPOINT_IOT_FEATURE}{serial.upper()}/0'
+
+        headers = self._session.headers
+        headers.update({'Content-Type': 'application/json'})
+
+        req_prep = requests.Request(
+            method="PUT", url=full_url, headers=headers, data=payload
+        ).prepare()
+
+        try:
+            req = self._session.send(
+                request=req_prep,
+                timeout=self._timeout,
+            )
+
+            req.raise_for_status()
+
+        except requests.HTTPError as err:
+            if err.response.status_code == 401:
+                # session is wrong, need to relogin
+                self.login()
+                return self.set_device_feature_by_key(
+                    serial, product_id, value, key, max_retries + 1
+                )
+
+            raise HTTPError from err
+
+        try:
+            json_output = req.json()
+
+        except ValueError as err:
+            raise PyEzvizError(
+                "Impossible to decode response: "
+                + str(err)
+                + "\nResponse was: "
+                + str(req.text)
+            ) from err
+
+        if json_output["meta"]["code"] != 200:
+            raise PyEzvizError(f"Could not set iot-feature key '${key}': Got {json_output})")
+
+        return True
+
+
     def upgrade_device(self, serial: str, max_retries: int = 0) -> bool:
         """Upgrade device firmware."""
         if max_retries > MAX_RETRIES:
@@ -1058,8 +1129,8 @@ class EzvizClient:
 
         return True
 
-    def load_cameras(self) -> dict[Any, Any]:
-        """Load and return all cameras objects."""
+    def load_devices(self) -> dict[Any, Any]:
+        """Load and return all cameras and light bulb objects."""
 
         devices = self.get_device_infos()
         supported_categories = [
@@ -1069,6 +1140,7 @@ class EzvizClient:
             DeviceCatagories.DOORBELL_DEVICE_CATEGORY.value,
             DeviceCatagories.BASE_STATION_DEVICE_CATEGORY.value,
             DeviceCatagories.CAT_EYE_CATEGORY.value,
+            DeviceCatagories.LIGHTING.value
         ]
 
         for device, data in devices.items():
@@ -1081,11 +1153,29 @@ class EzvizClient:
                 ):
                     continue
 
-                # Create camera object
+                if (
+                    data["deviceInfos"]["deviceCategory"]
+                    == DeviceCatagories.LIGHTING.value
+                ):
+                    # Create a light bulb object
+                    self._light_bulbs[device] = EzvizLightBulb(self, device, data).status()
+                else:
+                    # Create camera object
+                    self._cameras[device] = EzvizCamera(self, device, data).status()
 
-                self._cameras[device] = EzvizCamera(self, device, data).status()
+        return {**self._cameras, **self._light_bulbs}
 
+    def load_cameras(self) -> dict[Any, Any]:
+        """Load and return all cameras objects."""
+
+        self.load_devices()
         return self._cameras
+
+    def load_light_bulbs(self) -> dict[Any, Any]:
+        """Load light bulbs"""
+
+        self.load_devices()
+        return self._light_bulbs
 
     def get_device_infos(self, serial: str | None = None) -> dict[Any, Any]:
         """Load all devices and build dict per device serial."""
@@ -1695,6 +1785,40 @@ class EzvizClient:
             raise PyEzvizError(f"Unable to set brightness, got: {response_json}")
 
         return True
+
+    def set_brightness(
+        self,
+        serial: str,
+        luminance: int = 50,
+        channelno: str = "1",
+        max_retries: int = 0,
+    ) -> bool | str:
+        """Facade that changes the brightness to light bulbs or cameras' light """
+
+        device = self._light_bulbs.get(serial)
+        if device:
+            # the device is a light bulb
+            return self.set_device_feature_by_key(serial, device["productId"], luminance, "brightness", max_retries)
+
+        # assume the device is a camera
+        return self.set_floodlight_brightness(serial, luminance, channelno, max_retries)
+
+    def switch_light_status(
+        self,
+        serial: str,
+        enable: int,
+        channel_no: int = 0,
+        max_retries: int = 0,
+    ) -> bool:
+        """Facade that turns on/off light bulbs or cameras' light """
+
+        device = self._light_bulbs.get(serial)
+        if device:
+            # the device is a light bulb
+            return self.set_device_feature_by_key(serial, device["productId"], bool(enable), "light_switch", max_retries)
+
+        # assume the device is a camera
+        return self.switch_status(serial, DeviceSwitchType.ALARM_LIGHT.value, enable, channel_no, max_retries)
 
     def detection_sensibility(
         self,

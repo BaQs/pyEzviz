@@ -125,22 +125,36 @@ def deep_merge(dict1, dict2):
     dict: The merged dictionary.
 
     """
+    # If one of the dictionaries is None, return the other one
+    if dict1 is None:
+        return dict2
+    if dict2 is None:
+        return dict1
+
     if not isinstance(dict1, dict) or not isinstance(dict2, dict):
         if isinstance(dict1, list) and isinstance(dict2, list):
-            return dict1.extend(dict2)
+            return dict1 + dict2
         return dict2
 
-    merged = dict1.copy()
+    # Create a new dictionary to store the merged result
+    merged = {}
 
-    for key, value in dict2.items():
-        if key in merged:
-            if isinstance(merged[key], dict) and isinstance(value, dict):
-                merged[key] = deep_merge(merged[key], value)
-            elif isinstance(merged[key], list) and isinstance(value, list):
-                merged[key] += value
+    # Merge keys from both dictionaries
+    for key in set(dict1.keys()) | set(dict2.keys()):
+        if key in dict1 and key in dict2:
+            if isinstance(dict1[key], dict) and isinstance(dict2[key], dict):
+                merged[key] = deep_merge(dict1[key], dict2[key])
+            elif isinstance(dict1[key], list) and isinstance(dict2[key], list):
+                merged[key] = dict1[key] + dict2[key]
             else:
-                merged[key] = value
+                # If both values are not dictionaries or lists, keep the value from dict2
+                merged[key] = dict2[key]
+        elif key in dict1:
+            # If the key is only in dict1, keep its value
+            merged[key] = dict1[key]
         else:
-            merged[key] = value
+            # If the key is only in dict2, keep its value
+            merged[key] = dict2[key]
 
     return merged
+

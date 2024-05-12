@@ -35,8 +35,7 @@ def string_to_list(data: Any, separator: str = ",") -> Any:
         if separator in data:
             try:
                 # Attempt to convert the string into a list
-                new_list = data.split(separator)
-                return new_list
+                return data.split(separator)
 
             except AttributeError:
                 return data
@@ -56,6 +55,7 @@ def fetch_nested_value(data: Any, keys: list, default_value: Any = None) -> Any:
 
     Returns:
         The value corresponding to the nested keys or the default value.
+
     """
     try:
         for key in keys:
@@ -77,6 +77,7 @@ def decrypt_image(input_data: bytes, password: str) -> bytes:
 
     Returns:
         bytes: Decrypted image data
+
     """
 
     if len(input_data) < 48:
@@ -112,3 +113,48 @@ def decrypt_image(input_data: bytes, password: str) -> bytes:
         output_data += chunk
         i += chunk_size
     return output_data
+
+def deep_merge(dict1, dict2):
+    """Recursively merges two dictionaries, handling lists as well.
+
+    Args:
+    dict1 (dict): The first dictionary.
+    dict2 (dict): The second dictionary.
+
+    Returns:
+    dict: The merged dictionary.
+
+    """
+    # If one of the dictionaries is None, return the other one
+    if dict1 is None:
+        return dict2
+    if dict2 is None:
+        return dict1
+
+    if not isinstance(dict1, dict) or not isinstance(dict2, dict):
+        if isinstance(dict1, list) and isinstance(dict2, list):
+            return dict1 + dict2
+        return dict2
+
+    # Create a new dictionary to store the merged result
+    merged = {}
+
+    # Merge keys from both dictionaries
+    for key in set(dict1.keys()) | set(dict2.keys()):
+        if key in dict1 and key in dict2:
+            if isinstance(dict1[key], dict) and isinstance(dict2[key], dict):
+                merged[key] = deep_merge(dict1[key], dict2[key])
+            elif isinstance(dict1[key], list) and isinstance(dict2[key], list):
+                merged[key] = dict1[key] + dict2[key]
+            else:
+                # If both values are not dictionaries or lists, keep the value from dict2
+                merged[key] = dict2[key]
+        elif key in dict1:
+            # If the key is only in dict1, keep its value
+            merged[key] = dict1[key]
+        else:
+            # If the key is only in dict2, keep its value
+            merged[key] = dict2[key]
+
+    return merged
+

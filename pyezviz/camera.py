@@ -4,7 +4,7 @@ from __future__ import annotations
 import datetime
 from typing import TYPE_CHECKING, Any
 
-from .constants import DeviceSwitchType, SoundMode, BatteryCameraWorkMode
+from .constants import BatteryCameraWorkMode, DeviceSwitchType, SoundMode
 from .exceptions import PyEzvizError
 from .utils import fetch_nested_value, string_to_list
 

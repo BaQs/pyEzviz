@@ -8,7 +8,7 @@ from typing import Any
 import pandas as pd
 
 from .camera import EzvizCamera
-from .client import EzvizClient
+from .client import EzvizClient, EzvizSessionManager
 from .constants import BatteryCameraWorkMode, DefenseModeType
 from .exceptions import EzvizAuthVerificationCode
 from .light_bulb import EzvizLightBulb
@@ -29,6 +29,16 @@ def main() -> Any:
     )
     parser.add_argument(
         "--debug", "-d", action="store_true", help="Print debug messages to stderr"
+    )
+    parser.add_argument(
+        "--force-login",
+        action="store_true",
+        help="Force new login ignoring stored session"
+    )
+    parser.add_argument(
+        "--config-dir",
+        required=False,
+        help="Custom directory for storing the configuration file",
     )
 
     subparsers = parser.add_subparsers(dest="action")
@@ -185,21 +195,30 @@ Movement is still recorded even if do-not-disturb is enabled.",
     )
 
     args = parser.parse_args()
+    session_manager = EzvizSessionManager(config_dir=args.config_dir)
+
+    if args.force_login:
+        session_manager.save_session({})
 
     # print("--------------args")
     # print("--------------args: %s",args)
     # print("--------------args")
 
-    client = EzvizClient(args.username, args.password, args.region)
+    client = EzvizClient(
+        account=args.username,
+        password=args.password,
+        api_url=args.region,
+        session_manager=session_manager
+    )
     try:
-        client.login()
-
+        client.start()
     except EzvizAuthVerificationCode:
         mfa_code = input("MFA code required, please input MFA code.\n")
-        client.login(sms_code=mfa_code)
-
+        client._login(smscode=mfa_code)
     except Exception as exp:  # pylint: disable=broad-except
-        print(exp)
+        print(f"Error: {exp}")
+        session_manager.save_session({})
+        return 1
 
     if args.debug:
         # You must initialize logging, otherwise you'll not see debug output.

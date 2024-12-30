@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+import os
+import platform
+import time
+from pathlib import Path
 from datetime import datetime
 import hashlib
 import json
 import logging
-from typing import Any
+from typing import Any, Optional
 import urllib.parse
 from uuid import uuid4
 
@@ -73,6 +77,71 @@ from .utils import convert_to_dict, deep_merge
 
 _LOGGER = logging.getLogger(__name__)
 
+class EzvizSessionManager:
+    """Manages persistent sessions for the Ezviz client with cross-platform support."""
+    
+    def __init__(self, config_dir: Optional[str] = None):
+        """Initialize the session manager with platform-specific paths."""
+        if config_dir is None:
+            if platform.system() == "Windows":
+                # Windows: C:\Users\<username>\AppData\Roaming\pyezviz
+                base_dir = os.path.join(os.environ.get("APPDATA") or str(Path.home()), "pyezviz")
+            elif platform.system() == "Darwin":
+                # macOS: ~/Library/Application Support/pyezviz
+                base_dir = os.path.join(str(Path.home()), "Library", "Application Support", "pyezviz")
+            else:
+                # Linux/Unix: ~/.config/pyezviz
+                base_dir = os.path.join(str(Path.home()), ".config", "pyezviz")
+                
+            self.config_dir = base_dir
+        else:
+            self.config_dir = config_dir
+            
+        # Use Path for reliable cross-platform path handling
+        self.config_path = Path(self.config_dir)
+        self.session_file = self.config_path / "session.json"
+        self._ensure_config_dir()
+
+    def _ensure_config_dir(self) -> None:
+        """Create config directory if it doesn't exist with proper permissions."""
+        try:
+            # Create all parent directories if they don't exist
+            self.config_path.mkdir(parents=True, exist_ok=True)
+            
+            if platform.system() != "Windows":
+                # 0o700 for Unix-like systems (user read/write/execute only)
+                self.config_path.chmod(0o700)
+            
+        except Exception as e:
+            raise RuntimeError(f"Failed to create config directory: {e}")
+
+    def load_session(self) -> dict[str, Any]:
+        """Load session data from file with proper error handling."""
+        try:
+            if self.session_file.exists():
+                with self.session_file.open('r', encoding='utf-8') as f:
+                    return json.load(f)
+        except (json.JSONDecodeError, IOError, OSError) as e:
+            print(f"Warning: Could not load session file: {e}")
+        return {}
+
+    def save_session(self, session_data: dict[str, Any]) -> None:
+        """Save session data to file with proper permissions."""
+        try:
+            with self.session_file.open('w', encoding='utf-8') as f:
+                json.dump(session_data, f, indent=2)
+            
+            if platform.system() != "Windows":
+                # 0o600 for Unix-like systems (user read/write only)
+                self.session_file.chmod(0o600)
+                
+        except (IOError, OSError) as e:
+            print(f"Warning: Could not save session file: {e}")
+
+    def get_session_path(self) -> str:
+        """Return the full path to the session file."""
+        return str(self.session_file)
+
 
 class EzvizClient:
     """Initialize api client object."""
@@ -81,30 +150,64 @@ class EzvizClient:
         self,
         account: str | None = None,
         password: str | None = None,
-        url: str = "apiieu.ezvizlife.com",
+        api_url: str = "apiieu.ezvizlife.com",
         timeout: int = DEFAULT_TIMEOUT,
-        token: dict | None = None,
+        session_manager: Optional[EzvizSessionManager] = None,
     ) -> None:
         """Initialize the client object."""
+        self.api_url = api_url
         self.account = account
         self.password = (
             hashlib.md5(password.encode("utf-8")).hexdigest() if password else None
-        )  # Ezviz API sends md5 of password
+        )
         self._session = requests.session()
         self._session.headers.update(REQUEST_HEADER)
-        self._session.headers["sessionId"] = token["session_id"] if token else None
-        self._token = token or {
-            "session_id": None,
-            "rf_session_id": None,
-            "username": None,
-            "api_url": url,
-        }
         self._timeout = timeout
         self._cameras: dict[str, Any] = {}
         self._light_bulbs: dict[str, Any] = {}
+        
+        self._session_manager = session_manager or EzvizSessionManager()
+        self._token = {
+            "session_id": None,
+            "rf_session_id": None,
+            "username": None,
+            "email": self.account,
+            "api_url": self.api_url,
+        }
 
+    def start(self) -> None:
+        """Start the client."""
+        self._token = self._load_or_initialize_token()
+        self._session.headers["sessionId"] = self._token["session_id"]
+        self._token["service_urls"] = self.get_service_urls()
+
+    def _load_or_initialize_token(self) -> dict[str, Any]:
+        """Load existing token or initialize a new one, validating the account."""
+        stored_session = self._session_manager.load_session()
+                 
+        if self._is_valid_stored_session(stored_session):
+            if (    
+                    stored_session.get("email") == self.account 
+                    and stored_session.get("api_url") == self.api_url
+                ):
+                print("Using stored session.")
+                return stored_session
+            else:
+                print("Warning: Account does not match the stored session.")
+        
+        print("Logging in...")
+        return self._login()
+
+    def _is_valid_stored_session(self, stored_session: dict[str, Any]) -> bool:
+        """Check if stored session is valid and not expired."""
+        if not stored_session:
+            return False
+            
+        required_fields = ["session_id", "rf_session_id", "username", "email", "api_url"]
+        return all(stored_session.get(field) for field in required_fields)
+    
     def _login(self, smscode: int | None = None) -> dict[Any, Any]:
-        """Login to Ezviz API."""
+        """Login to Ezviz API with session persistence."""
 
         # Region code to url.
         if len(self._token["api_url"].split(".")) == 1:
@@ -146,45 +249,49 @@ class EzvizClient:
                 + "\nResponse was: "
                 + str(req.text)
             ) from err
+        
+        match json_result["meta"]["code"]:
+            case 200:
+                self._session.headers["sessionId"] = json_result["loginSession"]["sessionId"]
+                
+                self._token = {
+                    "session_id": str(json_result["loginSession"]["sessionId"]),
+                    "rf_session_id": str(json_result["loginSession"]["rfSessionId"]),
+                    "username": str(json_result["loginUser"]["username"]),
+                    "email": str(json_result["loginUser"]["email"]),
+                    "api_url": str(json_result["loginArea"]["apiDomain"]),
+                }
+                
+                # Save the session after successful login
+                self._session_manager.save_session(self._token)
+                return self._token
 
-        if json_result["meta"]["code"] == 200:
-            self._session.headers["sessionId"] = json_result["loginSession"][
-                "sessionId"
-            ]
-            self._token = {
-                "session_id": str(json_result["loginSession"]["sessionId"]),
-                "rf_session_id": str(json_result["loginSession"]["rfSessionId"]),
-                "username": str(json_result["loginUser"]["username"]),
-                "api_url": str(json_result["loginArea"]["apiDomain"]),
-            }
+            case 1100:
+                self._token["api_url"] = json_result["loginArea"]["apiDomain"]
+                _LOGGER.warning("Region incorrect!")
+                _LOGGER.warning("Your region url: %s", self._token["api_url"])
+                return self.login()
 
-            self._token["service_urls"] = self.get_service_urls()
+            case 1012:
+                raise PyEzvizError("The MFA code is invalid, please try again.")
 
-            return self._token
+            case 1013:
+                raise PyEzvizError("Incorrect Username.")
 
-        if json_result["meta"]["code"] == 1100:
-            self._token["api_url"] = json_result["loginArea"]["apiDomain"]
-            _LOGGER.warning("Region incorrect!")
-            _LOGGER.warning("Your region url: %s", self._token["api_url"])
-            return self.login()
+            case 1014:
+                raise PyEzvizError("Incorrect Password.")
 
-        if json_result["meta"]["code"] == 1012:
-            raise PyEzvizError("The MFA code is invalid, please try again.")
+            case 1015:
+                raise PyEzvizError("The user is locked.")
 
-        if json_result["meta"]["code"] == 1013:
-            raise PyEzvizError("Incorrect Username.")
+            case 1226:
+                raise PyEzvizError("User does not exist or wrong password")
 
-        if json_result["meta"]["code"] == 1014:
-            raise PyEzvizError("Incorrect Password.")
-
-        if json_result["meta"]["code"] == 1015:
-            raise PyEzvizError("The user is locked.")
-
-        if json_result["meta"]["code"] == 6002:
-            self.send_mfa_code()
-            raise EzvizAuthVerificationCode(
-                "MFA enabled on account. Please retry with code."
-            )
+            case 6002:
+                self.send_mfa_code()
+                raise EzvizAuthVerificationCode(
+                    "MFA enabled on account. Please retry with code."
+                )
 
         raise PyEzvizError(f"Login error: {json_result['meta']}")
 
@@ -238,7 +345,10 @@ class EzvizClient:
             raise InvalidURL("A Invalid URL or Proxy error occurred") from err
 
         except requests.HTTPError as err:
-            raise HTTPError from err
+            raise HTTPError(f"Failed to get service URLs: {req.status_code} {req.text}") from err
+        
+        except Exception as err:
+            raise PyEzvizError(f"Error getting Service URLs: {err}") from err
 
         try:
             json_output = req.json()
@@ -1512,6 +1622,7 @@ class EzvizClient:
 
     def login(self, sms_code: int | None = None) -> dict[Any, Any]:
         """Get or refresh ezviz login token."""
+
         if self._token["session_id"] and self._token["rf_session_id"]:
             try:
                 req = self._session.put(
@@ -1552,14 +1663,17 @@ class EzvizClient:
                 if not self._token.get("service_urls"):
                     self._token["service_urls"] = self.get_service_urls()
 
+                self._session_manager.save_session(self._token)
                 return self._token
 
             if json_result["meta"]["code"] == 403:
                 if self.account and self.password:
+                    self._session_manager.save_session({})
                     self._token = {
                         "session_id": None,
                         "rf_session_id": None,
                         "username": None,
+                        "email": self.account,
                         "api_url": self._token["api_url"],
                     }
                     return self.login()

@@ -2,19 +2,27 @@
 
 ![Upload Python Package](https://github.com/BaQs/pyEzviz/workflows/Upload%20Python%20Package/badge.svg)
 
+> [!WARNING]
+> This repository is depreciated, continuing the work on https://github.com/RenierM26/pyEzvizApi **
+> The new repository and package is called PyEzvizApi and starts with V1.0.0.0
+
+
+
+
+
 Pilot your Ezviz cameras (and light bulbs) with this module.
 
 ### Installing
 
 
 ```
-pip install pyezviz
+pip install pyezvizapi
 ```
 
 ## Playing with it
 
 ```
-pyezviz -u em@il -p PASS devices status
+pyezvizapi -u em@il -p PASS devices status
 ```
 
 ```
@@ -28,7 +36,7 @@ D444444   Backyard camera 2       1             IPC           Husky Air  False  
 ```
 
 ```
-pyezviz -u em@il -p PASS camera --serial D44444 status
+pyezvizapi -u em@il -p PASS camera --serial D44444 status
 ```
 
 ```
@@ -96,7 +104,7 @@ Switch numbers to name mappings are stored in constants.py file.
 ### Light bulbs
 
 ```
-pyezviz -u em@il -p PASS devices_light status
+pyezvizapi -u em@il -p PASS devices_light status
 ```
 
 ```
@@ -109,13 +117,13 @@ D55555    Kitchen lamp       1        lighting                 LB1  192.168.1.16
 ```
 # toggles on/off the light bulb with serial D55555
 
-pyezviz -u em@il -p PASS light --serial D55555 toggle
+pyezvizapi -u em@il -p PASS light --serial D55555 toggle
 ```
 
 ```
 # retrieves details of a specific light bulb
 
-pyezviz -u em@il -p PASS light --serial D55555 status
+pyezvizapi -u em@il -p PASS light --serial D55555 status
 ```
 
 <details>
@@ -259,7 +267,7 @@ tests/data folder contains samples of EzvizLife API for tests purposes.
 As there is no official documentation on the API, I had to reverse-engineer what is the one used in the Ezviz IOS APP.
 Some Regions might operate on an isolated platform and require a url to be entered. US for example:
 
-pyezviz -u username@domain.com -p PASS@123 -r apiius.ezvizlife.com devices status
+pyezvizapi -u username@domain.com -p PASS@123 -r apiius.ezvizlife.com devices status
 
 ## Contributing
 

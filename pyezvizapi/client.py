@@ -15,6 +15,8 @@ import requests
 from .api_endpoints import (
     API_ENDPOINT_ALARM_SOUND,
     API_ENDPOINT_ALARMINFO_GET,
+    API_ENDPOINT_CALLING_NOTIFY,
+    API_ENDPOINT_CAM_AUTH_CODE,
     API_ENDPOINT_CAM_ENCRYPTKEY,
     API_ENDPOINT_CANCEL_ALARM,
     API_ENDPOINT_CHANGE_DEFENCE_STATUS,
@@ -30,6 +32,7 @@ from .api_endpoints import (
     API_ENDPOINT_IOT_FEATURE,
     API_ENDPOINT_LOGIN,
     API_ENDPOINT_LOGOUT,
+    API_ENDPOINT_OFFLINE_NOTIFY,
     API_ENDPOINT_PAGELIST,
     API_ENDPOINT_PANORAMIC_DEVICES_OPERATION,
     API_ENDPOINT_PTZCONTROL,
@@ -122,7 +125,7 @@ class EzvizClient:
 
         try:
             req = self._session.post(
-                "https://" + self._token["api_url"] + API_ENDPOINT_LOGIN,
+                url=f"https://{self._token['api_url']}{API_ENDPOINT_LOGIN}",
                 allow_redirects=False,
                 data=payload,
                 timeout=self._timeout,
@@ -192,7 +195,7 @@ class EzvizClient:
         """Send verification code."""
         try:
             req = self._session.post(
-                "https://" + self._token["api_url"] + API_ENDPOINT_SEND_CODE,
+                url=f"https://{self._token['api_url']}{API_ENDPOINT_SEND_CODE}",
                 data={
                     "from": self.account,
                     "bizType": "TERMINAL_BIND",
@@ -229,7 +232,7 @@ class EzvizClient:
 
         try:
             req = self._session.get(
-                f"https://{self._token['api_url']}{API_ENDPOINT_SERVER_INFO}",
+                url=f"https://{self._token['api_url']}{API_ENDPOINT_SERVER_INFO}",
                 timeout=self._timeout,
             )
             req.raise_for_status()
@@ -285,7 +288,7 @@ class EzvizClient:
 
         try:
             req = self._session.get(
-                "https://" + self._token["api_url"] + API_ENDPOINT_PAGELIST,
+                url=f"https://{self._token['api_url']}{API_ENDPOINT_PAGELIST}",
                 params=params,
                 timeout=self._timeout,
             )
@@ -340,7 +343,6 @@ class EzvizClient:
 
         return data
 
-
     def get_alarminfo(self, serial: str, limit: int = 1, max_retries: int = 0) -> dict:
         """Get data from alarm info API for camera serial."""
         if max_retries > MAX_RETRIES:
@@ -355,7 +357,7 @@ class EzvizClient:
 
         try:
             req = self._session.get(
-                "https://" + self._token["api_url"] + API_ENDPOINT_ALARMINFO_GET,
+                url=f"https://{self._token['api_url']}{API_ENDPOINT_ALARMINFO_GET}",
                 params=params,
                 timeout=self._timeout,
             )
@@ -418,7 +420,7 @@ class EzvizClient:
 
         try:
             req = self._session.get(
-                "https://" + self._token["api_url"] + API_ENDPOINT_UNIFIEDMSG_LIST_GET,
+                url=f"https://{self._token['api_url']}{API_ENDPOINT_UNIFIEDMSG_LIST_GET}",
                 params=params,
                 timeout=self._timeout,
             )
@@ -570,7 +572,7 @@ class EzvizClient:
 
         try:
             req = self._session.put(
-                url=f"https://{self._token['api_url']}{API_ENDPOINT_DEVICES}{serial}/{channel_no}/{API_ENDPOINT_CHANGE_DEFENCE_STATUS}",
+                url=f"https://{self._token['api_url']}{API_ENDPOINT_DEVICES}{serial}/{channel_no}{API_ENDPOINT_CHANGE_DEFENCE_STATUS}",
                 timeout=self._timeout,
                 data={
                     "type": arm_type,
@@ -771,11 +773,7 @@ class EzvizClient:
 
         try:
             req = self._session.put(
-                "https://"
-                + self._token["api_url"]
-                + API_ENDPOINT_UPGRADE_DEVICE
-                + serial
-                + "/0/upgrade",
+                url=f"https://{self._token['api_url']}{API_ENDPOINT_UPGRADE_DEVICE}{serial}/0/upgrade",
                 timeout=self._timeout,
             )
 
@@ -862,12 +860,7 @@ class EzvizClient:
 
         try:
             req = self._session.put(
-                "https://"
-                + self._token["api_url"]
-                + API_ENDPOINT_DEVICES
-                + serial
-                + "/0"
-                + API_ENDPOINT_SWITCH_SOUND_ALARM,
+                url=f"https://{self._token['api_url']}{API_ENDPOINT_DEVICES}{serial}/0{API_ENDPOINT_SWITCH_SOUND_ALARM}",
                 data={
                     "enable": enable,
                 },
@@ -908,7 +901,7 @@ class EzvizClient:
 
         try:
             req = self._session.get(
-                f"https://{self._token['api_url']}{API_ENDPOINT_USER_ID}",
+                url=f"https://{self._token['api_url']}{API_ENDPOINT_USER_ID}",
                 timeout=self._timeout,
             )
             req.raise_for_status()
@@ -950,32 +943,24 @@ class EzvizClient:
         if max_retries > MAX_RETRIES:
             raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
 
-        device_token_info = self.get_user_id()
-        cookies = {
-            "clientType": "3",
-            "clientVersion": "5.12.1.0517",
-            "userId": device_token_info["userId"],
-            "ASG_DisplayName": "home",
-            "C_SS": self._session.headers["sessionId"],
-            "lang": "en_US",
-        }
+        if enable == 2 and not old_password:
+            raise PyEzvizError("Old password is required when changing password.")
+
+        if new_password and not enable == 2:
+            raise PyEzvizError("New password is only required when changing password.")
 
         try:
             req = self._session.put(
-                "https://"
-                + self._token["api_url"]
-                + API_ENDPOINT_DEVICES
-                + API_ENDPOINT_VIDEO_ENCRYPT,
+                url=f"https://{self._token['api_url']}{API_ENDPOINT_DEVICES}{API_ENDPOINT_VIDEO_ENCRYPT}",
                 data={
                     "deviceSerial": serial,
-                    "isEncrypt": enable,
-                    "oldPassword": old_password,
+                    "isEncrypt": enable,  # 1 = enable, 0 = disable, 2 = change password
+                    "oldPassword": old_password,  # required if changing.
                     "password": new_password,
                     "featureCode": FEATURE_CODE,
                     "validateCode": camera_verification_code,
                     "msgType": -1,
                 },
-                cookies=cookies,
                 timeout=self._timeout,
             )
 
@@ -1073,6 +1058,69 @@ class EzvizClient:
 
         return True
 
+    def set_offline_notification(
+        self,
+        serial: str,
+        enable: int = 1,
+        req_type: int = 1,
+        max_retries: int = 0,
+    ) -> bool:
+        """Set offline notification."""
+        if max_retries > MAX_RETRIES:
+            raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
+
+        try:
+            req = self._session.post(
+                url=f'https://{self._token["api_url"]}{API_ENDPOINT_OFFLINE_NOTIFY}',
+                data={
+                    "reqType": req_type,
+                    "serial": serial,
+                    "status": enable,
+                },
+                timeout=self._timeout,
+            )
+
+            req.raise_for_status()
+
+        except requests.HTTPError as err:
+            if err.response.status_code == 401:
+                # session is wrong, need to relogin
+                self.login()
+                return self.set_offline_notification(
+                    serial,
+                    enable,
+                    req_type,
+                    max_retries + 1,
+                )
+
+            raise HTTPError from err
+
+        try:
+            json_output = req.json()
+
+        except ValueError as err:
+            raise PyEzvizError(
+                "Impossible to decode response: "
+                + str(err)
+                + "\nResponse was: "
+                + str(req.text)
+            ) from err
+
+        if json_output["resultCode"] != "0":
+            if json_output["resultCode"] == "-1":
+                _LOGGER.warning(
+                    "Unable to set offline notification, camera %s is unreachable, retrying %s of %s",
+                    serial,
+                    max_retries,
+                    MAX_RETRIES,
+                )
+                return self.set_offline_notification(
+                    serial, enable, req_type, max_retries + 1
+                )
+            raise PyEzvizError(f"Could not set offline notification {json_output})")
+
+        return True
+
     def get_group_defence_mode(self, max_retries: int = 0) -> Any:
         """Get group arm status. The alarm arm/disarm concept on 1st page of app."""
 
@@ -1081,7 +1129,7 @@ class EzvizClient:
 
         try:
             req = self._session.get(
-                "https://" + self._token["api_url"] + API_ENDPOINT_GROUP_DEFENCE_MODE,
+                url=f"https://{self._token['api_url']}{API_ENDPOINT_GROUP_DEFENCE_MODE}",
                 params={
                     "groupId": -1,
                 },
@@ -1124,7 +1172,7 @@ class EzvizClient:
 
         try:
             req = self._session.post(
-                "https://" + self._token["api_url"] + API_ENDPOINT_CANCEL_ALARM,
+                url=f"https://{self._token['api_url']}{API_ENDPOINT_CANCEL_ALARM}",
                 data={"subSerial": serial},
                 timeout=self._timeout,
             )
@@ -1270,15 +1318,11 @@ class EzvizClient:
 
         try:
             req = self._session.put(
-                "https://"
-                + self._token["api_url"]
-                + API_ENDPOINT_DEVICES
-                + serial
-                + API_ENDPOINT_PTZCONTROL,
+                url=f"https://{self._token['api_url']}{API_ENDPOINT_DEVICES}{serial}{API_ENDPOINT_PTZCONTROL}",
                 data={
                     "command": command,
                     "action": action,
-                    "channelNo": "1",
+                    "channelNo": 1,
                     "speed": speed,
                     "uuid": str(uuid4()),
                     "serial": serial,
@@ -1316,7 +1360,7 @@ class EzvizClient:
 
         try:
             req = self._session.post(
-                "https://" + self._token["api_url"] + API_ENDPOINT_CAM_ENCRYPTKEY,
+                url=f"https://{self._token['api_url']}{API_ENDPOINT_CAM_ENCRYPTKEY}",
                 data={
                     "checkcode": smscode,
                     "serial": serial,
@@ -1368,6 +1412,61 @@ class EzvizClient:
 
         return json_output["encryptkey"]
 
+    def get_cam_auth_code(
+        self,
+        serial: str,
+        encrypt_pwd: str | None = None,
+        msg_auth_code: int | None = None,
+        max_retries: int = 0,
+    ) -> Any:
+        """Get Camera auth code. This is the verification code on the camera sticker."""
+
+        if max_retries > MAX_RETRIES:
+            raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
+
+        params: dict[str, int | str | None] = {
+            "encrptPwd": encrypt_pwd,
+            "msgAuthCode": msg_auth_code,
+            "senderType": 0,
+        }
+
+        try:
+            req = self._session.get(
+                url=f"https://{self._token['api_url']}{API_ENDPOINT_CAM_AUTH_CODE}{serial}",
+                params=params,
+                timeout=self._timeout,
+            )
+
+            req.raise_for_status()
+
+        except requests.HTTPError as err:
+            if err.response.status_code == 401:
+                # session is wrong, need to relogin
+                self.login()
+                return self.get_cam_auth_code(
+                    serial, encrypt_pwd, msg_auth_code, max_retries + 1
+                )
+
+            raise HTTPError from err
+
+        try:
+            json_output = req.json()
+
+        except ValueError as err:
+            raise PyEzvizError(
+                "Impossible to decode response: "
+                + str(err)
+                + "\nResponse was: "
+                + str(req.text)
+            ) from err
+
+        if json_output["meta"]["code"] != 200:
+            raise PyEzvizError(
+                f"Could not get camera verification key: Got {json_output})"
+            )
+
+        return json_output["devAuthCode"]
+
     def create_panoramic(self, serial: str, max_retries: int = 0) -> Any:
         """Create panoramic image."""
 
@@ -1376,7 +1475,7 @@ class EzvizClient:
 
         try:
             req = self._session.post(
-                "https://" + self._token["api_url"] + API_ENDPOINT_CREATE_PANORAMIC,
+                url=f"https://{self._token['api_url']}{API_ENDPOINT_CREATE_PANORAMIC}",
                 data={"deviceSerial": serial},
                 timeout=self._timeout,
             )
@@ -1424,7 +1523,7 @@ class EzvizClient:
 
         try:
             req = self._session.post(
-                "https://" + self._token["api_url"] + API_ENDPOINT_RETURN_PANORAMIC,
+                url=f"https://{self._token['api_url']}{API_ENDPOINT_RETURN_PANORAMIC}",
                 data={"deviceSerial": serial},
                 timeout=self._timeout,
             )
@@ -1479,9 +1578,7 @@ class EzvizClient:
 
         try:
             req = self._session.post(
-                "https://"
-                + self._token["api_url"]
-                + API_ENDPOINT_PANORAMIC_DEVICES_OPERATION,
+                url=f"https://{self._token['api_url']}{API_ENDPOINT_PANORAMIC_DEVICES_OPERATION}",
                 data={
                     "x": f"{x_axis:.6f}",
                     "y": f"{y_axis:.6f}",
@@ -1515,9 +1612,7 @@ class EzvizClient:
         if self._token["session_id"] and self._token["rf_session_id"]:
             try:
                 req = self._session.put(
-                    "https://"
-                    + self._token["api_url"]
-                    + API_ENDPOINT_REFRESH_SESSION_ID,
+                    url=f"https://{self._token['api_url']}{API_ENDPOINT_REFRESH_SESSION_ID}",
                     data={
                         "refreshSessionId": self._token["rf_session_id"],
                         "featureCode": FEATURE_CODE,
@@ -1579,7 +1674,7 @@ class EzvizClient:
         """Close Ezviz session and remove login session from ezviz servers."""
         try:
             req = self._session.delete(
-                "https://" + self._token["api_url"] + API_ENDPOINT_LOGOUT,
+                url=f"https://{self._token['api_url']}{API_ENDPOINT_LOGOUT}",
                 timeout=self._timeout,
             )
             req.raise_for_status()
@@ -1630,7 +1725,7 @@ class EzvizClient:
         )
         try:
             req = self._session.post(
-                "https://" + self._token["api_url"] + API_ENDPOINT_SET_DEFENCE_SCHEDULE,
+                url=f"https://{self._token['api_url']}{API_ENDPOINT_SET_DEFENCE_SCHEDULE}",
                 data={
                     "devTimingPlan": schedulestring,
                 },
@@ -1679,10 +1774,9 @@ class EzvizClient:
         """Set defence mode for all devices. The alarm panel from main page is used."""
         if max_retries > MAX_RETRIES:
             raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
-
         try:
             req = self._session.post(
-                "https://" + self._token["api_url"] + API_ENDPOINT_SWITCH_DEFENCE_MODE,
+                url=f"https://{self._token['api_url']}{API_ENDPOINT_SWITCH_DEFENCE_MODE}",
                 data={
                     "groupId": -1,
                     "mode": mode,
@@ -1729,14 +1823,8 @@ class EzvizClient:
 
         try:
             req = self._session.put(
-                "https://"
-                + self._token["api_url"]
-                + API_ENDPOINT_V3_ALARMS
-                + serial
-                + "/"
-                + channelno
-                + API_ENDPOINT_DO_NOT_DISTURB,
-                data={"enable": enable, "channelNo": channelno, "deviceSerial": serial},
+                url=f"https://{self._token['api_url']}{API_ENDPOINT_V3_ALARMS}{serial}/{channelno}{API_ENDPOINT_DO_NOT_DISTURB}",
+                data={"enable": enable},
                 timeout=self._timeout,
             )
             req.raise_for_status()
@@ -1760,11 +1848,47 @@ class EzvizClient:
 
         return True
 
+    def set_answer_call(
+        self,
+        serial: str,
+        enable: int = 1,
+        max_retries: int = 0,
+    ) -> bool:
+        """Set answer call on camera with specified serial."""
+        if max_retries > MAX_RETRIES:
+            raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
+        try:
+            req = self._session.put(
+                url=f"https://{self._token['api_url']}{API_ENDPOINT_CALLING_NOTIFY}{serial}{API_ENDPOINT_DO_NOT_DISTURB}",
+                data={"deviceSerial": serial, "switchStatus": enable},
+                timeout=self._timeout,
+            )
+            req.raise_for_status()
+
+        except requests.HTTPError as err:
+            if err.response.status_code == 401:
+                # session is wrong, need to re-log-in
+                self.login()
+                return self.set_answer_call(serial, enable, max_retries + 1)
+
+            raise HTTPError from err
+
+        try:
+            json_output = req.json()
+
+        except ValueError as err:
+            raise PyEzvizError("Could not decode response:" + str(err)) from err
+
+        if json_output["meta"]["code"] != 200:
+            raise PyEzvizError(f"Could not set answer call: Got {json_output})")
+
+        return True
+
     def set_floodlight_brightness(
         self,
         serial: str,
         luminance: int = 50,
-        channelno: str = "1",
+        channelno: int = 1,
         max_retries: int = 0,
     ) -> bool | str:
         """Set brightness on camera with adjustable light."""
@@ -1778,13 +1902,7 @@ class EzvizClient:
 
         try:
             req = self._session.post(
-                "https://"
-                + self._token["api_url"]
-                + API_ENDPOINT_SET_LUMINANCE
-                + "/"
-                + serial
-                + "/"
-                + channelno,
+                url=f"https://{self._token['api_url']}{API_ENDPOINT_SET_LUMINANCE}{serial}/{channelno}",
                 data={
                     "luminance": luminance,
                 },
@@ -1818,7 +1936,7 @@ class EzvizClient:
         self,
         serial: str,
         luminance: int = 50,
-        channelno: str = "1",
+        channelno: int = 1,
         max_retries: int = 0,
     ) -> bool | str:
         """Facade that changes the brightness to light bulbs or cameras' light."""
@@ -1869,16 +1987,13 @@ class EzvizClient:
             raise PyEzvizError(
                 "Unproper sensibility for type 0 (should be within 1 to 6)."
             )
-
         try:
             req = self._session.post(
-                "https://"
-                + self._token["api_url"]
-                + API_ENDPOINT_DETECTION_SENSIBILITY,
+                url=f"https://{self._token['api_url']}{API_ENDPOINT_DETECTION_SENSIBILITY}",
                 data={
                     "subSerial": serial,
                     "type": type_value,
-                    "channelNo": "1",
+                    "channelNo": 1,
                     "value": sensibility,
                 },
                 timeout=self._timeout,
@@ -1925,12 +2040,9 @@ class EzvizClient:
         """Get detection sensibility notifications."""
         if max_retries > MAX_RETRIES:
             raise PyEzvizError("Can't gather proper data. Max retries exceeded.")
-
         try:
             req = self._session.post(
-                "https://"
-                + self._token["api_url"]
-                + API_ENDPOINT_DETECTION_SENSIBILITY_GET,
+                url=f"https://{self._token['api_url']}{API_ENDPOINT_DETECTION_SENSIBILITY_GET}",
                 data={
                     "subSerial": serial,
                 },
@@ -1992,11 +2104,7 @@ class EzvizClient:
 
         try:
             req = self._session.put(
-                "https://"
-                + self._token["api_url"]
-                + API_ENDPOINT_DEVICES
-                + serial
-                + API_ENDPOINT_ALARM_SOUND,
+                url=f"https://{self._token['api_url']}{API_ENDPOINT_DEVICES}{serial}{API_ENDPOINT_ALARM_SOUND}",
                 data={
                     "enable": enable,
                     "soundType": sound_type,
@@ -2044,9 +2152,7 @@ class EzvizClient:
 
     def get_connection(self) -> Any:
         """Get ezviz connection infos filter."""
-        return self._api_get_pagelist(
-            page_filter="CONNECTION", json_key="CONNECTION"
-        )
+        return self._api_get_pagelist(page_filter="CONNECTION", json_key="CONNECTION")
 
     def _get_status(self) -> Any:
         """Get ezviz status infos filter."""
@@ -2054,9 +2160,7 @@ class EzvizClient:
 
     def get_switch(self) -> Any:
         """Get ezviz switch infos filter."""
-        return self._api_get_pagelist(
-            page_filter="SWITCH", json_key="SWITCH"
-        )
+        return self._api_get_pagelist(page_filter="SWITCH", json_key="SWITCH")
 
     def _get_wifi(self) -> Any:
         """Get ezviz wifi infos filter."""
@@ -2064,9 +2168,7 @@ class EzvizClient:
 
     def _get_nodisturb(self) -> Any:
         """Get ezviz nodisturb infos filter."""
-        return self._api_get_pagelist(
-            page_filter="NODISTURB", json_key="NODISTURB"
-        )
+        return self._api_get_pagelist(page_filter="NODISTURB", json_key="NODISTURB")
 
     def _get_p2p(self) -> Any:
         """Get ezviz P2P infos filter."""

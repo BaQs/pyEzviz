@@ -1,4 +1,4 @@
-"""Ezviz CAS API Functions."""
+"""pyezvizapi CAS API Functions."""
 
 from io import BytesIO
 from itertools import cycle

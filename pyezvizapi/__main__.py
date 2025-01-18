@@ -1,4 +1,4 @@
-"""pyezviz command line."""
+"""pyezvizapi command line."""
 import argparse
 import json
 import logging
@@ -17,7 +17,7 @@ from .mqtt import MQTTClient
 
 def main() -> Any:
     """Initiate arg parser."""
-    parser = argparse.ArgumentParser(prog="pyezviz")
+    parser = argparse.ArgumentParser(prog="pyezvizapi")
     parser.add_argument("-u", "--username", required=True, help="Ezviz username")
     parser.add_argument("-p", "--password", required=True, help="Ezviz Password")
     parser.add_argument(

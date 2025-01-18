@@ -1,4 +1,4 @@
-"""init pyezviz."""
+"""init pyezvizapi."""
 from .camera import EzvizCamera
 from .cas import EzvizCAS
 from .client import EzvizClient

@@ -1,4 +1,5 @@
 """Decrypt camera images."""
+
 from __future__ import annotations
 
 from hashlib import md5
@@ -85,13 +86,11 @@ def decrypt_image(input_data: bytes, password: str) -> bytes:
 
     # check header
     if input_data[:16] != b"hikencodepicture":
-        _LOGGER.warning("Image header doesn't contain 'hikencodepicture'")
+        _LOGGER.debug("Image header doesn't contain 'hikencodepicture'")
         return input_data
 
     file_hash = input_data[16:48]
-    passwd_hash = (
-        md5(str.encode(md5(str.encode(password)).digest().hex())).digest().hex()
-    )
+    passwd_hash = md5(str.encode(md5(str.encode(password)).hexdigest())).hexdigest()
     if file_hash != str.encode(passwd_hash):
         raise PyEzvizError("Invalid password")
 
@@ -114,7 +113,13 @@ def decrypt_image(input_data: bytes, password: str) -> bytes:
         i += chunk_size
     return output_data
 
-def deep_merge(dict1, dict2):
+
+def return_password_hash(password: str) -> str:
+    """Return the password hash."""
+    return md5(str.encode(md5(str.encode(password)).hexdigest())).hexdigest()
+
+
+def deep_merge(dict1: Any, dict2: Any) -> Any:
     """Recursively merges two dictionaries, handling lists as well.
 
     Args:
@@ -157,4 +162,3 @@ def deep_merge(dict1, dict2):
             merged[key] = dict2[key]
 
     return merged
-

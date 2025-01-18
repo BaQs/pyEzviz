@@ -66,7 +66,7 @@ class EzvizLightBulb:
 
         return json_output
 
-    def get_feature_item(self, key: str, default_value: Any = None) -> Any:
+    def get_feature_item(self, key: str, default_value: Any = { "dataValue" : "" }) -> Any:
         """Get items fron FEATURE."""
         items = self._feature_json["featureItemDtos"]
         for item in items:

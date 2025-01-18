@@ -1,4 +1,5 @@
-"""pyezviz camera api."""
+"""pyezvizapi camera api."""
+
 from __future__ import annotations
 
 import datetime
@@ -43,7 +44,7 @@ class EzvizCamera:
 
         if fetch_nested_value(_alarmlist, ["page", "totalResults"], 0) > 0:
             self._last_alarm = _alarmlist["alarms"][0]
-            return self._motion_trigger()
+            self._motion_trigger()
 
     def _local_ip(self) -> Any:
         """Fix empty ip value for certain cameras."""
@@ -123,6 +124,8 @@ class EzvizCamera:
             "local_ip": self._local_ip(),
             "wan_ip": self.fetch_key(["CONNECTION", "netIp"]),
             "mac_address": self.fetch_key(["deviceInfos", "mac"]),
+            "offline_notify": bool(self.fetch_key(["deviceInfos", "offlineNotify"])),
+            "last_offline_time": self.fetch_key(["deviceInfos", "offlineTime"]),
             "local_rtsp_port": self.fetch_key(["CONNECTION", "localRtspPort"], "554")
             if self.fetch_key(["CONNECTION", "localRtspPort"], "554") != 0
             else "554",
